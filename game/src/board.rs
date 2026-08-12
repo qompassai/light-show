@@ -139,11 +139,18 @@ fn hit_test_node(level: &LevelDef, pos: Vec2) -> Option<u32> {
 
 /// Returns `(from, to, slot_index)` for the pill under `pos`, if any,
 /// where `slot_index` is the position within that pair's choice group
-/// (not the raw index into `available_components`).
+/// (not the raw index into `available_components`). Edges with only one
+/// choice have no pill drawn (the drag gesture alone places them, see
+/// `draw_board_gizmos`), so they're skipped here too — otherwise a tap
+/// near the edge midpoint would silently register against an invisible
+/// target.
 fn hit_test_pill(level: &LevelDef, pos: Vec2) -> Option<(u32, u32, usize)> {
     let mut best: Option<(u32, u32, usize, f32)> = None;
     for ((from, to), indices) in grouped_choices(level) {
         let count = indices.len();
+        if count <= 1 {
+            continue;
+        }
         for slot in 0..count {
             let Some(world) = pill_world_pos(level, from, to, slot, count) else {
                 continue;
@@ -155,6 +162,66 @@ fn hit_test_pill(level: &LevelDef, pos: Vec2) -> Option<(u32, u32, usize)> {
         }
     }
     best.map(|(from, to, slot, _)| (from, to, slot))
+}
+
+/// What a press (mouse-down / touch-down) resolves to, given the level
+/// layout and the pointer's world position. Pure decision logic, kept
+/// separate from `handle_pointer_input`'s Bevy resource plumbing so it can
+/// be unit-tested directly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PressAction {
+    /// Pointer landed on a node — begin a node → node drag from it.
+    StartDrag(u32),
+    /// Pointer landed on a component-choice pill — select that variant
+    /// immediately (no drag needed).
+    SelectPill { from: u32, to: u32, slot: usize },
+    /// Pointer landed on empty board space.
+    None,
+}
+
+fn resolve_press(level: &LevelDef, pos: Vec2) -> PressAction {
+    if let Some(node_id) = hit_test_node(level, pos) {
+        PressAction::StartDrag(node_id)
+    } else if let Some((from, to, slot)) = hit_test_pill(level, pos) {
+        PressAction::SelectPill { from, to, slot }
+    } else {
+        PressAction::None
+    }
+}
+
+/// What a release (mouse-up / touch-up) resolves to, given an in-progress
+/// drag and the release position. Pure decision logic, unit-tested
+/// directly (see `resolve_press` for why this is split out).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReleaseAction {
+    /// Drag ended on a different node that has an available component for
+    /// this pair — connect it (using the caller's default/first choice).
+    Connect { from: u32, to: u32 },
+    /// No valid connection: nothing was dragging, the release landed on
+    /// empty space, on the same node the drag started from, or on a node
+    /// pair with no component offered between them.
+    None,
+}
+
+fn resolve_release(level: &LevelDef, drag_from: Option<u32>, pos: Option<Vec2>) -> ReleaseAction {
+    let (Some(src), Some(pos)) = (drag_from, pos) else {
+        return ReleaseAction::None;
+    };
+    let Some(dst) = hit_test_node(level, pos) else {
+        return ReleaseAction::None;
+    };
+    if dst == src {
+        return ReleaseAction::None;
+    }
+    let has_choice = level
+        .available_components
+        .iter()
+        .any(|c| c.from == src && c.to == dst);
+    if has_choice {
+        ReleaseAction::Connect { from: src, to: dst }
+    } else {
+        ReleaseAction::None
+    }
 }
 
 /// Rebuilds a fresh `PathGraph` from the level's nodes and fixed edges,
@@ -279,7 +346,9 @@ pub fn track_pointer(
 
 /// Turns pointer gestures into placements: drag node → node connects the
 /// default choice for that pair; tapping a pill explicitly picks one
-/// alternative among several offered choices.
+/// alternative among several offered choices. All decision logic lives in
+/// `resolve_press`/`resolve_release` (see their unit tests below); this
+/// system is just the thin ECS-resource glue around them.
 pub fn handle_pointer_input(
     level: Res<LevelDef>,
     pointer: Res<PointerWorld>,
@@ -292,34 +361,23 @@ pub fn handle_pointer_input(
     let just_pressed = mouse.just_pressed(MouseButton::Left) || touches.any_just_pressed();
     let just_released = mouse.just_released(MouseButton::Left) || touches.any_just_released();
 
-    let Some(pos) = pointer.0 else {
-        if just_released {
-            drag.from = None;
-        }
-        return;
-    };
-
     if just_pressed {
-        if let Some(node_id) = hit_test_node(&level, pos) {
-            drag.from = Some(node_id);
-        } else if let Some((from, to, slot)) = hit_test_pill(&level, pos) {
-            placed.0.insert((from, to), slot);
-            rebuild_live_graph(&level, &placed, &mut live.graph);
+        if let Some(pos) = pointer.0 {
+            match resolve_press(&level, pos) {
+                PressAction::StartDrag(node_id) => drag.from = Some(node_id),
+                PressAction::SelectPill { from, to, slot } => {
+                    placed.0.insert((from, to), slot);
+                    rebuild_live_graph(&level, &placed, &mut live.graph);
+                }
+                PressAction::None => {}
+            }
         }
     }
 
     if just_released {
-        if let Some(src) = drag.from {
-            if let Some(dst) = hit_test_node(&level, pos) {
-                let has_choice = level
-                    .available_components
-                    .iter()
-                    .any(|c| c.from == src && c.to == dst);
-                if dst != src && has_choice {
-                    placed.0.entry((src, dst)).or_insert(0);
-                    rebuild_live_graph(&level, &placed, &mut live.graph);
-                }
-            }
+        if let ReleaseAction::Connect { from, to } = resolve_release(&level, drag.from, pointer.0) {
+            placed.0.entry((from, to)).or_insert(0);
+            rebuild_live_graph(&level, &placed, &mut live.graph);
         }
         drag.from = None;
     }
@@ -402,5 +460,497 @@ pub fn draw_board_gizmos(
         if let Some(from_pos) = node_world_pos(&level, from_id) {
             gizmos.line_2d(from_pos, pointer_pos, LIGHT_HOT);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::level::{ComponentChoice, LevelEdge, LevelNode, WavelengthDef};
+    use crate::states::playing::WavelengthWrapper;
+    use osp_sim::component::PlantType;
+    use osp_sim::{Component, SpliceType};
+
+    /// Builds a minimal but fully-valid `LevelDef` from just the parts a
+    /// given test cares about, filling in flavor/metadata fields with
+    /// placeholder values.
+    fn fixture(
+        nodes: Vec<LevelNode>,
+        fixed_edges: Vec<LevelEdge>,
+        available_components: Vec<ComponentChoice>,
+        source_node: u32,
+        target_node: u32,
+    ) -> LevelDef {
+        LevelDef {
+            id: "test".into(),
+            title: "Test Level".into(),
+            world: 0,
+            briefing: String::new(),
+            tx_dbm: 3.0,
+            wavelength: WavelengthDef::Nm1490,
+            window_min_dbm: -27.0,
+            window_max_dbm: -8.0,
+            nodes,
+            fixed_edges,
+            available_components,
+            source_node,
+            target_node,
+            scripted_outage: None,
+            on_enter_line: None,
+            on_win_line: None,
+            on_fail_line: None,
+        }
+    }
+
+    fn node(id: u32, grid_x: f32, grid_y: f32) -> LevelNode {
+        LevelNode {
+            id,
+            label: format!("Node {id}"),
+            grid_x,
+            grid_y,
+        }
+    }
+
+    fn fusion_splice() -> Component {
+        Component::Splice {
+            kind: SpliceType::Fusion,
+            degradation_db: 0.0,
+        }
+    }
+
+    fn mechanical_splice() -> Component {
+        Component::Splice {
+            kind: SpliceType::Mechanical,
+            degradation_db: 0.0,
+        }
+    }
+
+    /// Mirrors `assets/levels/world1_level1.json`'s shape: two node ids
+    /// (1, 2) on the same row, with a fusion-vs-mechanical splice choice
+    /// between them — used to exercise pill selection.
+    fn two_choice_level() -> LevelDef {
+        fixture(
+            vec![node(1, 1.0, 0.0), node(2, 2.0, 0.0)],
+            vec![],
+            vec![
+                ComponentChoice {
+                    from: 1,
+                    to: 2,
+                    component: fusion_splice(),
+                },
+                ComponentChoice {
+                    from: 1,
+                    to: 2,
+                    component: mechanical_splice(),
+                },
+            ],
+            1,
+            2,
+        )
+    }
+
+    /// Same layout, but with only one component offered between (1, 2) —
+    /// used to confirm no invisible pill target exists for single choices.
+    fn single_choice_level() -> LevelDef {
+        fixture(
+            vec![node(1, 1.0, 0.0), node(2, 2.0, 0.0)],
+            vec![],
+            vec![ComponentChoice {
+                from: 1,
+                to: 2,
+                component: fusion_splice(),
+            }],
+            1,
+            2,
+        )
+    }
+
+    // -- grid_to_world / grouped_choices -----------------------------------
+
+    #[test]
+    fn grid_to_world_matches_expected_layout() {
+        assert_eq!(grid_to_world(1.0, 0.0), Vec2::new(0.0, 300.0));
+        assert_eq!(grid_to_world(2.0, 0.0), Vec2::new(200.0, 300.0));
+        assert_eq!(grid_to_world(1.0, 1.0), Vec2::new(0.0, 100.0));
+    }
+
+    #[test]
+    fn grouped_choices_preserves_encounter_order_and_indices() {
+        let level = fixture(
+            vec![node(1, 1.0, 0.0), node(2, 2.0, 0.0), node(3, 3.0, 0.0)],
+            vec![],
+            vec![
+                ComponentChoice {
+                    from: 1,
+                    to: 2,
+                    component: fusion_splice(),
+                },
+                ComponentChoice {
+                    from: 2,
+                    to: 3,
+                    component: fusion_splice(),
+                },
+                ComponentChoice {
+                    from: 1,
+                    to: 2,
+                    component: mechanical_splice(),
+                },
+            ],
+            1,
+            3,
+        );
+        let groups = grouped_choices(&level);
+        assert_eq!(groups, vec![((1, 2), vec![0, 2]), ((2, 3), vec![1])]);
+    }
+
+    // -- hit_test_node ------------------------------------------------------
+
+    #[test]
+    fn hit_test_node_finds_node_within_radius() {
+        let level = two_choice_level();
+        // Node 1 sits at world (0, 300); comfortably within NODE_HIT_RADIUS.
+        assert_eq!(hit_test_node(&level, Vec2::new(5.0, 302.0)), Some(1));
+    }
+
+    #[test]
+    fn hit_test_node_returns_none_when_out_of_range() {
+        let level = two_choice_level();
+        assert_eq!(hit_test_node(&level, Vec2::new(5000.0, 5000.0)), None);
+    }
+
+    #[test]
+    fn hit_test_node_picks_nearest_when_two_are_in_range() {
+        // Two nodes close enough together that both fall within
+        // NODE_HIT_RADIUS of a point between them; the nearer one wins.
+        let level = fixture(
+            vec![node(1, 1.0, 0.0), node(2, 1.05, 0.0)],
+            vec![],
+            vec![],
+            1,
+            2,
+        );
+        // Node 1 world pos (0, 300); node 2 world pos (10, 300).
+        assert_eq!(hit_test_node(&level, Vec2::new(3.0, 300.0)), Some(1));
+        assert_eq!(hit_test_node(&level, Vec2::new(7.0, 300.0)), Some(2));
+    }
+
+    // -- hit_test_pill --------------------------------------------------------
+
+    #[test]
+    fn hit_test_pill_finds_each_pill_in_a_multi_choice_group() {
+        let level = two_choice_level();
+        // Pill 0 (Fusion) at (100, 265), pill 1 (Mechanical) at (100, 335)
+        // per pill_world_pos's midpoint + perpendicular-spread formula.
+        assert_eq!(
+            hit_test_pill(&level, Vec2::new(100.0, 265.0)),
+            Some((1, 2, 0))
+        );
+        assert_eq!(
+            hit_test_pill(&level, Vec2::new(100.0, 335.0)),
+            Some((1, 2, 1))
+        );
+    }
+
+    #[test]
+    fn hit_test_pill_returns_none_for_single_choice_edge() {
+        let level = single_choice_level();
+        // No pill is drawn when there's only one choice, so a tap at the
+        // edge midpoint must not silently register against an invisible
+        // target.
+        assert_eq!(hit_test_pill(&level, Vec2::new(100.0, 300.0)), None);
+    }
+
+    #[test]
+    fn hit_test_pill_returns_none_far_from_any_pill() {
+        let level = two_choice_level();
+        assert_eq!(hit_test_pill(&level, Vec2::new(-500.0, -500.0)), None);
+    }
+
+    // -- resolve_press / resolve_release (the actual gesture logic) --------
+
+    #[test]
+    fn resolve_press_starts_drag_when_pressing_a_node() {
+        let level = two_choice_level();
+        assert_eq!(
+            resolve_press(&level, Vec2::new(0.0, 300.0)),
+            PressAction::StartDrag(1)
+        );
+    }
+
+    #[test]
+    fn resolve_press_selects_pill_when_pressing_a_pill() {
+        let level = two_choice_level();
+        assert_eq!(
+            resolve_press(&level, Vec2::new(100.0, 335.0)),
+            PressAction::SelectPill {
+                from: 1,
+                to: 2,
+                slot: 1
+            }
+        );
+    }
+
+    #[test]
+    fn resolve_press_none_on_empty_board_space() {
+        let level = two_choice_level();
+        assert_eq!(
+            resolve_press(&level, Vec2::new(-900.0, -900.0)),
+            PressAction::None
+        );
+    }
+
+    #[test]
+    fn resolve_release_connects_a_valid_drag() {
+        let level = two_choice_level();
+        let action = resolve_release(&level, Some(1), Some(Vec2::new(200.0, 300.0)));
+        assert_eq!(action, ReleaseAction::Connect { from: 1, to: 2 });
+    }
+
+    #[test]
+    fn resolve_release_rejects_dropping_on_the_same_node() {
+        let level = two_choice_level();
+        let action = resolve_release(&level, Some(1), Some(Vec2::new(0.0, 300.0)));
+        assert_eq!(action, ReleaseAction::None);
+    }
+
+    #[test]
+    fn resolve_release_rejects_pair_with_no_available_component() {
+        let level = two_choice_level();
+        // Reversed direction: available_components only defines 1 -> 2, not
+        // 2 -> 1, so dragging node 2 onto node 1 must not connect.
+        let action = resolve_release(&level, Some(2), Some(Vec2::new(0.0, 300.0)));
+        assert_eq!(action, ReleaseAction::None);
+    }
+
+    #[test]
+    fn resolve_release_none_when_nothing_was_dragging() {
+        let level = two_choice_level();
+        let action = resolve_release(&level, None, Some(Vec2::new(200.0, 300.0)));
+        assert_eq!(action, ReleaseAction::None);
+    }
+
+    #[test]
+    fn resolve_release_none_when_dropped_on_empty_space() {
+        let level = two_choice_level();
+        let action = resolve_release(&level, Some(1), Some(Vec2::new(-900.0, -900.0)));
+        assert_eq!(action, ReleaseAction::None);
+    }
+
+    // -- rebuild_live_graph --------------------------------------------------
+
+    #[test]
+    fn rebuild_live_graph_includes_fixed_and_placed_edges() {
+        let level = fixture(
+            vec![node(0, 0.0, 0.0), node(1, 1.0, 0.0), node(2, 2.0, 0.0)],
+            vec![LevelEdge {
+                from: 0,
+                to: 1,
+                component: Component::Span {
+                    length_km: 8.0,
+                    plant: PlantType::Buried,
+                },
+            }],
+            vec![
+                ComponentChoice {
+                    from: 1,
+                    to: 2,
+                    component: fusion_splice(),
+                },
+                ComponentChoice {
+                    from: 1,
+                    to: 2,
+                    component: mechanical_splice(),
+                },
+            ],
+            0,
+            2,
+        );
+        let mut placed = PlacedChoices::default();
+        placed.0.insert((1, 2), 1); // pick the mechanical alternative
+        let mut graph = PathGraph::default();
+        rebuild_live_graph(&level, &placed, &mut graph);
+
+        assert_eq!(graph.edges.len(), 2);
+        assert!(graph
+            .edges
+            .iter()
+            .any(|e| e.from == 0 && e.to == 1 && matches!(e.component, Component::Span { .. })));
+        assert!(graph
+            .edges
+            .iter()
+            .any(|e| e.from == 1 && e.to == 2 && e.component == mechanical_splice()));
+    }
+
+    #[test]
+    fn rebuild_live_graph_ignores_an_out_of_range_slot() {
+        // Defensive regression test: if `PlacedChoices` ever ends up with a
+        // slot index beyond what the level offers for that pair, rebuild
+        // must skip it instead of panicking or connecting the wrong thing.
+        let level = two_choice_level();
+        let mut placed = PlacedChoices::default();
+        placed.0.insert((1, 2), 7);
+        let mut graph = PathGraph::default();
+        rebuild_live_graph(&level, &placed, &mut graph);
+        assert!(graph.edges.is_empty());
+    }
+
+    // -- end-to-end interaction scenario -------------------------------------
+
+    #[test]
+    fn drag_then_pill_tap_updates_the_live_graph_and_link_budget() {
+        let level = two_choice_level();
+        let mut placed = PlacedChoices::default();
+        let mut live = LiveGraph {
+            graph: PathGraph::default(),
+            wavelength: WavelengthWrapper(level.wavelength.into()),
+            tx_dbm: level.tx_dbm,
+        };
+        rebuild_live_graph(&level, &placed, &mut live.graph);
+
+        // 1. Drag from node 1 to node 2 -- places the default (first,
+        //    fusion) choice, exactly like `handle_pointer_input` would on
+        //    a real press-then-release.
+        let press = resolve_press(&level, Vec2::new(0.0, 300.0));
+        assert_eq!(press, PressAction::StartDrag(1));
+        let drag_from = match press {
+            PressAction::StartDrag(id) => Some(id),
+            _ => None,
+        };
+        let release = resolve_release(&level, drag_from, Some(Vec2::new(200.0, 300.0)));
+        assert_eq!(release, ReleaseAction::Connect { from: 1, to: 2 });
+        if let ReleaseAction::Connect { from, to } = release {
+            placed.0.entry((from, to)).or_insert(0);
+            rebuild_live_graph(&level, &placed, &mut live.graph);
+        }
+
+        let result_fusion = live
+            .graph
+            .compute_link_budget(1, 2, live.tx_dbm, live.wavelength.0, level.receive_window())
+            .expect("fusion splice alone forms a valid path");
+        assert!((result_fusion.total_loss_db - SpliceType::Fusion.typical_loss_db()).abs() < 1e-9);
+
+        // 2. Tap the mechanical pill directly -- overrides the drag's
+        //    default choice with the explicitly selected alternative.
+        let press = resolve_press(&level, Vec2::new(100.0, 335.0));
+        assert_eq!(
+            press,
+            PressAction::SelectPill {
+                from: 1,
+                to: 2,
+                slot: 1
+            }
+        );
+        if let PressAction::SelectPill { from, to, slot } = press {
+            placed.0.insert((from, to), slot);
+            rebuild_live_graph(&level, &placed, &mut live.graph);
+        }
+
+        let result_mechanical = live
+            .graph
+            .compute_link_budget(1, 2, live.tx_dbm, live.wavelength.0, level.receive_window())
+            .expect("mechanical splice alone forms a valid path");
+        assert!(
+            (result_mechanical.total_loss_db - SpliceType::Mechanical.typical_loss_db()).abs()
+                < 1e-9
+        );
+        assert!(result_mechanical.total_loss_db > result_fusion.total_loss_db);
+    }
+
+    // -- handle_pointer_input as an actual Bevy system -----------------------
+    //
+    // The tests above exercise `resolve_press`/`resolve_release` directly.
+    // These run the real `handle_pointer_input` system through a `World`
+    // via `run_system_once`, covering the ECS resource-extraction glue
+    // (`Res<ButtonInput<MouseButton>>`, `ResMut<DragState>`, etc.) itself,
+    // not just the pure decision logic it delegates to.
+
+    fn test_world(level: LevelDef) -> World {
+        let mut world = World::new();
+        world.insert_resource(ButtonInput::<MouseButton>::default());
+        world.insert_resource(Touches::default());
+        world.insert_resource(PointerWorld::default());
+        world.insert_resource(DragState::default());
+        world.insert_resource(PlacedChoices::default());
+        world.insert_resource(LiveGraph {
+            graph: PathGraph::default(),
+            wavelength: WavelengthWrapper(level.wavelength.into()),
+            tx_dbm: level.tx_dbm,
+        });
+        world.insert_resource(level);
+        world
+    }
+
+    #[test]
+    fn system_drag_from_node_to_node_connects_default_choice() {
+        use bevy_ecs::system::RunSystemOnce;
+
+        let mut world = test_world(two_choice_level());
+
+        // Frame 1: press over node 1 (world (0, 300)) -- starts a drag.
+        world.resource_mut::<PointerWorld>().0 = Some(Vec2::new(0.0, 300.0));
+        world
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .press(MouseButton::Left);
+        world.run_system_once(handle_pointer_input);
+        assert_eq!(world.resource::<DragState>().from, Some(1));
+
+        // Frame 2: move over node 2 (world (200, 300)) and release --
+        // connects the default (first-listed, fusion) choice.
+        world.resource_mut::<ButtonInput<MouseButton>>().clear();
+        world
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .release(MouseButton::Left);
+        world.resource_mut::<PointerWorld>().0 = Some(Vec2::new(200.0, 300.0));
+        world.run_system_once(handle_pointer_input);
+
+        assert_eq!(world.resource::<DragState>().from, None);
+        assert_eq!(world.resource::<PlacedChoices>().0.get(&(1, 2)), Some(&0));
+        let live = world.resource::<LiveGraph>();
+        assert_eq!(live.graph.edges.len(), 1);
+        assert_eq!(live.graph.edges[0].component, fusion_splice());
+    }
+
+    #[test]
+    fn system_tapping_a_pill_selects_it_without_starting_a_drag() {
+        use bevy_ecs::system::RunSystemOnce;
+
+        let mut world = test_world(two_choice_level());
+
+        // Press directly on the Mechanical pill (slot 1) -- no drag
+        // involved, selection should apply immediately on press.
+        world.resource_mut::<PointerWorld>().0 = Some(Vec2::new(100.0, 335.0));
+        world
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .press(MouseButton::Left);
+        world.run_system_once(handle_pointer_input);
+
+        assert_eq!(world.resource::<DragState>().from, None);
+        assert_eq!(world.resource::<PlacedChoices>().0.get(&(1, 2)), Some(&1));
+        let live = world.resource::<LiveGraph>();
+        assert_eq!(live.graph.edges.len(), 1);
+        assert_eq!(live.graph.edges[0].component, mechanical_splice());
+    }
+
+    #[test]
+    fn system_press_and_release_on_empty_space_places_nothing() {
+        use bevy_ecs::system::RunSystemOnce;
+
+        let mut world = test_world(two_choice_level());
+
+        world.resource_mut::<PointerWorld>().0 = Some(Vec2::new(-900.0, -900.0));
+        world
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .press(MouseButton::Left);
+        world.run_system_once(handle_pointer_input);
+
+        world.resource_mut::<ButtonInput<MouseButton>>().clear();
+        world
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .release(MouseButton::Left);
+        world.run_system_once(handle_pointer_input);
+
+        assert_eq!(world.resource::<DragState>().from, None);
+        assert!(world.resource::<PlacedChoices>().0.is_empty());
+        assert!(world.resource::<LiveGraph>().graph.edges.is_empty());
     }
 }
