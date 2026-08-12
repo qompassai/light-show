@@ -109,3 +109,22 @@ impl LevelDef {
         }
     }
 }
+
+/// Level JSON is embedded at compile time (rather than loaded through
+/// Bevy's `AssetServer`) so the same code path works identically on
+/// desktop and Android without needing APK asset-file access at runtime.
+pub const LEVEL_SOURCES: &[&str] = &[
+    include_str!("../assets/levels/world1_level1.json"),
+    include_str!("../assets/levels/world4_level1_outage.json"),
+];
+
+/// Which bundled level is currently active. Advance this (e.g. from the
+/// Results screen) to move to the next level; `setup_level` reads it on
+/// every `OnEnter(Playing)`.
+#[derive(Resource, Clone, Copy, Default)]
+pub struct CurrentLevelIndex(pub usize);
+
+pub fn load_level(index: usize) -> LevelDef {
+    let idx = index.min(LEVEL_SOURCES.len() - 1);
+    serde_json::from_str(LEVEL_SOURCES[idx]).expect("bundled level JSON must always parse")
+}

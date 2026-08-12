@@ -1,9 +1,11 @@
 //! Core puzzle-solving state: renders the OSP node graph, lets the player
-//! tap/drag to place components on open edges, keeps a live `osp_sim`
-//! `PathGraph` in sync, and watches the scripted outage clock.
+//! drag/tap to place components on open edges (see `crate::board`), keeps
+//! a live `osp_sim::PathGraph` in sync, and watches the scripted outage
+//! clock.
 
 use super::GameState;
-use crate::level::LevelDef;
+use crate::board;
+use crate::level::{self, CurrentLevelIndex, LevelDef};
 use bevy::prelude::*;
 use osp_sim::{PathGraph, Wavelength};
 
@@ -13,10 +15,22 @@ impl Plugin for PlayingPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(LiveGraph::default())
             .insert_resource(LevelClock::default())
+            .insert_resource(CurrentLevelIndex::default())
+            .insert_resource(board::PlacedChoices::default())
+            .insert_resource(board::DragState::default())
+            .insert_resource(board::PointerWorld::default())
             .add_systems(OnEnter(GameState::Playing), setup_level)
+            .add_systems(OnExit(GameState::Playing), board::teardown_board)
             .add_systems(
                 Update,
-                (tick_clock, check_scripted_outage, check_win_condition)
+                (
+                    board::track_pointer,
+                    board::handle_pointer_input,
+                    board::draw_board_gizmos,
+                    tick_clock,
+                    check_scripted_outage,
+                    check_win_condition,
+                )
                     .run_if(in_state(GameState::Playing)),
             );
     }
@@ -46,18 +60,40 @@ pub struct LevelClock {
     pub elapsed_seconds: f64,
 }
 
-fn setup_level(mut live: ResMut<LiveGraph>, level: Option<Res<LevelDef>>) {
-    let Some(level) = level else { return };
-    let mut graph = PathGraph::default();
-    for node in &level.nodes {
-        graph.add_node(node.id, node.label.clone());
-    }
-    for edge in &level.fixed_edges {
-        graph.connect(edge.from, edge.to, edge.component.clone());
-    }
-    live.graph = graph;
-    live.wavelength = WavelengthWrapper(level.wavelength.into());
-    live.tx_dbm = level.tx_dbm;
+/// Loads the current level, resets placements, rebuilds the live graph,
+/// and spawns the board + ledger UI — all synchronously in one system so
+/// there's no risk of other `OnEnter(Playing)`/`Update` systems observing
+/// a half-initialized state within the same frame. `LevelDef` is inserted
+/// as a resource only at the very end: Bevy flushes `Commands` at the end
+/// of the state-transition schedule, before `Update` runs later in the
+/// same frame, so every `Update` system can safely take a plain
+/// `Res<LevelDef>` instead of `Option<Res<LevelDef>>`.
+///
+/// Note: this always does a full reset on every `OnEnter(Playing)`. That's
+/// correct for "start/restart a level" but would also wipe progress if a
+/// future change makes `OutageActive` route back into `Playing` for the
+/// *same* level rather than resolving into `Results` — the outage-repair
+/// loop isn't wired up to player action yet, so that's a follow-up rather
+/// than a concern for this change.
+fn setup_level(
+    mut commands: Commands,
+    index: Res<CurrentLevelIndex>,
+    mut live: ResMut<LiveGraph>,
+    mut placed: ResMut<board::PlacedChoices>,
+    mut clock: ResMut<LevelClock>,
+    asset_server: Res<AssetServer>,
+) {
+    let level_def = level::load_level(index.0);
+
+    placed.0.clear();
+    clock.elapsed_seconds = 0.0;
+    board::rebuild_live_graph(&level_def, &placed, &mut live.graph);
+    live.wavelength = WavelengthWrapper(level_def.wavelength.into());
+    live.tx_dbm = level_def.tx_dbm;
+
+    board::spawn_board_from_level(&mut commands, &level_def, &asset_server);
+
+    commands.insert_resource(level_def);
 }
 
 fn tick_clock(time: Res<Time>, mut clock: ResMut<LevelClock>) {
@@ -66,10 +102,9 @@ fn tick_clock(time: Res<Time>, mut clock: ResMut<LevelClock>) {
 
 fn check_scripted_outage(
     clock: Res<LevelClock>,
-    level: Option<Res<LevelDef>>,
+    level: Res<LevelDef>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    let Some(level) = level else { return };
     let Some(outage) = &level.scripted_outage else {
         return;
     };
@@ -80,10 +115,9 @@ fn check_scripted_outage(
 
 fn check_win_condition(
     live: Res<LiveGraph>,
-    level: Option<Res<LevelDef>>,
+    level: Res<LevelDef>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    let Some(level) = level else { return };
     let Ok(result) = live.graph.compute_link_budget(
         level.source_node,
         level.target_node,

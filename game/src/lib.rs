@@ -4,6 +4,7 @@
 //! loaded via Bevy's `game-activity` glue. Both paths converge on
 //! `build_app()` so there is exactly one place that configures the App.
 
+mod board;
 mod level;
 mod states;
 mod ui;
@@ -31,7 +32,7 @@ fn build_app() -> App {
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
             title: "Light Show".into(),
-            resolution: (720.0, 1280.0).into(),
+            resolution: (720.0_f32, 1280.0_f32).into(),
             ..default()
         }),
         ..default()

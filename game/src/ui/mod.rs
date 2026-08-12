@@ -5,13 +5,17 @@
 
 use crate::level::LevelDef;
 use crate::states::playing::LiveGraph;
+use crate::states::GameState;
 use bevy::prelude::*;
 
 pub struct LedgerUiPlugin;
 
 impl Plugin for LedgerUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update_ledger_text);
+        app.add_systems(
+            Update,
+            update_ledger_text.run_if(in_state(GameState::Playing)),
+        );
     }
 }
 
@@ -20,10 +24,9 @@ pub struct LedgerText;
 
 fn update_ledger_text(
     live: Res<LiveGraph>,
-    level: Option<Res<LevelDef>>,
+    level: Res<LevelDef>,
     mut query: Query<&mut Text, With<LedgerText>>,
 ) {
-    let Some(level) = level else { return };
     let Ok(result) = live.graph.compute_link_budget(
         level.source_node,
         level.target_node,
