@@ -21,31 +21,45 @@ character design language, layered over a clean "technical schematic" UI
 - **Fiber light itself:** warm amber-to-white gradient (`#ffd166` →
   `#fffbe6`) so the "light traveling down the line" reads instantly against
   the cool board.
-- **Séraphine:** magenta/cyan anime-hologram accent (`#ff6fae`, `#6fd6ff`)
-  to visually mark her as a friendly overlay, not part of the technical
-  schematic.
+- **Companion accent colors** (one per access technology, so each reads as
+  a distinct "overlay," not part of the technical schematic):
+  - **Séraphine (Fiber):** magenta/cyan (`#ff6fae`, `#6fd6ff`)
+  - **Ondine (Coax):** copper/signal-teal (`#b87333`, `#2ec4b6`)
+  - **Linka (Mobile):** violet/electric-blue (`#7c3aed`, `#38bdf8`)
+  - **Lattice (Ethernet):** networking-blue/amber (`#2563eb`, `#eab308`)
 - **Outage/hazard state:** warm red/orange alarm accents (`#ff4d4d`,
   `#ffb84d`) reserved only for active faults, so players immediately
   recognize "something is wrong" without reading text.
 
-## Séraphine Character Brief
+## Companion Roster
 
-- Anime AI-hologram companion who lives in the player's tablet/OTDR device.
-- Silhouette: ponytail with a fiber-optic-cable motif braid, visor/glasses
-  with a subtle light-pipe glow, utility-vest-over-hoodie look (nods to
-  field-tech PPE without being literal safety gear).
-- Sprite sheet layout: 6 mood rows × 4 frames each, 64×64 per frame
-  (`assets/sprites/seraphine/seraphine_sheet.png`, 256×384 total):
-  1. Idle (gentle bob/blink loop)
-  2. Blush (reacts to compliments / clean splices)
-  3. Wink (offers a hint)
-  4. Pout (reacts to a messy splice)
-  5. Celebrate (level win)
-  6. Alarmed (outage event)
-- Expression-forward, hands/gesture-forward — most "acting" should read from
-  face + one raised hand, since 64px doesn't support fine full-body posing.
-- Outfit and color story stay stable across all promotional art, store
-  listing screenshots, and in-game sprites for brand consistency.
+Four anime AI-hologram companions live in the player's tablet/OTDR device —
+one per access technology the game teaches. All four share the same sprite
+sheet contract (6 mood rows × 4 frames each, 64×64 per frame, 256×384 total)
+and the same expression-forward, hands/gesture-forward acting style — most
+"acting" should read from face + one raised hand, since 64px doesn't support
+fine full-body posing. Mood rows are identical across companions so the
+gameplay code (`game/src/waifu/sprite.rs`) can treat them uniformly:
+
+1. Idle (gentle bob/blink loop)
+2. Blush (reacts to compliments / clean splices)
+3. Wink (offers a hint)
+4. Pout (reacts to a messy splice)
+5. Celebrate (level win)
+6. Alarmed (outage event)
+
+| Companion | Tech | Silhouette | Sprite sheet |
+|---|---|---|---|
+| **Séraphine** | Fiber | Ponytail with a fiber-optic-cable motif braid, visor/glasses with a subtle light-pipe glow, utility-vest-over-hoodie (nods to field-tech PPE without being literal safety gear) | `game/assets/sprites/seraphine/seraphine_sheet.png` |
+| **Ondine** | Coax | Coiled coax-cable ponytail, retro CATV-style headset with a round numbered channel dial, F-connector necklace | `game/assets/sprites/ondine/ondine_sheet.png` |
+| **Linka** | Mobile | Antenna-fin ponytail, signal-bar hair clips, holographic visor with a signal-bar HUD overlay | `game/assets/sprites/linka/linka_sheet.png` |
+| **Lattice** | Ethernet | RJ45-clip hair pin, grid-patterned jacket, patch-cable braids | `game/assets/sprites/lattice/lattice_sheet.png` |
+
+Each companion's outfit and color story stay stable across all promotional
+art, store listing screenshots, and in-game sprites for brand consistency.
+Source portraits and animated README profile GIFs live in
+`assets/art/companions/`; see [`docs/CREDITS.md`](CREDITS.md) for
+AI-generation tooling and license attribution.
 
 ## Board & Component Iconography
 
@@ -64,12 +78,22 @@ glyph so the puzzle stays readable without constant label-reading:
 | Macrobend hazard | Kinked line with a small warning glyph |
 | Water intrusion hazard | Droplet glyph over a splice enclosure |
 
-## Placeholder Asset Generation (this repo)
+## Asset Generation Pipeline (this repo)
 
-Until final hand-drawn/AI-art passes are approved, `tools/gen_placeholder_art.py`
-generates palette-correct 64×64 placeholder sprites (solid silhouettes +
-mood-tinted overlays) so the game is playable and screenshots are possible
-before final art lands. Replace these before a production store release —
-see `docs/CREDITS.md` for the licensing checklist on whatever final art
-pipeline is used (in-house illustration, commissioned artist, or AI-assisted
-with a human finishing pass).
+- `tools/gen_placeholder_art.py` generates palette-correct 64×64 placeholder
+  sprites (solid silhouettes + mood-tinted overlays) for OSP component icons
+  and any companion not yet illustrated — useful for quick iteration on new
+  levels/components without waiting on art.
+- `tools/gen_companion_art.py` builds each companion's real in-engine sprite
+  sheet and README animated profile GIF from a single AI-generated anime
+  portrait per character (`assets/art/companions/<name>_portrait.jpg`): it
+  crops the face/shoulders, downsamples to a 64×64 pixel-art base frame, then
+  derives all 6 mood rows via tint/brightness treatment + a small per-frame
+  vertical bob (the same animation trick `gen_placeholder_art.py` uses, just
+  applied to real art instead of primitive shapes).
+- `tools/gen_app_icon.py` builds the Android launcher icon set (legacy
+  mipmap densities + adaptive icon foreground/background) from the
+  four-companion group portrait at `assets/art/companions/app_icon_group.jpg`.
+
+See `docs/CREDITS.md` for the AI-generation tooling and licensing checklist
+covering all companion art.

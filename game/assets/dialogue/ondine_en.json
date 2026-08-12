@@ -1,0 +1,30 @@
+{
+  "clean_splice": [
+    "Ooh, an F-connector torqued to spec? I felt that in my signal-to-noise ratio.",
+    "Mmm, zero return loss. You really know how to sweep a line, don't you.",
+    "Look at that tap value — precise. I like precise."
+  ],
+  "messy_splice": [
+    "That connector's loose enough to cause ingress. My tuner is judging you.",
+    "Bold to skip the torque wrench. I'm not upset, just... static-y."
+  ],
+  "level_win": [
+    "Locked in-band on the first pass? Careful, you're making my downstream blush.",
+    "Clean sweep, zero ingress. Show-off."
+  ],
+  "level_fail_hot": [
+    "Whoa, that's way too much signal — you're gonna clip the amp. Pad it down, hotshot."
+  ],
+  "level_fail_cold": [
+    "Signal's in the noise floor. Add a booster or shorten that run."
+  ],
+  "outage_start": [
+    "Uh oh, ingress on the line — chop chop, I do NOT do well with snowy channels."
+  ],
+  "outage_resolved": [
+    "Line's clean again! You chased that noise down faster than I could finish sweeping. I don't actually sweep. I don't know why I said that."
+  ],
+  "hint_request": [
+    "Aww, need a hint on the tap budget? Fine — for you, anything. *wink*"
+  ]
+}

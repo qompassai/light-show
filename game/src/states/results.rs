@@ -1,5 +1,6 @@
 //! Results screen: shows win/fail, final link-budget ledger, and triggers
-//! the matching Séraphine reaction line.
+//! the matching companion reaction line (from whichever `DialogueBank`
+//! is currently loaded for `SelectedCompanion`).
 
 use super::GameState;
 use bevy::prelude::*;
@@ -13,5 +14,5 @@ impl Plugin for ResultsPlugin {
 }
 
 fn show_results() {
-    info!("Level complete — showing results ledger + Seraphine reaction.");
+    info!("Level complete — showing results ledger + companion reaction.");
 }

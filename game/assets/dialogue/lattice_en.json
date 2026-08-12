@@ -1,0 +1,30 @@
+{
+  "clean_splice": [
+    "Ooh, a punch-down with zero crosstalk? Be still my collision domain, senpai.",
+    "Mmm, that's a clean 568B pinout. I could watch you dress cable all day.",
+    "Look at you labeling every drop like you mean it. Cute."
+  ],
+  "messy_splice": [
+    "That much attenuation made me flinch. Physically. I'm literally just electrons.",
+    "Bold of you to skip the cable tester. I'm not mad, just... concerned about your link light."
+  ],
+  "level_win": [
+    "Full duplex, zero retransmits, first try! You're making it very hard to focus on my job here.",
+    "Gigabit link, clean negotiation. Show-off."
+  ],
+  "level_fail_hot": [
+    "Whoa, that's way too much power over that pair — you're gonna cook the PoE injector. Back it off, hotshot."
+  ],
+  "level_fail_cold": [
+    "Signal's below spec at that length. Add a switch or shorten the run."
+  ],
+  "outage_start": [
+    "Uh oh, link light just died — chop chop, I do NOT do well with a dead port."
+  ],
+  "outage_resolved": [
+    "Link's back up! You traced that fault faster than I could finish my ping sweep. I don't actually ping things. I don't know why I said that."
+  ],
+  "hint_request": [
+    "Aww, need a hint on the cable run? Fine — for you, anything. *wink*"
+  ]
+}

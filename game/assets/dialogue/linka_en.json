@@ -1,0 +1,30 @@
+{
+  "clean_splice": [
+    "Ooh, a clean handoff with zero dropped calls? Be still my baseband, senpai.",
+    "Mmm, that's a solid RSRP. I could watch you tune antennas all day.",
+    "Look at you optimizing that link budget like you mean it. Cute."
+  ],
+  "messy_splice": [
+    "That much path loss made me flinch. Physically. I'm literally just radio waves.",
+    "Bold of you to skip the site survey. I'm not mad, just... concerned about your SINR."
+  ],
+  "level_win": [
+    "In-window on the first try! You're making it very hard to focus on my job here.",
+    "Five bars, no jitter. Show-off."
+  ],
+  "level_fail_hot": [
+    "Whoa, you're overdriving that PA — you're gonna desense the receiver. Back it off, hotshot."
+  ],
+  "level_fail_cold": [
+    "Signal's in the noise floor. Add gain or move closer to the tower."
+  ],
+  "outage_start": [
+    "Uh oh, we dropped to zero bars — chop chop, I do NOT do well with dead air."
+  ],
+  "outage_resolved": [
+    "Bars are back! You re-acquired that carrier faster than I could finish my coffee. I don't drink coffee. I don't know why I said that."
+  ],
+  "hint_request": [
+    "Aww, need a hint on the link budget? Fine — for you, anything. *wink*"
+  ]
+}
