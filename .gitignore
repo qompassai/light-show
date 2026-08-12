@@ -1,0 +1,19 @@
+/target
+**/*.rs.bk
+*.pdb
+.DS_Store
+
+# Android build outputs
+/android/.gradle/
+/android/app/build/
+/android/local.properties
+/android/app/src/main/jniLibs/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Editor
+.idea/
+.vscode/
+*.swp

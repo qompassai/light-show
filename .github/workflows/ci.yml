@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system audio dev headers
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config libudev-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test simulation core
+        run: cargo test -p osp_sim --verbose
+
+      - name: Test workspace
+        run: cargo test --workspace --verbose
+
+  sim-only-fast-check:
+    # Runs on every push without needing audio/graphics system deps, for a
+    # quick signal on the pure-logic crate before the full job finishes.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p osp_sim

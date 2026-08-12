@@ -1,0 +1,23 @@
+Light Show is a puzzle game built on real Outside Plant (OSP) fiber-optic
+engineering. You're a field tech routing light from the OLT to the
+customer's ONT — every splice, connector, and splitter you place is modeled
+on real-world dB loss figures. Land the receive power inside the target
+window, or the customer's link goes down.
+
+FEATURES
+- Real link-budget math: fusion vs. mechanical splices, UPC vs. APC
+  connectors, PON splitters (1x2 through 1x32), wavelength-dependent
+  attenuation (1310/1490/1550 nm) — all pulled from real OSP practice.
+- Outage events: fiber cuts, storm damage, water intrusion, macrobends —
+  diagnose and reroute before the customer-complaint timer runs out.
+- Six worlds of escalating difficulty, from your first fusion splice to
+  full PON fan-outs and long-haul wavelength puzzles.
+- Séraphine, your anime-styled AI companion, reacts to every splice you
+  make and offers optional hints — never required, always charming.
+- 64x64 pixel-art visuals with an anime-inspired look.
+- No ads. No in-app purchases. No tracking. No network permission at all —
+  this game works completely offline and always will.
+
+Whether you're a working telecom tech, a network engineering student, or
+just enjoy a good logic puzzle, Light Show teaches real fiber-optic
+concepts through play.

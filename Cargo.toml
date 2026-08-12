@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/osp_sim",
+    "game",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Qompass AI <opensource@qompass.ai>"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/qompassai/light-show"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

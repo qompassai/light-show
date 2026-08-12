@@ -1,0 +1,30 @@
+{
+  "clean_splice": [
+    "Ara ara~ a 0.05 dB fusion splice? Be still my heart, senpai.",
+    "Mmm, that's a clean core alignment. I could watch you splice all day.",
+    "Look at you, prepping your cleaver like you mean it. Cute."
+  ],
+  "messy_splice": [
+    "That mechanical splice loss made me flinch. Physically. I have no body.",
+    "Bold of you to skip re-cleaving. I'm not mad, just... concerned."
+  ],
+  "level_win": [
+    "In-window, first try! You're making it very hard to focus on my job here.",
+    "-15.2 dBm, right in the pocket. Show-off."
+  ],
+  "level_fail_hot": [
+    "Whoa — too hot, you're gonna cook that receiver. Add some loss, hotshot."
+  ],
+  "level_fail_cold": [
+    "Signal's underwater. Either shorten the run or drop a splitter tier."
+  ],
+  "outage_start": [
+    "Uh oh — got a fault on the line. Chop chop, I do NOT do well with dead air."
+  ],
+  "outage_resolved": [
+    "Service restored! You rerouted that faster than I could finish my coffee. I don't drink coffee. I don't know why I said that."
+  ],
+  "hint_request": [
+    "Aww, need a hint? Fine — for you, anything. *wink*"
+  ]
+}

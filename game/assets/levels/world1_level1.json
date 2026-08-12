@@ -1,0 +1,40 @@
+{
+  "id": "w1l1",
+  "title": "First Light",
+  "world": 1,
+  "briefing": "Welcome to Splice School. Route the OLT's launch power down a single buried span to the ONT. Land inside the GPON receive window.",
+  "tx_dbm": 3.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -27.0,
+  "window_max_dbm": -8.0,
+  "nodes": [
+    { "id": 0, "label": "OLT (Central Office)", "grid_x": 0.0, "grid_y": 0.0 },
+    { "id": 1, "label": "Splice Enclosure 14+00", "grid_x": 1.0, "grid_y": 0.0 },
+    { "id": 2, "label": "ONT (Customer Premise)", "grid_x": 2.0, "grid_y": 0.0 }
+  ],
+  "fixed_edges": [
+    {
+      "from": 0,
+      "to": 1,
+      "component": { "Span": { "length_km": 8.0, "plant": "Buried" } }
+    }
+  ],
+  "available_components": [
+    {
+      "from": 1,
+      "to": 2,
+      "component": { "Splice": { "kind": "Fusion", "degradation_db": 0.0 } }
+    },
+    {
+      "from": 1,
+      "to": 2,
+      "component": { "Splice": { "kind": "Mechanical", "degradation_db": 0.0 } }
+    }
+  ],
+  "source_node": 0,
+  "target_node": 2,
+  "scripted_outage": null,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold"
+}

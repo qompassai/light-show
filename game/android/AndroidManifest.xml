@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Reference manifest fragment for the Light Show Android build.
+
+  `cargo-apk` (see docs/BUILD.md) generates the full manifest at build time
+  from [package.metadata.android] in game/Cargo.toml; this file documents
+  the equivalent hand-written manifest for maintainers who switch to a
+  Gradle-based packaging flow (e.g. via cargo-ndk + a thin Kotlin/Gradle
+  shell, which is the more common path for a polished Play Store listing
+  with in-app review prompts, dynamic feature delivery, etc).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="ai.qompass.lightshow">
+
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+
+    <!-- No network, location, storage, or contacts permissions requested —
+         Light Show is fully offline and collects no data. This keeps the
+         Play Data Safety form and F-Droid "anti-features" list both clean. -->
+
+    <application
+        android:label="Light Show"
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@mipmap/ic_launcher"
+        android:hasCode="true"
+        android:allowBackup="false"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true">
+
+        <activity
+            android:name="android.app.NativeActivity"
+            android:label="Light Show"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize">
+            <meta-data android:name="android.app.lib_name" android:value="light_show" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
