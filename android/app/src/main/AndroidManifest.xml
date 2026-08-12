@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Gradle-side manifest for the "Option B" Play Store AAB build (see
+  docs/BUILD.md). Kept in lockstep with game/android/AndroidManifest.xml
+  (the cargo-apk-generated reference copy) and game/Cargo.toml's
+  [package.metadata.android]. `package` is intentionally omitted — the
+  applicationId/namespace are declared in app/build.gradle.kts.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+
+    <!-- No network, location, storage, or contacts permissions requested —
+         Light Show is fully offline and collects no data. This keeps the
+         Play Data Safety form and F-Droid "anti-features" list both clean,
+         and stays true even in instrumented test builds: the
+         instrumented-test-logging feature only writes to Logcat, which
+         needs no manifest permission. -->
+
+    <application
+        android:label="Light Show"
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@mipmap/ic_launcher"
+        android:hasCode="true"
+        android:allowBackup="false"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true">
+
+        <activity
+            android:name="android.app.NativeActivity"
+            android:label="Light Show"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize">
+            <meta-data android:name="android.app.lib_name" android:value="light_show" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -6,6 +6,7 @@
 use super::GameState;
 use crate::board;
 use crate::level::{self, CurrentLevelIndex, LevelDef};
+use crate::test_log;
 use bevy::prelude::*;
 use osp_sim::{PathGraph, Wavelength};
 
@@ -92,6 +93,11 @@ fn setup_level(
     live.tx_dbm = level_def.tx_dbm;
 
     board::spawn_board_from_level(&mut commands, &level_def, &asset_server);
+    // Signals the on-device instrumentation tests (android/app/src/androidTest)
+    // that the board has finished spawning and is ready to receive touch
+    // input — they poll Logcat for this line before injecting gestures.
+    // See `test_log!` in lib.rs and docs/BUILD.md.
+    test_log!("level_ready index={}", index.0);
 
     commands.insert_resource(level_def);
 }

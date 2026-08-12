@@ -16,6 +16,7 @@
 
 use crate::level::LevelDef;
 use crate::states::playing::LiveGraph;
+use crate::test_log;
 use crate::ui::LedgerText;
 use bevy::input::touch::Touches;
 use bevy::prelude::*;
@@ -368,6 +369,7 @@ pub fn handle_pointer_input(
                 PressAction::SelectPill { from, to, slot } => {
                     placed.0.insert((from, to), slot);
                     rebuild_live_graph(&level, &placed, &mut live.graph);
+                    test_log!("select from={} to={} slot={}", from, to, slot);
                 }
                 PressAction::None => {}
             }
@@ -378,6 +380,7 @@ pub fn handle_pointer_input(
         if let ReleaseAction::Connect { from, to } = resolve_release(&level, drag.from, pointer.0) {
             placed.0.entry((from, to)).or_insert(0);
             rebuild_live_graph(&level, &placed, &mut live.graph);
+            test_log!("connect from={} to={}", from, to);
         }
         drag.from = None;
     }

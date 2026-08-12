@@ -21,6 +21,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bevy_ecs = "0.14"
 bevy_state = "0.14"
+# Only pulled in by the `instrumented-test-logging` feature (see below) —
+# retail Play Store / F-Droid builds never depend on this.
+log = { version = "0.4", optional = true }
 
 [target.'cfg(not(target_os = "android"))'.dependencies]
 bevy = { version = "0.14", default-features = false, features = [
@@ -57,6 +60,22 @@ bevy = { version = "0.14", default-features = false, features = [
     "android_shared_stdcxx",
     "multi_threaded",
 ] }
+
+# Only pulled in by the `instrumented-test-logging` feature. Emits the
+# board's connect/select/level-ready events to Logcat so the on-device
+# instrumentation tests in android/app/src/androidTest can assert against
+# them — a NativeActivity has no Espresso-visible view hierarchy, so this
+# is the black-box signal those tests read. See game/src/board.rs's
+# `test_log!` macro and docs/BUILD.md.
+android_logger = { version = "0.14", optional = true }
+
+[features]
+# Off by default: retail builds (cargo-apk for F-Droid, the Gradle release
+# build type for Play Store) never enable this. Only the Gradle *debug*
+# build type's jniLibs should be built with
+# `cargo ndk ... build --features instrumented-test-logging`, specifically
+# for running android/app/src/androidTest against.
+instrumented-test-logging = ["dep:log", "dep:android_logger"]
 
 [package.metadata.android]
 package = "ai.qompass.lightshow"
