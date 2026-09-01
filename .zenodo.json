@@ -1,0 +1,33 @@
+{
+  "title": "light-show",
+  "description": "Light Show — an OSP fiber-optic puzzle game built in Rust/Bevy, with anime waifu companions. Route light from A to B, hit target dB budget, survive outages.",
+  "license": "Q-CDA-1.0",
+  "language": "eng",
+  "upload_type": "software",
+  "access_right": "open",
+  "version": "d927bfe",
+  "publication_date": "2026-08-31",
+  "creators": [
+    {
+      "name": "Porter, Matthew A.",
+      "affiliation": "Qompass AI",
+      "orcid": "0000-0002-0302-4812",
+      "type": "Author"
+    }
+  ],
+  "keywords": ["AI","Education","Healthcare","Post-Quantum Cryptography","Quantum","performance","rust","systems programming"],
+  "related_identifiers": [
+    { "identifier": "https://github.com/qompassai/light-show", "relation": "isSupplementTo", "resource_type": "software" },
+    { "identifier": "https://github.com/qompassai/light-show/releases/tag/v2026-08-31", "relation": "isIdenticalTo", "resource_type": "software" },
+    { "identifier": "https://orcid.org/0000-0002-0302-4812", "relation": "isAuthorOf", "resource_type": "person" },
+    { "identifier": "https://github.com/qompassai/light-show/actions", "relation": "isCompiledBy", "resource_type": "workflow" },
+    { "identifier": "https://loop.frontiersin.org/people/2230223", "relation": "isAuthorOf", "resource_type": "person" },
+    { "identifier": "https://www.webofscience.com/wos/author/HNQ-0292-2023", "relation": "isIdenticalTo", "resource_type": "person" },
+    { "identifier": "https://www.scopus.com/authid/detail.uri?authorId=57385910700", "relation": "isIdenticalTo", "resource_type": "person" }
+  ],
+  "communities": [ { "identifier": "qompassai" } ],
+  "contributors": [
+    { "name": "Porter, Matthew A.", "orcid": "https://orcid.org/0000-0002-0302-4812", "type": "Author" },
+    { "name": "Qompass AI", "type": "Sponsor" }
+  ]
+}
