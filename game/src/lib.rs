@@ -4,6 +4,7 @@
 //! loaded via Bevy's `game-activity` glue. Both paths converge on
 //! `build_app()` so there is exactly one place that configures the App.
 
+mod audio;
 mod board;
 mod level;
 mod states;
@@ -74,6 +75,7 @@ fn build_app() -> App {
         states::results::ResultsPlugin,
         waifu::SeraphinePlugin,
         ui::LedgerUiPlugin,
+        audio::MusicPlugin,
     ));
     app
 }

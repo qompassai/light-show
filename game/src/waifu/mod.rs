@@ -16,6 +16,7 @@ pub mod dialogue;
 pub mod sprite;
 
 use bevy::prelude::*;
+use bevy::sprite::TextureAtlas;
 use dialogue::DialogueBank;
 
 pub struct SeraphinePlugin;
@@ -25,8 +26,55 @@ impl Plugin for SeraphinePlugin {
         app.insert_resource(FavorPoints::default())
             .insert_resource(SelectedCompanion::default())
             .insert_resource(DialogueBank::load_default(Companion::default()))
+            .init_resource::<CompanionAtlasLayout>()
+            .add_event::<SpliceReaction>()
             .add_systems(Startup, spawn_companion)
-            .add_systems(Update, (animate_companion, respawn_on_companion_change));
+            .add_systems(
+                Update,
+                (
+                    animate_companion,
+                    sync_companion_atlas_index,
+                    react_to_splice_events,
+                    respawn_on_companion_change,
+                ),
+            );
+    }
+}
+
+/// Fired by `board::handle_pointer_input` whenever a placement resolves
+/// to a `Component::Splice` (fusion → a pleased reaction, mechanical → a
+/// mildly disapproving one) so the companion sprite visibly reacts to
+/// placement quality, not just outages and win/fail.
+#[derive(Event, Clone, Copy)]
+pub struct SpliceReaction(pub Mood);
+
+/// Applies the most recent `SpliceReaction` to every companion sprite
+/// (there's only ever one on screen). Resets `frame` too so the new mood
+/// starts its animation loop from the top.
+pub(crate) fn react_to_splice_events(
+    mut events: EventReader<SpliceReaction>,
+    mut query: Query<&mut CompanionSprite>,
+) {
+    let Some(reaction) = events.read().last() else {
+        return;
+    };
+    for mut sprite in &mut query {
+        sprite.mood = reaction.0;
+        sprite.frame = 0;
+    }
+}
+
+/// The one shared grid layout every companion sheet uses. Built once via
+/// `FromWorld` (which needs mutable access to `Assets<TextureAtlasLayout>`,
+/// unavailable at plain `insert_resource` call sites) and cloned into each
+/// companion's `TextureAtlas` component.
+#[derive(Resource)]
+struct CompanionAtlasLayout(Handle<bevy::sprite::TextureAtlasLayout>);
+
+impl FromWorld for CompanionAtlasLayout {
+    fn from_world(world: &mut World) -> Self {
+        let mut layouts = world.resource_mut::<Assets<bevy::sprite::TextureAtlasLayout>>();
+        Self(layouts.add(sprite::atlas_layout()))
     }
 }
 
@@ -136,20 +184,27 @@ impl Mood {
 
 fn companion_bundle(
     asset_server: &AssetServer,
+    atlas_layout: &CompanionAtlasLayout,
     companion: Companion,
-) -> (CompanionSprite, SpriteBundle) {
+) -> (CompanionSprite, SpriteBundle, TextureAtlas) {
     let texture: Handle<Image> = asset_server.load(companion.sprite_path());
+    let mood = Mood::Idle;
+    let frame = 0;
     (
         CompanionSprite {
             companion,
-            mood: Mood::Idle,
+            mood,
             anim_timer: Timer::from_seconds(0.18, TimerMode::Repeating),
-            frame: 0,
+            frame,
         },
         SpriteBundle {
             texture,
             transform: Transform::from_xyz(0.0, -400.0, 10.0).with_scale(Vec3::splat(4.0)),
             ..default()
+        },
+        TextureAtlas {
+            layout: atlas_layout.0.clone(),
+            index: sprite::atlas_index(mood.sheet_row(), frame),
         },
     )
 }
@@ -157,9 +212,10 @@ fn companion_bundle(
 fn spawn_companion(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    atlas_layout: Res<CompanionAtlasLayout>,
     selected: Res<SelectedCompanion>,
 ) {
-    commands.spawn(companion_bundle(&asset_server, selected.0));
+    commands.spawn(companion_bundle(&asset_server, &atlas_layout, selected.0));
 }
 
 /// Swaps the on-screen sprite and reloads the dialogue bank whenever
@@ -170,6 +226,7 @@ fn spawn_companion(
 fn respawn_on_companion_change(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    atlas_layout: Res<CompanionAtlasLayout>,
     selected: Res<SelectedCompanion>,
     mut dialogue: ResMut<DialogueBank>,
     query: Query<(Entity, &CompanionSprite)>,
@@ -182,7 +239,7 @@ fn respawn_on_companion_change(
     }
     commands.entity(entity).despawn();
     *dialogue = DialogueBank::load_default(selected.0);
-    commands.spawn(companion_bundle(&asset_server, selected.0));
+    commands.spawn(companion_bundle(&asset_server, &atlas_layout, selected.0));
 }
 
 fn animate_companion(time: Res<Time>, mut query: Query<&mut CompanionSprite>) {
@@ -191,6 +248,19 @@ fn animate_companion(time: Res<Time>, mut query: Query<&mut CompanionSprite>) {
         if chan.anim_timer.just_finished() {
             chan.frame = (chan.frame + 1) % 4; // 4 frames per mood row
         }
+    }
+}
+
+/// Keeps each companion's on-screen `TextureAtlas` cell in sync with its
+/// `CompanionSprite.{mood, frame}`. Split out from `animate_companion` so
+/// mood changes fired from other states (e.g. `states::outage::alarm_companion`
+/// on `OnEnter(OutageActive)`) are reflected the instant they happen rather
+/// than waiting on the animation timer.
+fn sync_companion_atlas_index(
+    mut query: Query<(&CompanionSprite, &mut TextureAtlas), Changed<CompanionSprite>>,
+) {
+    for (sprite, mut atlas) in &mut query {
+        atlas.index = sprite::atlas_index(sprite.mood.sheet_row(), sprite.frame);
     }
 }
 
@@ -221,8 +291,10 @@ mod tests {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()));
         app.init_asset::<Image>();
+        app.init_asset::<bevy::sprite::TextureAtlasLayout>();
         app.insert_resource(SelectedCompanion(selected));
         app.insert_resource(DialogueBank::load_default(selected));
+        app.init_resource::<CompanionAtlasLayout>();
         app
     }
 
@@ -233,11 +305,12 @@ mod tests {
 
         world.run_system_once(spawn_companion);
 
-        let mut query = world.query::<&CompanionSprite>();
+        let mut query = world.query::<(&CompanionSprite, &TextureAtlas)>();
         let spawned: Vec<_> = query.iter(world).collect();
         assert_eq!(spawned.len(), 1);
-        assert_eq!(spawned[0].companion, Companion::Coax);
-        assert_eq!(spawned[0].mood, Mood::Idle);
+        assert_eq!(spawned[0].0.companion, Companion::Coax);
+        assert_eq!(spawned[0].0.mood, Mood::Idle);
+        assert_eq!(spawned[0].1.index, sprite::atlas_index(0, 0));
     }
 
     #[test]
@@ -274,6 +347,14 @@ mod tests {
 
         let mut query = world.query::<&CompanionSprite>();
         assert_eq!(query.iter(world).count(), 1, "should not spawn a duplicate");
+    }
+
+    #[test]
+    fn every_companion_has_a_non_empty_tagline_distinct_from_its_display_name() {
+        for companion in Companion::ALL {
+            assert!(!companion.tagline().is_empty());
+            assert_ne!(companion.tagline(), companion.display_name());
+        }
     }
 
     #[test]

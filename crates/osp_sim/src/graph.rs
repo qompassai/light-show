@@ -3,6 +3,7 @@
 //! (one OLT feeding many ONTs through splitters).
 
 use crate::component::Component;
+use crate::outage::Outage;
 use crate::wavelength::Wavelength;
 use crate::ReceiveWindow;
 use serde::{Deserialize, Serialize};
@@ -118,12 +119,49 @@ impl PathGraph {
             hop_count: path.len(),
         })
     }
+
+    /// Like `compute_link_budget`, but also accounts for an in-progress
+    /// `Outage`.
+    ///
+    /// Full-cut hazards (see `OutageKind::is_full_cut`) are expected to
+    /// already be excluded from `self` by the caller — the affected edge
+    /// should simply not be `connect`ed while the cut is unresolved (see
+    /// `board::rebuild_live_graph` in the game crate) — so a still-severed
+    /// full cut naturally resolves through the ordinary `Disconnected`
+    /// path error above, not through this method. Degrade-type hazards
+    /// (water intrusion, connector contamination, macrobend) instead keep
+    /// their edge connected but worsen over time, so this method adds the
+    /// hazard's currently-accumulated extra loss on top of the plain
+    /// budget and re-evaluates the receive window against that adjusted
+    /// figure.
+    pub fn compute_link_budget_with_outage(
+        &self,
+        source: NodeId,
+        target: NodeId,
+        tx_dbm: f64,
+        wavelength: Wavelength,
+        window: ReceiveWindow,
+        outage: Option<&Outage>,
+    ) -> Result<LinkBudgetResult, PathError> {
+        let mut result = self.compute_link_budget(source, target, tx_dbm, wavelength, window)?;
+        if let Some(outage) = outage {
+            if !outage.resolved && !outage.kind.is_full_cut() {
+                let extra_db = outage.accumulated_extra_loss_db();
+                result.total_loss_db += extra_db;
+                result.received_dbm -= extra_db;
+                result.in_window = window.contains(result.received_dbm);
+                result.margin_db = window.margin(result.received_dbm);
+            }
+        }
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::component::{Component, PlantType};
+    use crate::outage::OutageKind;
     use crate::DEFAULT_TX_DBM;
     use approx::assert_relative_eq;
 
@@ -170,6 +208,120 @@ mod tests {
                 DEFAULT_TX_DBM,
                 Wavelength::Nm1490,
                 ReceiveWindow::GPON_ONT,
+            )
+            .unwrap_err();
+        assert_eq!(err, PathError::Disconnected);
+    }
+
+    #[test]
+    fn degrade_type_outage_adds_extra_loss_on_top_of_the_plain_budget() {
+        let mut g = PathGraph::default();
+        g.add_node(0, "OLT");
+        g.add_node(1, "ONT");
+        g.connect(
+            0,
+            1,
+            Component::Span {
+                length_km: 1.0,
+                plant: PlantType::Buried,
+            },
+        );
+        let mut outage = Outage::new(OutageKind::WaterIntrusion, 0, 1);
+        outage.tick(50.0); // 5.0 dB accumulated (see accumulated_extra_loss_db)
+
+        let plain = g
+            .compute_link_budget(
+                0,
+                1,
+                DEFAULT_TX_DBM,
+                Wavelength::Nm1490,
+                ReceiveWindow::GPON_ONT,
+            )
+            .unwrap();
+        let with_outage = g
+            .compute_link_budget_with_outage(
+                0,
+                1,
+                DEFAULT_TX_DBM,
+                Wavelength::Nm1490,
+                ReceiveWindow::GPON_ONT,
+                Some(&outage),
+            )
+            .unwrap();
+
+        assert_relative_eq!(
+            with_outage.total_loss_db - plain.total_loss_db,
+            5.0,
+            epsilon = 1e-9
+        );
+        assert_relative_eq!(
+            with_outage.received_dbm,
+            plain.received_dbm - 5.0,
+            epsilon = 1e-9
+        );
+    }
+
+    #[test]
+    fn resolved_outage_no_longer_contributes_extra_loss() {
+        let mut g = PathGraph::default();
+        g.add_node(0, "OLT");
+        g.add_node(1, "ONT");
+        g.connect(
+            0,
+            1,
+            Component::Span {
+                length_km: 1.0,
+                plant: PlantType::Buried,
+            },
+        );
+        let mut outage = Outage::new(OutageKind::WaterIntrusion, 0, 1);
+        outage.tick(50.0);
+        outage.resolved = true;
+
+        let plain = g
+            .compute_link_budget(
+                0,
+                1,
+                DEFAULT_TX_DBM,
+                Wavelength::Nm1490,
+                ReceiveWindow::GPON_ONT,
+            )
+            .unwrap();
+        let with_outage = g
+            .compute_link_budget_with_outage(
+                0,
+                1,
+                DEFAULT_TX_DBM,
+                Wavelength::Nm1490,
+                ReceiveWindow::GPON_ONT,
+                Some(&outage),
+            )
+            .unwrap();
+
+        assert_relative_eq!(
+            with_outage.total_loss_db,
+            plain.total_loss_db,
+            epsilon = 1e-9
+        );
+    }
+
+    #[test]
+    fn full_cut_outage_relies_on_the_caller_excluding_the_edge() {
+        // A full-cut hazard on an edge that's simply absent from the graph
+        // (as `board::rebuild_live_graph` ensures while unresolved) surfaces
+        // as an ordinary `Disconnected` error, not a special outage code path.
+        let mut g = PathGraph::default();
+        g.add_node(0, "OLT");
+        g.add_node(1, "ONT");
+        let outage = Outage::new(OutageKind::FiberCut, 0, 1);
+        let err = g
+            .compute_link_budget_with_outage(
+                0,
+                1,
+                DEFAULT_TX_DBM,
+                Wavelength::Nm1490,
+                ReceiveWindow::GPON_ONT,
+                Some(&outage),
             )
             .unwrap_err();
         assert_eq!(err, PathError::Disconnected);

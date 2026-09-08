@@ -34,14 +34,31 @@ MOODS = ["idle", "blush", "wink", "pout", "celebrate", "alarmed"]
 FRAMES_PER_MOOD = 4
 
 # (companion_key, source_portrait_filename, mood_tint_color)
+#
+# Portrait filenames match what's actually committed at
+# assets/art/companions/<key>_portrait.jpg (see docs/CREDITS.md) --
+# this must stay in sync with that directory or the pipeline silently
+# can't find its own source art.
 COMPANIONS = [
-    ("seraphine", "portrait_seraphine.png", (255, 111, 174)),
-    ("ondine", "portrait_ondine.png", (46, 196, 182)),
-    ("linka", "portrait_linka.png", (124, 58, 237)),
-    ("lattice", "portrait_lattice.png", (37, 99, 235)),
+    ("seraphine", "seraphine_portrait.jpg", (255, 111, 174)),
+    ("ondine", "ondine_portrait.jpg", (46, 196, 182)),
+    ("linka", "linka_portrait.jpg", (124, 58, 237)),
+    ("lattice", "lattice_portrait.jpg", (37, 99, 235)),
 ]
 
 HAZARD_RED = (255, 77, 77)
+# Per-mood accent-strip colors so each row reads at a glance even at tiny
+# in-game render sizes, instead of every non-alarmed row sharing the same
+# character tint strip and only differing via a barely-visible
+# brightness/saturation nudge.
+MOOD_ACCENTS = {
+    "idle": None,  # falls back to the character's own tint
+    "blush": (255, 141, 187),
+    "wink": (255, 209, 102),
+    "pout": (94, 114, 148),
+    "celebrate": (255, 209, 102),
+    "alarmed": HAZARD_RED,
+}
 
 
 def load_base_frame(portrait_path: Path) -> Image.Image:
@@ -76,17 +93,28 @@ def mood_variant(base: Image.Image, mood: str, tint: tuple, frame: int) -> Image
     enhancer_color = ImageEnhance.Color(working)
     enhancer_bright = ImageEnhance.Brightness(working)
 
+    # Each mood gets both a stronger color/brightness treatment *and* a
+    # translucent color-overlay wash (like `alarmed` already had) so the
+    # difference reads clearly at 64x64, not just under close inspection.
     if mood == "blush":
-        working = enhancer_color.enhance(1.25)
-        working = enhancer_bright.enhance(1.05)
+        working = enhancer_color.enhance(1.4)
+        working = enhancer_bright.enhance(1.08)
+        overlay = Image.new("RGBA", working.size, (255, 141, 187, 55))
+        working = Image.alpha_composite(working.convert("RGBA"), overlay).convert("RGB")
     elif mood == "wink":
-        working = enhancer_bright.enhance(1.1)
+        working = enhancer_bright.enhance(1.2)
+        overlay = Image.new("RGBA", working.size, (255, 209, 102, 45))
+        working = Image.alpha_composite(working.convert("RGBA"), overlay).convert("RGB")
     elif mood == "pout":
-        working = ImageEnhance.Color(working).enhance(0.75)
-        working = ImageEnhance.Brightness(working).enhance(0.92)
+        working = ImageEnhance.Color(working).enhance(0.55)
+        working = ImageEnhance.Brightness(working).enhance(0.82)
+        overlay = Image.new("RGBA", working.size, (94, 114, 148, 60))
+        working = Image.alpha_composite(working.convert("RGBA"), overlay).convert("RGB")
     elif mood == "celebrate":
-        working = enhancer_bright.enhance(1.18)
-        working = enhancer_color.enhance(1.3)
+        working = enhancer_bright.enhance(1.3)
+        working = enhancer_color.enhance(1.45)
+        overlay = Image.new("RGBA", working.size, (255, 209, 102, 60))
+        working = Image.alpha_composite(working.convert("RGBA"), overlay).convert("RGB")
     elif mood == "alarmed":
         overlay = Image.new("RGBA", working.size, HAZARD_RED + (70,))
         working = Image.alpha_composite(working.convert("RGBA"), overlay).convert("RGB")
@@ -95,11 +123,13 @@ def mood_variant(base: Image.Image, mood: str, tint: tuple, frame: int) -> Image
 
     tile.paste(working.convert("RGBA"), (0, bob))
 
-    # Thin mood-accent underline strip so each row is readable even at a
-    # glance in the sprite sheet / in tiny in-game render sizes.
+    # Thick mood-accent underline strip (own color per mood, see
+    # MOOD_ACCENTS) so each row is identifiable at a glance in the sprite
+    # sheet / in tiny in-game render sizes, without needing to read the
+    # subtler tint/brightness treatment above it.
     draw = ImageDraw.Draw(tile)
-    accent = HAZARD_RED if mood == "alarmed" else tint
-    draw.rectangle([2, FRAME - 4, FRAME - 3, FRAME - 3], fill=accent)
+    accent = MOOD_ACCENTS.get(mood) or tint
+    draw.rectangle([1, FRAME - 5, FRAME - 2, FRAME - 2], fill=accent)
     return tile
 
 
@@ -151,9 +181,12 @@ def main() -> None:
     art_dir.mkdir(parents=True, exist_ok=True)
 
     for key, portrait_name, tint in COMPANIONS:
-        portrait_path = ROOT.parent / portrait_name
+        portrait_path = art_dir / portrait_name
         if not portrait_path.exists():
-            portrait_path = ROOT / portrait_name
+            raise FileNotFoundError(
+                f"missing source portrait for {key!r}: {portrait_path} "
+                "(see docs/CREDITS.md for how these are AI-generated)"
+            )
         base = load_base_frame(portrait_path)
 
         # 1. Static 64x64 profile frame for README / store listing use.
