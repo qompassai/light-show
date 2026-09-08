@@ -15,13 +15,14 @@
 //! blues/greys, warm amber "light" accent, hot pink Séraphine accent).
 
 use crate::level::LevelDef;
+use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
 use crate::test_log;
 use crate::ui::LedgerText;
 use bevy::input::touch::Touches;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use osp_sim::PathGraph;
+use osp_sim::{Component, Outage, PathGraph};
 use std::collections::HashMap;
 
 /// Visual radius of a drawn node circle.
@@ -39,6 +40,7 @@ const BOARD_LINE: Color = Color::srgb(0.11, 0.145, 0.255); // #1c2541
 const BOARD_ACCENT: Color = Color::srgb(0.357, 0.753, 0.922); // #5bc0eb
 const LIGHT_WARM: Color = Color::srgb(1.0, 0.82, 0.4); // #ffd166
 const LIGHT_HOT: Color = Color::srgb(1.0, 0.435, 0.682); // #ff6fae
+const HAZARD_RED: Color = Color::srgb(1.0, 0.302, 0.302); // #ff4d4d
 
 /// Maps a level's abstract `grid_x`/`grid_y` node coordinates onto world
 /// space. `grid_x = 1` sits at world `x = 0` and each grid column is 200
@@ -81,6 +83,78 @@ pub struct BoardRoot;
 /// Marks the root UI entity that hosts the ledger readout text.
 #[derive(Component)]
 pub struct LedgerRoot;
+
+/// Marks the root UI entity that hosts the level-intro briefing text
+/// (world/title heading, flavor briefing, and the companion's on-enter
+/// dialogue line, when the level defines one).
+#[derive(Component)]
+pub struct BriefingRoot;
+
+/// Resolves which concrete `Component` a `(from, to, slot)` placement
+/// refers to — the same lookup `rebuild_live_graph` does per placed edge,
+/// factored out so `handle_pointer_input` can inspect what was just
+/// placed (e.g. to fire a `waifu::SpliceReaction`) without duplicating it.
+fn resolve_placed_component(
+    level: &LevelDef,
+    from: u32,
+    to: u32,
+    slot: usize,
+) -> Option<Component> {
+    level
+        .available_components
+        .iter()
+        .filter(|c| c.from == from && c.to == to)
+        .nth(slot)
+        .map(|c| c.component.clone())
+}
+
+/// Maps a just-placed component to the companion's reaction, if any —
+/// only splices carry a quality judgement in this game (fusion = clean,
+/// mechanical = messy); every other component type is reaction-neutral.
+fn splice_reaction_for(component: &Component) -> Option<crate::waifu::SpliceReaction> {
+    match component {
+        Component::Splice { kind, .. } => Some(crate::waifu::SpliceReaction(match kind {
+            osp_sim::SpliceType::Fusion => crate::waifu::Mood::Blush,
+            osp_sim::SpliceType::Mechanical => crate::waifu::Mood::Pout,
+        })),
+        _ => None,
+    }
+}
+
+/// Which `game/assets/sprites/components/*.png` icon represents a given
+/// component, per the iconography table in `docs/ART_STYLE.md`. `Span`
+/// has no dedicated icon (it's fixed background plant, already drawn as
+/// a solid line by `draw_board_gizmos`, never offered as a pill choice).
+fn component_icon_path(component: &Component) -> Option<&'static str> {
+    match component {
+        Component::Splice {
+            kind: osp_sim::SpliceType::Fusion,
+            ..
+        } => Some("sprites/components/fusion_splice.png"),
+        Component::Splice {
+            kind: osp_sim::SpliceType::Mechanical,
+            ..
+        } => Some("sprites/components/mechanical_splice.png"),
+        Component::Connector {
+            kind: osp_sim::ConnectorType::Upc,
+            ..
+        } => Some("sprites/components/upc_connector.png"),
+        Component::Connector {
+            kind: osp_sim::ConnectorType::Apc,
+            ..
+        } => Some("sprites/components/apc_connector.png"),
+        Component::Splitter { .. } => Some("sprites/components/splitter.png"),
+        Component::Macrobend { .. } => Some("sprites/components/macrobend.png"),
+        Component::Span { .. } => None,
+    }
+}
+
+/// Marks a pill's icon sprite so it can be found/despawned alongside the
+/// rest of the board (it's spawned as a `BoardRoot` child, so normal
+/// `despawn_recursive` teardown already covers it — this marker exists
+/// for test/inspector legibility, not cleanup).
+#[derive(Component)]
+struct ComponentIcon;
 
 /// Groups `available_components` entries by their `(from, to)` pair,
 /// preserving first-encounter order, and records each entry's original
@@ -225,20 +299,47 @@ fn resolve_release(level: &LevelDef, drag_from: Option<u32>, pos: Option<Vec2>) 
     }
 }
 
+/// Whether `(from, to)` should be treated as physically disconnected
+/// because of `outage` — true only for an *unresolved, full-cut* hazard
+/// on that exact edge (see `osp_sim::OutageKind::is_full_cut`).
+/// Degrade-type hazards (water intrusion, connector contamination,
+/// macrobend) keep the edge connected here; their extra loss is instead
+/// applied on top of the budget by
+/// `osp_sim::PathGraph::compute_link_budget_with_outage`.
+fn is_edge_severed(outage: Option<&Outage>, from: u32, to: u32) -> bool {
+    outage.is_some_and(|o| {
+        !o.resolved && o.kind.is_full_cut() && o.edge_from == from && o.edge_to == to
+    })
+}
+
 /// Rebuilds a fresh `PathGraph` from the level's nodes and fixed edges,
 /// then connects whichever component choice the player has placed on each
-/// open `(from, to)` pair. Plain function (not a system) so it can be
-/// called both from the `OnEnter(Playing)` setup and from the pointer
-/// input system whenever a placement changes.
-pub fn rebuild_live_graph(level: &LevelDef, placed: &PlacedChoices, graph: &mut PathGraph) {
+/// open `(from, to)` pair — skipping any edge currently severed by a
+/// full-cut `outage` (see `is_edge_severed`), which is exactly what forces
+/// `compute_link_budget`/`compute_link_budget_with_outage` to report
+/// `Disconnected` until the player reroutes around it. Plain function
+/// (not a system) so it can be called both from the `OnEnter(Playing)`
+/// setup and from the pointer input system whenever a placement changes.
+pub fn rebuild_live_graph(
+    level: &LevelDef,
+    placed: &PlacedChoices,
+    outage: Option<&Outage>,
+    graph: &mut PathGraph,
+) {
     let mut fresh = PathGraph::default();
     for node in &level.nodes {
         fresh.add_node(node.id, node.label.clone());
     }
     for edge in &level.fixed_edges {
+        if is_edge_severed(outage, edge.from, edge.to) {
+            continue;
+        }
         fresh.connect(edge.from, edge.to, edge.component.clone());
     }
     for ((from, to), slot) in &placed.0 {
+        if is_edge_severed(outage, *from, *to) {
+            continue;
+        }
         let component = level
             .available_components
             .iter()
@@ -259,8 +360,48 @@ pub fn spawn_board_from_level(
     commands: &mut Commands,
     level: &LevelDef,
     asset_server: &AssetServer,
+    on_enter_dialogue: Option<&str>,
 ) {
     let font: Handle<Font> = asset_server.load("fonts/pixel.ttf");
+
+    let mut briefing_text = format!(
+        "World {} — {}\n{}",
+        level.world, level.title, level.briefing
+    );
+    if let Some(line) = on_enter_dialogue {
+        briefing_text.push_str("\n\"");
+        briefing_text.push_str(line);
+        briefing_text.push('"');
+    }
+    commands
+        .spawn((
+            BriefingRoot,
+            // Tags the entity with the level's data-file id (e.g.
+            // "world4_level1_outage") so it's identifiable in the Bevy
+            // entity inspector / scene dumps during development — the
+            // player never sees this, only the rendered briefing text.
+            Name::new(level.id.clone()),
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.0),
+                    padding: UiRect::all(Val::Px(10.0)),
+                    justify_content: JustifyContent::Center,
+                    ..default()
+                },
+                background_color: Color::srgba(0.051, 0.051, 0.118, 0.7).into(),
+                ..default()
+            },
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle::from_section(
+                briefing_text,
+                TextStyle {
+                    font: font.clone(),
+                    font_size: 14.0,
+                    color: BOARD_ACCENT,
+                },
+            ));
+        });
 
     commands
         .spawn((BoardRoot, SpatialBundle::default()))
@@ -282,6 +423,42 @@ pub fn spawn_board_from_level(
                     text_anchor: bevy::sprite::Anchor::Center,
                     ..default()
                 });
+            }
+
+            // One icon sprite per offered component choice, positioned at
+            // the same spot `draw_board_gizmos` draws that pill's circle
+            // (`pill_world_pos`) so the icon sits centered inside it.
+            // Single-choice pairs place their component via drag alone
+            // and never draw a pill circle either (see the `count <= 1`
+            // skip in `draw_board_gizmos`), so icons are skipped there too
+            // for visual consistency.
+            for ((from, to), indices) in grouped_choices(level) {
+                let count = indices.len();
+                if count <= 1 {
+                    continue;
+                }
+                for (slot, idx) in indices.into_iter().enumerate() {
+                    let Some(pos) = pill_world_pos(level, from, to, slot, count) else {
+                        continue;
+                    };
+                    let Some(icon_path) =
+                        component_icon_path(&level.available_components[idx].component)
+                    else {
+                        continue;
+                    };
+                    parent.spawn((
+                        ComponentIcon,
+                        SpriteBundle {
+                            texture: asset_server.load(icon_path),
+                            transform: Transform::from_translation(pos.extend(6.0)),
+                            sprite: Sprite {
+                                custom_size: Some(Vec2::splat(48.0)),
+                                ..default()
+                            },
+                            ..default()
+                        },
+                    ));
+                }
             }
         });
 
@@ -314,7 +491,7 @@ pub fn spawn_board_from_level(
         });
 }
 
-type BoardOrLedgerRoot = Or<(With<BoardRoot>, With<LedgerRoot>)>;
+type BoardOrLedgerRoot = Or<(With<BoardRoot>, With<LedgerRoot>, With<BriefingRoot>)>;
 
 pub fn teardown_board(mut commands: Commands, query: Query<Entity, BoardOrLedgerRoot>) {
     for entity in &query {
@@ -350,6 +527,10 @@ pub fn track_pointer(
 /// alternative among several offered choices. All decision logic lives in
 /// `resolve_press`/`resolve_release` (see their unit tests below); this
 /// system is just the thin ECS-resource glue around them.
+// One parameter per input/state resource this glue needs to read or
+// mutate; splitting it up would just move the same resource list into an
+// artificial bag type for no clarity gain.
+#[allow(clippy::too_many_arguments)]
 pub fn handle_pointer_input(
     level: Res<LevelDef>,
     pointer: Res<PointerWorld>,
@@ -358,6 +539,8 @@ pub fn handle_pointer_input(
     mut drag: ResMut<DragState>,
     mut placed: ResMut<PlacedChoices>,
     mut live: ResMut<LiveGraph>,
+    active_outage: Res<ActiveOutage>,
+    mut splice_reactions: EventWriter<crate::waifu::SpliceReaction>,
 ) {
     let just_pressed = mouse.just_pressed(MouseButton::Left) || touches.any_just_pressed();
     let just_released = mouse.just_released(MouseButton::Left) || touches.any_just_released();
@@ -368,7 +551,17 @@ pub fn handle_pointer_input(
                 PressAction::StartDrag(node_id) => drag.from = Some(node_id),
                 PressAction::SelectPill { from, to, slot } => {
                     placed.0.insert((from, to), slot);
-                    rebuild_live_graph(&level, &placed, &mut live.graph);
+                    rebuild_live_graph(
+                        &level,
+                        &placed,
+                        active_outage.outage.as_ref(),
+                        &mut live.graph,
+                    );
+                    if let Some(component) = resolve_placed_component(&level, from, to, slot) {
+                        if let Some(reaction) = splice_reaction_for(&component) {
+                            splice_reactions.send(reaction);
+                        }
+                    }
                     test_log!("select from={} to={} slot={}", from, to, slot);
                 }
                 PressAction::None => {}
@@ -378,8 +571,18 @@ pub fn handle_pointer_input(
 
     if just_released {
         if let ReleaseAction::Connect { from, to } = resolve_release(&level, drag.from, pointer.0) {
-            placed.0.entry((from, to)).or_insert(0);
-            rebuild_live_graph(&level, &placed, &mut live.graph);
+            let slot = *placed.0.entry((from, to)).or_insert(0);
+            rebuild_live_graph(
+                &level,
+                &placed,
+                active_outage.outage.as_ref(),
+                &mut live.graph,
+            );
+            if let Some(component) = resolve_placed_component(&level, from, to, slot) {
+                if let Some(reaction) = splice_reaction_for(&component) {
+                    splice_reactions.send(reaction);
+                }
+            }
             test_log!("connect from={} to={}", from, to);
         }
         drag.from = None;
@@ -407,19 +610,28 @@ pub fn draw_board_gizmos(
     placed: Res<PlacedChoices>,
     drag: Res<DragState>,
     pointer: Res<PointerWorld>,
+    active_outage: Res<ActiveOutage>,
 ) {
+    let outage = active_outage.outage.as_ref();
+
     for edge in &level.fixed_edges {
         if let (Some(a), Some(b)) = (
             node_world_pos(&level, edge.from),
             node_world_pos(&level, edge.to),
         ) {
-            gizmos.line_2d(a, b, LIGHT_WARM);
+            if is_edge_severed(outage, edge.from, edge.to) {
+                draw_dashed_line(&mut gizmos, a, b, HAZARD_RED);
+            } else {
+                gizmos.line_2d(a, b, LIGHT_WARM);
+            }
         }
     }
 
     for (from, to) in grouped_choices(&level).into_iter().map(|(k, _)| k) {
         if let (Some(a), Some(b)) = (node_world_pos(&level, from), node_world_pos(&level, to)) {
-            let color = if placed.0.contains_key(&(from, to)) {
+            let color = if is_edge_severed(outage, from, to) {
+                HAZARD_RED
+            } else if placed.0.contains_key(&(from, to)) {
                 LIGHT_WARM
             } else {
                 BOARD_LINE
@@ -771,7 +983,7 @@ mod tests {
         let mut placed = PlacedChoices::default();
         placed.0.insert((1, 2), 1); // pick the mechanical alternative
         let mut graph = PathGraph::default();
-        rebuild_live_graph(&level, &placed, &mut graph);
+        rebuild_live_graph(&level, &placed, None, &mut graph);
 
         assert_eq!(graph.edges.len(), 2);
         assert!(graph
@@ -793,7 +1005,75 @@ mod tests {
         let mut placed = PlacedChoices::default();
         placed.0.insert((1, 2), 7);
         let mut graph = PathGraph::default();
-        rebuild_live_graph(&level, &placed, &mut graph);
+        rebuild_live_graph(&level, &placed, None, &mut graph);
+        assert!(graph.edges.is_empty());
+    }
+
+    #[test]
+    fn rebuild_live_graph_excludes_an_unresolved_full_cut_edge() {
+        let level = two_choice_level();
+        let mut placed = PlacedChoices::default();
+        placed.0.insert((1, 2), 0);
+        let outage = Outage::new(osp_sim::OutageKind::FiberCut, 1, 2);
+        let mut graph = PathGraph::default();
+        rebuild_live_graph(&level, &placed, Some(&outage), &mut graph);
+        assert!(
+            graph.edges.is_empty(),
+            "a full-cut hazard on the only placed edge must sever it from the live graph"
+        );
+    }
+
+    #[test]
+    fn rebuild_live_graph_keeps_a_resolved_full_cut_edge_connected() {
+        let level = two_choice_level();
+        let mut placed = PlacedChoices::default();
+        placed.0.insert((1, 2), 0);
+        let mut outage = Outage::new(osp_sim::OutageKind::FiberCut, 1, 2);
+        outage.resolved = true;
+        let mut graph = PathGraph::default();
+        rebuild_live_graph(&level, &placed, Some(&outage), &mut graph);
+        assert_eq!(
+            graph.edges.len(),
+            1,
+            "a resolved outage must not sever the edge"
+        );
+    }
+
+    #[test]
+    fn rebuild_live_graph_keeps_a_degrade_type_outage_edge_connected() {
+        let level = two_choice_level();
+        let mut placed = PlacedChoices::default();
+        placed.0.insert((1, 2), 0);
+        let outage = Outage::new(osp_sim::OutageKind::WaterIntrusion, 1, 2);
+        let mut graph = PathGraph::default();
+        rebuild_live_graph(&level, &placed, Some(&outage), &mut graph);
+        assert_eq!(
+            graph.edges.len(),
+            1,
+            "degrade-type hazards keep the edge connected; loss is added on top instead"
+        );
+    }
+
+    #[test]
+    fn rebuild_live_graph_full_cut_on_a_fixed_edge_is_also_severed() {
+        let level = fixture(
+            vec![node(0, 0.0, 0.0), node(1, 1.0, 0.0)],
+            vec![LevelEdge {
+                from: 0,
+                to: 1,
+                component: Component::Span {
+                    length_km: 8.0,
+                    plant: PlantType::Buried,
+                },
+            }],
+            vec![],
+            0,
+            1,
+        );
+        let placed = PlacedChoices::default();
+        let outage = Outage::new(osp_sim::OutageKind::AerialDamage, 0, 1);
+        let mut graph = PathGraph::default();
+        rebuild_live_graph(&level, &placed, Some(&outage), &mut graph);
         assert!(graph.edges.is_empty());
     }
 
@@ -808,7 +1088,7 @@ mod tests {
             wavelength: WavelengthWrapper(level.wavelength.into()),
             tx_dbm: level.tx_dbm,
         };
-        rebuild_live_graph(&level, &placed, &mut live.graph);
+        rebuild_live_graph(&level, &placed, None, &mut live.graph);
 
         // 1. Drag from node 1 to node 2 -- places the default (first,
         //    fusion) choice, exactly like `handle_pointer_input` would on
@@ -823,7 +1103,7 @@ mod tests {
         assert_eq!(release, ReleaseAction::Connect { from: 1, to: 2 });
         if let ReleaseAction::Connect { from, to } = release {
             placed.0.entry((from, to)).or_insert(0);
-            rebuild_live_graph(&level, &placed, &mut live.graph);
+            rebuild_live_graph(&level, &placed, None, &mut live.graph);
         }
 
         let result_fusion = live
@@ -845,7 +1125,7 @@ mod tests {
         );
         if let PressAction::SelectPill { from, to, slot } = press {
             placed.0.insert((from, to), slot);
-            rebuild_live_graph(&level, &placed, &mut live.graph);
+            rebuild_live_graph(&level, &placed, None, &mut live.graph);
         }
 
         let result_mechanical = live
@@ -879,6 +1159,8 @@ mod tests {
             wavelength: WavelengthWrapper(level.wavelength.into()),
             tx_dbm: level.tx_dbm,
         });
+        world.insert_resource(ActiveOutage::default());
+        world.init_resource::<Events<crate::waifu::SpliceReaction>>();
         world.insert_resource(level);
         world
     }
@@ -955,5 +1237,149 @@ mod tests {
         assert_eq!(world.resource::<DragState>().from, None);
         assert!(world.resource::<PlacedChoices>().0.is_empty());
         assert!(world.resource::<LiveGraph>().graph.edges.is_empty());
+    }
+
+    #[test]
+    fn splice_reaction_for_maps_quality_to_the_matching_mood() {
+        assert_eq!(
+            splice_reaction_for(&fusion_splice()).map(|r| r.0),
+            Some(crate::waifu::Mood::Blush)
+        );
+        assert_eq!(
+            splice_reaction_for(&mechanical_splice()).map(|r| r.0),
+            Some(crate::waifu::Mood::Pout)
+        );
+    }
+
+    #[test]
+    fn component_icon_path_covers_every_placeable_component_and_excludes_span() {
+        assert_eq!(
+            component_icon_path(&fusion_splice()),
+            Some("sprites/components/fusion_splice.png")
+        );
+        assert_eq!(
+            component_icon_path(&mechanical_splice()),
+            Some("sprites/components/mechanical_splice.png")
+        );
+        assert_eq!(
+            component_icon_path(&Component::Connector {
+                kind: osp_sim::ConnectorType::Upc,
+                contamination_db: 0.0,
+            }),
+            Some("sprites/components/upc_connector.png")
+        );
+        assert_eq!(
+            component_icon_path(&Component::Connector {
+                kind: osp_sim::ConnectorType::Apc,
+                contamination_db: 0.0,
+            }),
+            Some("sprites/components/apc_connector.png")
+        );
+        assert_eq!(
+            component_icon_path(&Component::Splitter {
+                ratio: osp_sim::component::SplitterRatio::OneByFour,
+            }),
+            Some("sprites/components/splitter.png")
+        );
+        assert_eq!(
+            component_icon_path(&Component::Macrobend {
+                excess_loss_db: 0.0
+            }),
+            Some("sprites/components/macrobend.png")
+        );
+        assert_eq!(
+            component_icon_path(&Component::Span {
+                length_km: 1.0,
+                plant: osp_sim::component::PlantType::Buried,
+            }),
+            None,
+            "Span is fixed background plant, never a pill choice, and has no icon"
+        );
+    }
+
+    #[test]
+    fn every_component_icon_path_actually_exists_under_game_assets() {
+        // `asset_server.load(icon_path)` fails silently at runtime (a
+        // missing-texture magenta square, not a panic) if the file isn't
+        // there -- catch that here instead of only at manual playtest.
+        for (component, path) in [
+            (fusion_splice(), "sprites/components/fusion_splice.png"),
+            (
+                mechanical_splice(),
+                "sprites/components/mechanical_splice.png",
+            ),
+        ] {
+            assert_eq!(component_icon_path(&component), Some(path));
+            let on_disk = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string() + path;
+            assert!(
+                std::path::Path::new(&on_disk).is_file(),
+                "{on_disk} referenced by component_icon_path but missing on disk"
+            );
+        }
+        for path in [
+            "sprites/components/upc_connector.png",
+            "sprites/components/apc_connector.png",
+            "sprites/components/splitter.png",
+            "sprites/components/macrobend.png",
+        ] {
+            let on_disk = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string() + path;
+            assert!(
+                std::path::Path::new(&on_disk).is_file(),
+                "{on_disk} referenced by component_icon_path but missing on disk"
+            );
+        }
+    }
+
+    #[test]
+    fn splice_reaction_for_is_none_for_non_splice_components() {
+        let splitter = Component::Splitter {
+            ratio: osp_sim::component::SplitterRatio::OneByTwo,
+        };
+        assert!(splice_reaction_for(&splitter).is_none());
+    }
+
+    #[test]
+    fn resolve_placed_component_looks_up_the_nth_choice_for_a_pair() {
+        let level = two_choice_level();
+        assert_eq!(
+            resolve_placed_component(&level, 1, 2, 0),
+            Some(fusion_splice())
+        );
+        assert_eq!(
+            resolve_placed_component(&level, 1, 2, 1),
+            Some(mechanical_splice())
+        );
+        assert_eq!(resolve_placed_component(&level, 1, 2, 99), None);
+    }
+
+    #[test]
+    fn tapping_the_mechanical_pill_fires_a_pout_reaction_on_the_companion() {
+        use bevy_ecs::system::RunSystemOnce;
+
+        let mut world = test_world(two_choice_level());
+        let companion = world
+            .spawn(crate::waifu::CompanionSprite {
+                companion: crate::waifu::Companion::default(),
+                mood: crate::waifu::Mood::Idle,
+                anim_timer: Timer::from_seconds(0.18, TimerMode::Repeating),
+                frame: 0,
+            })
+            .id();
+
+        // Same pointer position as `system_tapping_a_pill_selects_it_
+        // without_starting_a_drag` above -- lands on the Mechanical
+        // (slot 1) pill.
+        world.resource_mut::<PointerWorld>().0 = Some(Vec2::new(100.0, 335.0));
+        world
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .press(MouseButton::Left);
+        world.run_system_once(handle_pointer_input);
+        world.run_system_once(crate::waifu::react_to_splice_events);
+
+        let sprite = world
+            .get::<crate::waifu::CompanionSprite>(companion)
+            .unwrap();
+        assert_eq!(sprite.mood, crate::waifu::Mood::Pout);
+        assert_eq!(sprite.frame, 0);
     }
 }

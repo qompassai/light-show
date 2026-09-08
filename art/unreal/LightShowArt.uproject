@@ -1,0 +1,12 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.4",
+	"Category": "",
+	"Description": "Content-only companion project for previewing and re-exporting Light Show's pixel-art sprites, companion flipbooks, and chiptune audio inside Unreal Engine. Ships no gameplay code — the shipping game is the Bevy/Rust project at the repository root (game/). See art/unreal/README.md.",
+	"Plugins": [
+		{
+			"Name": "Paper2D",
+			"Enabled": true
+		}
+	]
+}

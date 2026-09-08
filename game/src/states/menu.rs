@@ -1,6 +1,7 @@
 //! Main menu: title, companion picker, world/level select.
 
 use super::GameState;
+use crate::board;
 use crate::waifu::{Companion, SelectedCompanion};
 use bevy::prelude::*;
 
@@ -8,17 +9,25 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::MainMenu), setup_menu)
-            .add_systems(
-                Update,
-                (
-                    handle_start_button,
-                    handle_companion_buttons,
-                    update_companion_ui,
-                )
-                    .run_if(in_state(GameState::MainMenu)),
+        // `board::teardown_board` here is a safe no-op the very first time
+        // (Startup) this runs, since nothing has been spawned yet. It's
+        // needed for every subsequent MainMenu entry (e.g. Results ->
+        // MainMenu) now that board teardown is no longer tied to
+        // `OnExit(Playing)` — see `playing::PlayingPlugin::build`.
+        app.add_systems(
+            OnEnter(GameState::MainMenu),
+            (board::teardown_board, setup_menu),
+        )
+        .add_systems(
+            Update,
+            (
+                handle_start_button,
+                handle_companion_buttons,
+                update_companion_ui,
             )
-            .add_systems(OnExit(GameState::MainMenu), teardown_menu);
+                .run_if(in_state(GameState::MainMenu)),
+        )
+        .add_systems(OnExit(GameState::MainMenu), teardown_menu);
     }
 }
 
@@ -36,6 +45,11 @@ struct CompanionButton(Companion);
 /// The "Companion: <name>" label kept in sync with `SelectedCompanion`.
 #[derive(Component)]
 struct CompanionLabel;
+
+/// The one-line medium description under `CompanionLabel` (e.g. "Fiber-optic
+/// OSP splicing"), kept in sync with `SelectedCompanion` the same way.
+#[derive(Component)]
+struct CompanionTagline;
 
 fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
@@ -82,6 +96,17 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         font: asset_server.load("fonts/pixel.ttf"),
                         font_size: 16.0,
                         color: Color::srgb(0.8, 0.8, 0.9),
+                    },
+                ),
+            ));
+            parent.spawn((
+                CompanionTagline,
+                TextBundle::from_section(
+                    Companion::default().tagline(),
+                    TextStyle {
+                        font: asset_server.load("fonts/pixel.ttf"),
+                        font_size: 13.0,
+                        color: Color::srgb(0.55, 0.55, 0.68),
                     },
                 ),
             ));
@@ -192,7 +217,8 @@ fn handle_companion_buttons(
 fn update_companion_ui(
     selected: Res<SelectedCompanion>,
     mut buttons: Query<(&CompanionButton, &mut BackgroundColor)>,
-    mut labels: Query<&mut Text, With<CompanionLabel>>,
+    mut labels: Query<&mut Text, (With<CompanionLabel>, Without<CompanionTagline>)>,
+    mut taglines: Query<&mut Text, (With<CompanionTagline>, Without<CompanionLabel>)>,
 ) {
     if !selected.is_changed() {
         return;
@@ -202,6 +228,9 @@ fn update_companion_ui(
     }
     for mut text in &mut labels {
         text.sections[0].value = format!("Companion: {}", selected.0.display_name());
+    }
+    for mut text in &mut taglines {
+        text.sections[0].value = selected.0.tagline().to_string();
     }
 }
 
@@ -296,6 +325,25 @@ mod tests {
             .next()
             .unwrap();
         assert_eq!(bg.1 .0, companion_button_color(Companion::Coax, false));
+    }
+
+    #[test]
+    fn update_companion_ui_relabels_the_tagline_after_a_selection_change() {
+        let mut world = world_with_selected(Companion::Fiber);
+        world.spawn((
+            CompanionTagline,
+            TextBundle::from_section("placeholder", TextStyle::default()),
+        ));
+
+        world.resource_mut::<SelectedCompanion>().0 = Companion::Ethernet;
+        world.run_system_once(update_companion_ui);
+
+        let tagline = world
+            .query::<(&CompanionTagline, &Text)>()
+            .iter(&world)
+            .next()
+            .expect("tagline label should exist");
+        assert_eq!(tagline.1.sections[0].value, Companion::Ethernet.tagline());
     }
 
     #[test]

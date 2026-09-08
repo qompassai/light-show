@@ -17,3 +17,7 @@
 .idea/
 .vscode/
 *.swp
+
+# Scratch WAV intermediates from tools/gen_chiptune_music.py (script now
+# uses a real tempfile.TemporaryDirectory, so this is just a safety net)
+/tools/_audio_tmp/
