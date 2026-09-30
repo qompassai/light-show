@@ -15,7 +15,7 @@ once, in order. Values below are the exact ones to paste.
 
 - Play Console → Create app. Name: **Light Show**, default language en-US,
   app or game, free, no ads. Package name must be `ai.qompass.lightshow`
-  (from `android/app/build.gradle.kts`).
+  (applicationId in `android/app/build.gradle.kts`, package in `game/Cargo.toml` `[package.metadata.android]` — the two must match).
 
 ## 3. Store listing (copy from this repo)
 
@@ -40,7 +40,7 @@ once, in order. Values below are the exact ones to paste.
 ## 5. First upload
 
 - Build the signed `.aab` (see `docs/BUILD.md`; keystore via
-  `scripts/matt/matt-keystore.sh` — dry-run validated, real run is yours).
+  `scripts/publish/tbr-keystore.sh` — dry-run validated, real run is yours).
 - Upload to the **Internal testing** track first. Add yourself as a tester,
   install via the testing link, play through World 1 end to end.
 - Promote Internal → Closed → Production at your own pace. Every new

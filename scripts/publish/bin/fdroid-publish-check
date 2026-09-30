@@ -275,6 +275,10 @@ def _gate_version_literals(repo: str) -> tuple[str, str]:
     cands = [
         os.path.join(repo, "app", "build.gradle"),
         os.path.join(repo, "app", "build.gradle.kts"),
+        # Light Show's Gradle wrapper project lives under android/
+        # (Option B Play path); the repo root has no app/ module.
+        os.path.join(repo, "android", "app", "build.gradle"),
+        os.path.join(repo, "android", "app", "build.gradle.kts"),
     ]
     path = next((p for p in cands if os.path.isfile(p)), None)
     if path is None:

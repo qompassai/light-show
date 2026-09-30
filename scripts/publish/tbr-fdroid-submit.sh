@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# matt-fdroid-submit.sh -- F-Droid submission for light-show (Matt-only steps).
+# tbr-fdroid-submit.sh -- F-Droid submission for light-show (Matt-only steps).
 #
 # F-Droid needs nothing secret from you: they build and sign the app
 # themselves. The only human steps are the GitLab fork and the merge
 # request, which need YOUR GitLab account, so agents cannot do them.
 #
 # Usage:
-#   scripts/matt/matt-fdroid-submit.sh --dry-run   # run the upstream gates, print the exact MR steps
-#   scripts/matt/matt-fdroid-submit.sh             # same gates, then print the steps to execute
+#   scripts/publish/tbr-fdroid-submit.sh --dry-run   # run the upstream gates, print the exact MR steps
+#   scripts/publish/tbr-fdroid-submit.sh             # same gates, then print the steps to execute
 
 set -euo pipefail
 
@@ -21,14 +21,18 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 [ -x "$CHECK" ] || die "check binary missing at $CHECK"
 
 echo "=== Gate check (real tree: $REPO_DIR) ==="
-"$CHECK" --repo "$REPO_DIR" --appid "$APPID" --vercode "$VERCODE" || true
+# No `|| true` here: a failed readiness gate must abort the submission
+# flow, not print "steps" underneath a red gate report.
+"$CHECK" --repo "$REPO_DIR" --appid "$APPID" --vercode "$VERCODE" \
+    || die "readiness gates FAILED — fix the failures above before submitting"
 echo ""
 echo "=== F-Droid submission steps (your GitLab account) ==="
 echo "1. Fork https://gitlab.com/fdroid/fdroiddata on GitLab."
 echo "2. Clone your fork; create branch '$APPID'."
 echo "3. Copy the recipe from this repo's docs/FDROID.md (Reference metadata"
 echo "   recipe) into your fork at metadata/$APPID.yml, replacing"
-echo "   'commit:' with the full 40-char SHA of the release commit."
+echo "   '__RELEASE_COMMIT_SHA__' with the full 40-char SHA of the release"
+echo "   commit (the pushed, gate-green commit — never a tag or branch)."
 echo "4. In your fork: fdroid readmeta && fdroid rewritemeta $APPID"
 echo "   (must produce no diff) && fdroid lint $APPID (must be clean)."
 echo "5. Commit as 'New App: $APPID', push, open the MR against"
