@@ -13,11 +13,14 @@ reference copy). Key requirements this project is designed to satisfy:
   free of Google Play Services, Firebase, or other proprietary blobs.
   `bevy`'s Android backend (`android-activity`/`game-activity`) is Apache-
   2.0/MIT, part of the free-software `rust-mobile` ecosystem.
-- **No non-free assets.** All art/audio/fonts are original or CC0/CC-BY,
-  tracked with attribution in `docs/CREDITS.md`. AI-assisted art passes
-  used only for early placeholders (see `docs/ART_STYLE.md`) are replaced
-  before a tagged F-Droid release, with the licensing chain documented in
-  `docs/CREDITS.md`.
+- **No non-free assets.** All art/audio/fonts are original, deterministic
+  tool-generated, or OFL-licensed (Press Start 2P), tracked with full
+  attribution in `docs/CREDITS.md`. The component-icon art and every
+  music track are produced by original, license-clean Python scripts in
+  `tools/` with zero third-party samples — the only open item is
+  re-confirming the AI image provider's current redistribution terms for
+  the four companion portraits before tagging a release (tracked as an
+  explicit checklist item in `docs/CREDITS.md`).
 - **No pay-to-win / IAP.** There is no monetization at all — no ads,
   no purchases, no gacha, so the same build serves both stores unmodified.
 

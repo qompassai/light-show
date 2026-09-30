@@ -21,6 +21,21 @@ pub enum OutageKind {
 }
 
 impl OutageKind {
+    /// Whether this hazard fully severs the affected edge (no signal at
+    /// all gets through until rerouted/repaired) versus merely degrading
+    /// it (edge stays connected but loses extra dB the longer it's left
+    /// unresolved). Exhaustive match on purpose: a future new variant
+    /// must make an explicit choice here rather than silently falling
+    /// into a wildcard default.
+    pub fn is_full_cut(&self) -> bool {
+        match self {
+            OutageKind::FiberCut | OutageKind::AerialDamage => true,
+            OutageKind::WaterIntrusion
+            | OutageKind::ConnectorContamination
+            | OutageKind::Macrobend => false,
+        }
+    }
+
     pub fn flavor_text(&self) -> &'static str {
         match self {
             OutageKind::FiberCut => "Backhoe strike! Buried span severed near marker 14+00.",
@@ -100,6 +115,15 @@ impl Outage {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn full_cut_classification_is_exhaustive_and_correct() {
+        assert!(OutageKind::FiberCut.is_full_cut());
+        assert!(OutageKind::AerialDamage.is_full_cut());
+        assert!(!OutageKind::WaterIntrusion.is_full_cut());
+        assert!(!OutageKind::ConnectorContamination.is_full_cut());
+        assert!(!OutageKind::Macrobend.is_full_cut());
+    }
 
     #[test]
     fn water_intrusion_worsens_over_time() {

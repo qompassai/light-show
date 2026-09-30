@@ -44,20 +44,34 @@ game/                  Bevy application: states, UI, level loading, companions
 game/assets/levels/    Level definitions (JSON)
 game/assets/dialogue/  Per-companion dialogue banks (JSON, localizable)
 game/assets/sprites/   In-engine sprite sheets, incl. companion mood sheets
+game/assets/audio/     Chiptune music loops + win/fail jingles (.ogg)
 assets/art/companions/ Source portraits, animated profile GIFs, app icon art
-docs/                  Design, art direction, build, and F-Droid docs
+art/aseprite/          Aseprite-ready sprite sources + headless import script
+art/unreal/            Content-only Unreal preview project (Paper2D) for the same art
+docs/                  Design, art direction, asset pipeline, build, and F-Droid docs
 fastlane/              Shared Play Store / F-Droid store listing metadata
-tools/                 Art generation scripts (placeholder + companion art)
+tools/                 Art + music generation scripts (placeholder art, companion art, chiptune)
 ```
 
 ## Status
 
-Early scaffold: core simulation (`osp_sim`) is fully implemented and
-tested; the Bevy front-end has working state machine, level loading, win
-condition checking, a live dB ledger UI, a companion-select menu, and all
-four companions' dialogue/animation systems, backed by real AI-generated
-portrait art and 64x64 in-engine sprite sheets. Full outage-repair UI is
-the next milestone — see open issues.
+Feature-complete gameplay loop: core simulation (`osp_sim`) is fully
+implemented and tested; the Bevy front-end has a working state machine
+(menu → playing → outage-repair → results), level loading, win/fail
+condition checking with a live dB ledger UI, a companion-select menu,
+an outage-repair loop (fault injection, live reroute under a countdown,
+in-window vs. timed-out resolution), a results screen with win/fail
+banners and companion dialogue, all four companions' dialogue/animation
+systems (backed by real AI-generated portrait art and 64x64 in-engine
+sprite sheets with per-mood accent tinting), on-board component icon
+sprites for every placeable part, and a full Megaman-esque chiptune
+soundtrack (menu/playing/outage loops, win/fail jingles) wired to every
+state. See [`docs/ASSET_PIPELINE.md`](docs/ASSET_PIPELINE.md) for how
+all art/audio is generated and how to take it further in Aseprite or
+Unreal. Remaining before store submission is entirely account/asset
+logistics rather than code: a signing keystore, real device
+screenshots, and the Play Console/`fdroiddata` listing steps — see
+[`docs/BUILD.md`](docs/BUILD.md) and [`docs/FDROID.md`](docs/FDROID.md).
 
 ## License
 
