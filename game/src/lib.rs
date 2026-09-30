@@ -70,6 +70,7 @@ fn build_app() -> App {
     .init_state::<GameState>()
     .add_plugins((
         states::menu::MenuPlugin,
+        states::credits::CreditsPlugin,
         states::playing::PlayingPlugin,
         states::outage::OutagePlugin,
         states::results::ResultsPlugin,

@@ -1,71 +1,35 @@
-# light-show music candidates — licenses & credits
+# Music credits — shipped tracks
 
-Audition copies only. If any track ships in the game, the CC-BY items below
-REQUIRE the attribution lines (ship in the in-game credits screen). CC0 items
-need no attribution (courtesy credit optional).
+These are the only music tracks that ship with Light Show, under
+`game/assets/music/<tier>/` (12 tracks). CC-BY tracks require attribution
+(below); CC0 tracks require none and are credited as a courtesy.
 
-## What landed
+The same attribution is shown in-game: main menu → **Credits**
+(`game/src/states/credits.rs` embeds `ATTRIBUTION.txt` at compile time,
+so the screen can never drift from this file).
 
-### eric-skiff/ — Eric Skiff, *Resistor Anthems* (17 MP3s)
-- License: **CC-BY** (composer's page text states CC-BY 4.0; the page's badge
-  image shows BY 3.0 — attribute as BY either way).
-- Source: http://ericskiff.com/music
-- Tracks: A Night Of Dizzy Spells, Underclocked (underunderclocked mix),
-  Chibi Ninja, All of Us, Come and Find Me, Searching, We're the Resistors,
-  Ascending, Come and Find Me - B mix, Arpanauts, HHavok-intro, HHavok-main,
-  Digital Native, Jumpshot, Prologue, We're all under the stars,
-  Behind the waterfall lies the beginning.
+## CC-BY (attribution required)
 
-### teknoaxe/ — TeknoAXE (2 MP3s)
-- License: **CC-BY 4.0**.
-- Source: https://www.free-stock-music.com/
-- Tracks: Basic Metal 5 (3:27), Stepping Along The Sky (4:28).
+- **Eric Skiff** — *Resistor Anthems* (http://ericskiff.com/music):
+  "We're all under the stars", "Searching", "Ascending", "Chibi Ninja",
+  "Underclocked (underunderclocked mix)", "We're the Resistors".
+  License: CC-BY 4.0 (page text verified 2026-09-30; the page's badge
+  image still shows BY 3.0). Required format:
+  "Eric Skiff - [Song] - Resistor Anthems - Available at
+  http://EricSkiff.com/music".
+- **Kevin MacLeod** (https://incompetech.com/music/royalty-free/):
+  "Exhilarate" — CC-BY 4.0; "In a Heartbeat" — CC-BY 3.0.
+- **TeknoAXE** — "Basic Metal 5" — CC-BY 4.0, sourced via
+  https://www.free-stock-music.com/ (track page:
+  https://www.free-stock-music.com/teknoaxe-basic-metal-5.html).
+  Required credit: "Basic Metal 5 by TeknoAXE | http://teknoaxe.com —
+  Royalty Free Music by https://www.free-stock-music.com — CC BY 4.0 —
+  https://creativecommons.org/licenses/by/4.0/".
 
-### kevin-macleod/ — Kevin MacLeod (2 MP3s)
-- "Exhilarate": **CC-BY 4.0** (2:25).
-- "In a Heartbeat": **CC-BY 3.0** (3:37).
-- Source: https://incompetech.com/music/royalty-free/
+## CC0 (no attribution required; courtesy credit)
 
-### subspaceaudio/ — Juhani Junkala / SubspaceAudio, *JRPG Pack 5: Action* (3 OGGs)
-- License: **CC0** (no attribution required).
-- Source: https://opengameart.org/content/jrpg-pack-5-action
-- Tracks: Action1 - Encounter With The Witches, Action2 - Army Approaching,
-  Action3 - Preparing For Battle.
-
-### komiku/ — Komiku (2 MP3s)
-- License: **CC0 1.0 Universal** (no attribution required).
-- Source: https://freemusicarchive.org/ (public stream URLs; FMA's download
-  button now requires login, the public player stream does not)
-- Tracks: Battle of Pogs (1:24), Intensive puzzle resolution (1:34).
-
-## NOT fetched (itch.io interactive download flow)
-
-The three itch.io packs could not be fetched automatically: itch.io issues the
-file download only after an interactive license-accept click, which mints a
-server-side download key (no login needed in a browser, but not scriptable).
-Grab them manually in a browser (each is one click on Download):
-- Dylann Taylor — SUPER 16-BIT SOUNDS (CC0, 7 tracks, seamless OGG loops):
-  https://dylanntaylor.itch.io/super-16bit-sounds → dylann-taylor/
-- HydroGene — High Quality 16-bit RPG Music (CC0, 28 tracks, OGG):
-  https://hydrogene.itch.io/high-quality-16-bit-music → hydrogene/
-- LonePeakMusic — Free Retro 16 Bit Music Pack #1 (CC-BY, 10 WAVs):
-  https://lonepeakmusic.itch.io/retro-midi-music-pack-1 → lonepeakmusic/
-
-## Ready-to-paste credits block (for the game's credits screen)
-
-    Music:
-    - "Exhilarate" by Kevin MacLeod (incompetech.com) — CC BY 4.0
-    - "In a Heartbeat" by Kevin MacLeod (incompetech.com) — CC BY 3.0
-    - Resistor Anthems by Eric Skiff (ericskiff.com/music) — CC BY
-      (format: "Music: Eric Skiff - [Song] - Resistor Anthems -
-      Available at http://EricSkiff.com/music")
-    - "Basic Metal 5" / "Stepping Along The Sky" by TeknoAXE
-      (teknoaxe.com) — CC BY 4.0
-    - JRPG Pack 5: Action by Juhani Junkala (SubspaceAudio) — CC0
-      (courtesy credit)
-    - Komiku (freemusicarchive.org) — CC0 (courtesy credit)
-    - (if the itch.io packs are added later:)
-    - SUPER 16-BIT SOUNDS by Dylann Taylor — CC0 (courtesy credit)
-    - High Quality 16-bit RPG Music by HydroGene — CC0 (courtesy credit)
-    - Free Retro 16 Bit Music Pack #1 by LonePeakMusic — CC BY
-      ("Music provided and produced by LonePeakMusic")
+- **Komiku** (https://freemusicarchive.org/): "Intensive puzzle
+  resolution" — CC0 1.0 Universal.
+- **Juhani Junkala / SubspaceAudio** — *JRPG Pack 5: Action*
+  (https://opengameart.org/content/jrpg-pack-5-action):
+  "Action2 - Army Approaching", "Action3 - Preparing For Battle" — CC0.

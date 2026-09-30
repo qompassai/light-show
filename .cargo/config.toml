@@ -1,0 +1,10 @@
+# Android 15+ (API 35+) requires 16 KB ELF page alignment for native
+# libraries in apps targeting API 35+. We target API 36, so this is a
+# hard Play Store requirement, not an optimization.
+#
+# The 64-bit Android targets already default to 16 KB alignment, but
+# armv7-linux-androideabi (armeabi-v7a) defaults to 4 KB. This forces
+# the linker to 16 KB for the 32-bit target. Verified via
+# `readelf -lW` showing 0x4000 LOAD alignment (2026-09-30).
+[target.armv7-linux-androideabi]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]

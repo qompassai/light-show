@@ -384,6 +384,9 @@ pub fn spawn_board_from_level(
             NodeBundle {
                 style: Style {
                     width: Val::Percent(100.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(0.0),
+                    left: Val::Px(0.0),
                     padding: UiRect::all(Val::Px(10.0)),
                     justify_content: JustifyContent::Center,
                     ..default()
@@ -468,6 +471,9 @@ pub fn spawn_board_from_level(
             NodeBundle {
                 style: Style {
                     width: Val::Percent(100.0),
+                    position_type: PositionType::Absolute,
+                    bottom: Val::Px(0.0),
+                    left: Val::Px(0.0),
                     padding: UiRect::all(Val::Px(10.0)),
                     justify_content: JustifyContent::Center,
                     ..default()

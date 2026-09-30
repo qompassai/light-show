@@ -1,6 +1,7 @@
 //! Top-level game state machine. Each variant owns its own plugin (see
 //! sibling modules) so systems are only scheduled while that state is active.
 
+pub mod credits;
 pub mod menu;
 pub mod outage;
 pub mod playing;
@@ -19,6 +20,11 @@ pub enum GameState {
     OutageActive,
     /// Level finished (win or fail) — shows Séraphine's reaction + summary.
     Results,
+    /// In-game credits screen (code/art/font credits + the shipped music
+    /// attribution), reachable from the main menu. The CC-BY music
+    /// attribution must be user-visible, so this is a real state rather
+    /// than a menu-local overlay.
+    Credits,
 }
 
 /// Why the game most recently entered `GameState::Results` — set in the

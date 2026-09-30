@@ -22,6 +22,7 @@ impl Plugin for MenuPlugin {
             Update,
             (
                 handle_start_button,
+                handle_credits_button,
                 handle_companion_buttons,
                 update_companion_ui,
             )
@@ -37,6 +38,11 @@ struct MenuRoot;
 #[derive(Component)]
 struct StartButton;
 
+/// Opens the in-game credits screen (`GameState::Credits`), where the
+/// CC-BY music attribution is user-visible as the licenses require.
+#[derive(Component)]
+struct CreditsButton;
+
 /// Tags one of the four companion-picker buttons with the companion it
 /// selects when pressed.
 #[derive(Component)]
@@ -51,8 +57,13 @@ struct CompanionLabel;
 #[derive(Component)]
 struct CompanionTagline;
 
-fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Query<&Camera>) {
+    // The Credits screen reuses this camera (menu teardown only despawns
+    // `MenuRoot`), so only spawn one when none exists — otherwise every
+    // return from Credits would stack another camera.
+    if cameras.is_empty() {
+        commands.spawn(Camera2dBundle::default());
+    }
 
     commands
         .spawn((
@@ -170,6 +181,28 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         },
                     ));
                 });
+            parent
+                .spawn((
+                    CreditsButton,
+                    ButtonBundle {
+                        style: Style {
+                            padding: UiRect::axes(Val::Px(28.0), Val::Px(10.0)),
+                            ..default()
+                        },
+                        background_color: Color::srgb(0.2, 0.2, 0.28).into(),
+                        ..default()
+                    },
+                ))
+                .with_children(|btn| {
+                    btn.spawn(TextBundle::from_section(
+                        "Credits",
+                        TextStyle {
+                            font: asset_server.load("fonts/pixel.ttf"),
+                            font_size: 18.0,
+                            color: Color::WHITE,
+                        },
+                    ));
+                });
         });
 }
 
@@ -194,6 +227,19 @@ fn handle_start_button(
     for interaction in &interactions {
         if *interaction == Interaction::Pressed {
             next_state.set(GameState::Playing);
+        }
+    }
+}
+
+/// Opens the credits screen. The CC-BY music attribution must be
+/// user-visible, so credits are one tap from the main menu.
+fn handle_credits_button(
+    interactions: Query<&Interaction, (Changed<Interaction>, With<CreditsButton>)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    for interaction in &interactions {
+        if *interaction == Interaction::Pressed {
+            next_state.set(GameState::Credits);
         }
     }
 }
@@ -251,6 +297,12 @@ mod tests {
         world
     }
 
+    fn world_with_next_state() -> World {
+        let mut world = World::new();
+        world.insert_resource(NextState::<GameState>::default());
+        world
+    }
+
     #[test]
     fn pressing_a_companion_button_updates_selected_companion() {
         let mut world = world_with_selected(Companion::Fiber);
@@ -269,6 +321,45 @@ mod tests {
         world.run_system_once(handle_companion_buttons);
 
         assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Fiber);
+    }
+
+    #[test]
+    fn pressing_the_credits_button_requests_the_credits_state() {
+        let mut world = world_with_next_state();
+        world.spawn((CreditsButton, Interaction::Pressed));
+
+        world.run_system_once(handle_credits_button);
+
+        assert!(matches!(
+            world.resource::<NextState<GameState>>(),
+            NextState::Pending(GameState::Credits)
+        ));
+    }
+
+    #[test]
+    fn hovering_the_credits_button_requests_no_state_change() {
+        let mut world = world_with_next_state();
+        world.spawn((CreditsButton, Interaction::Hovered));
+
+        world.run_system_once(handle_credits_button);
+
+        assert!(matches!(
+            world.resource::<NextState<GameState>>(),
+            NextState::Unchanged
+        ));
+    }
+
+    #[test]
+    fn pressing_the_start_button_still_requests_the_playing_state() {
+        let mut world = world_with_next_state();
+        world.spawn((StartButton, Interaction::Pressed));
+
+        world.run_system_once(handle_start_button);
+
+        assert!(matches!(
+            world.resource::<NextState<GameState>>(),
+            NextState::Pending(GameState::Playing)
+        ));
     }
 
     #[test]

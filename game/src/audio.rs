@@ -1,9 +1,11 @@
 //! Licensed background music: one track per game context, chosen by a small
 //! pure music manager (`menu_track`, `playing_track`, `outage_track`,
 //! `results_track`) and played through Bevy's `AudioBundle`. Track files
-//! live under `game/assets/music/<tier>/`; the CC-BY attribution block in
+//! live under `game/assets/music/<tier>/`; the CC-BY attribution in
 //! `game/assets/music/CREDITS.md` ships with the game and is REQUIRED for
-//! the CC-BY tracks — do not ship a build without it.
+//! the CC-BY tracks — do not ship a build without it. The same attribution
+//! is user-visible on the in-game credits screen (`states::credits`),
+//! which embeds `game/assets/music/ATTRIBUTION.txt` at compile time.
 //!
 //! Each state spawns its own track `OnEnter` and despawns it `OnExit`,
 //! mirroring the existing per-state UI teardown convention (see
@@ -28,7 +30,14 @@ impl Plugin for MusicPlugin {
             .add_systems(OnEnter(GameState::OutageActive), play_outage_track)
             .add_systems(OnExit(GameState::OutageActive), stop_music)
             .add_systems(OnEnter(GameState::Results), play_results_track)
-            .add_systems(OnExit(GameState::Results), stop_music);
+            .add_systems(OnExit(GameState::Results), stop_music)
+            // The credits screen keeps the menu track playing across the
+            // MainMenu -> Credits hop: OnExit(MainMenu) stops it, this
+            // OnEnter restarts it, OnExit(Credits) stops it on the way
+            // back — the same spawn-on-enter/despawn-on-exit contract as
+            // every other state above.
+            .add_systems(OnEnter(GameState::Credits), play_menu_track)
+            .add_systems(OnExit(GameState::Credits), stop_music);
     }
 }
 

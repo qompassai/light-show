@@ -96,6 +96,9 @@ pub struct LevelClock {
 // mutate; splitting it up would just move the same resource list into an
 // artificial bag type for no clarity gain (see `board::handle_pointer_input`
 // for the same tradeoff).
+#[derive(Component)]
+struct PlayingCamera;
+
 #[allow(clippy::too_many_arguments)]
 fn setup_level(
     mut commands: Commands,
@@ -107,7 +110,23 @@ fn setup_level(
     asset_server: Res<AssetServer>,
     dialogue: Res<DialogueBank>,
     mut companions: Query<&mut crate::waifu::CompanionSprite>,
+    cameras: Query<Entity, With<Camera>>,
 ) {
+    // Dedicated board camera: the MainMenu camera persists
+    // across the transition but does not frame world-space
+    // content correctly on Android (verified 2026-09-30).
+    for entity in &cameras {
+        commands.entity(entity).despawn_recursive();
+    }
+    // Board nodes sit around y=300 in world space; center the camera
+    // there so the board clears the briefing text at the top.
+    commands.spawn((
+        PlayingCamera,
+        Camera2dBundle {
+            transform: Transform::from_xyz(0.0, 200.0, 0.0),
+            ..default()
+        },
+    ));
     let level_def = level::load_level(index.0);
 
     placed.0.clear();
