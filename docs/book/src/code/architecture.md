@@ -1,6 +1,6 @@
 # Architecture
 
-## ELI5
+## In plain terms
 
 The game is two crates with a clean split: **`osp_sim`** is the
 physics textbook — pure math about light and loss, no graphics, no

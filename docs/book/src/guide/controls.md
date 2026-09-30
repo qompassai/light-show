@@ -1,6 +1,6 @@
 # Controls
 
-## ELI5
+## In plain terms
 
 There is no keyboard control at all — no arrow keys, no shortcuts, no
 text entry. You play with a mouse or a finger. Every control in the game

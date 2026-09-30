@@ -1,6 +1,6 @@
 # Settings
 
-## ELI5
+## In plain terms
 
 The game has no settings screen. There is no volume slider, no
 mute button, no graphics quality toggle, no difficulty selector. The

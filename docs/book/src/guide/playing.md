@@ -1,6 +1,6 @@
 # Playing the Game
 
-## ELI5: the loop
+## In plain terms: the loop
 
 **Menu → pick your companion → Start → route the light → land in the
 window (or survive the outage) → results screen → next level.**

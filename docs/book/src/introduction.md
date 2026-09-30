@@ -13,7 +13,7 @@ Route light from the OLT (Point A) to the customer's ONT (Point B), and
 land your received power inside the target window — while outages strike
 and the clock runs.
 
-## ELI5: what you actually do
+## In plain terms: what you actually do
 
 Think of it like connecting the dots, but every line you draw is a real
 fiber-optic component with a real cost. Light leaves the transmitter at
