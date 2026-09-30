@@ -36,6 +36,35 @@ splices, outages, and level results in her own voice.
 Full character briefs, palettes, and mood-sheet specs live in
 [`docs/ART_STYLE.md`](docs/ART_STYLE.md).
 
+## Gameplay
+
+Real captures from the desktop build (scripted input driving the actual
+game under Xvfb — no mockups). MP4 versions alongside each GIF.
+
+![Level 1: drag to splice, tap a pill to pick the component](docs/gameplay/light-show-level1.gif)
+
+**World 1 – First Light.** Drag from the splice enclosure to the ONT to
+place the default fusion splice, then tap a component pill to switch to
+the mechanical splice. The ledger at the bottom recomputes the live
+link budget on every change: loss, received power, and where it lands
+against the GPON receive window.
+
+![Storm Season: outage fires, reroute over the protection path](docs/gameplay/light-show-outage.gif)
+
+**World 4 – Storm Season.** The aerial route goes up first; 20 seconds
+in, the scripted storm outage cuts it and the repair banner starts its
+countdown. Dragging from the protection-route splice to the ONT brings
+the backup path live.
+
+Two honest caveats. First, the outage clip was captured with a
+temporary build that starts at level 2 — level select doesn't exist yet,
+and level 2 is only reachable through the results screen. Second, as
+shipped, neither bundled level's link budget can actually land inside
+the receive window (level 1's best case is Rx 0.36 dBm against a −8 dBm
+window ceiling), so these clips show real play up to the win check, not
+a victory. The level numbers need a balance pass before the win path is
+reachable.
+
 ## Project layout
 
 ```
