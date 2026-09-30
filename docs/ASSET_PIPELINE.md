@@ -1,16 +1,23 @@
 # Asset pipeline: generation, source formats, and external tools
 
-Light Show's shipped art and audio are all procedurally generated from
-small, reviewable scripts rather than hand-authored binary assets with
-no reproducible source — this keeps the whole pipeline auditable and
-license-clean (see `CREDITS.md`), and means every asset can be
-regenerated or tuned by editing a script instead of a lost source file.
+Light Show's shipped art is procedurally generated from small, reviewable
+scripts rather than hand-authored binary assets with no reproducible
+source — this keeps the whole pipeline auditable and license-clean (see
+`CREDITS.md`), and means every asset can be regenerated or tuned by
+editing a script instead of a lost source file. Music is licensed
+third-party audio (see `docs/CREDITS.md` and
+`game/assets/music/CREDITS.md`), not generated.
 
 | Asset class | Generator | Ships to | Editable source for further iteration |
 |---|---|---|---|
 | Companion sprite sheets, profile stills, animated GIFs | `tools/gen_companion_art.py` | `game/assets/sprites/*/`, `assets/art/companions/` | `art/aseprite/*_sheet.png` + `art/aseprite/import_sheet.lua` (slices into tagged `.aseprite` docs) |
 | OSP component icons | `tools/gen_placeholder_art.py` | `game/assets/sprites/components/*.png` | `art/aseprite/component_icons/*.png` (single-frame, open directly in Aseprite) |
-| Chiptune music (menu/playing/outage loops, win/fail jingles) | `tools/gen_chiptune_music.py` | `game/assets/audio/*.ogg` | Regenerate by editing the note-event `Channel` lists in the script itself — see its module docstring for the NES-2A03-inspired 4-channel model (2 pulse + 1 triangle + 1 noise) |
+| Chiptune music (menu/playing/outage loops, win/fail jingles) | `tools/gen_chiptune_music.py` | *(retired — no longer shipped; see below)* | Regenerate by editing the note-event `Channel` lists in the script itself — see its module docstring for the NES-2A03-inspired 4-channel model (2 pulse + 1 triangle + 1 noise) |
+
+The chiptune set (`game/assets/audio/*.ogg`) was retired when the 12
+licensed tracks landed under `game/assets/music/` — `tools/gen_chiptune_music.py`
+is kept as a compositional sketchpad only, and its outputs are not
+shipped.
 
 Regenerating any of these is a plain `python3 tools/<script>.py` run
 (numpy + Pillow + ffmpeg on PATH for the music script; Pillow alone for
@@ -42,8 +49,7 @@ Both external-tool workflows are fully scaffolded under `art/`:
    frames as PNG) back to the same dimensions documented in
    `docs/ART_STYLE.md` (256×384 for companion sheets, 64×64 for
    component icons).
-2. Overwrite the corresponding file under `game/assets/sprites/...` (or
-   `game/assets/audio/...` for music re-exported from a DAW).
+2. Overwrite the corresponding file under `game/assets/sprites/...`.
 3. Run `cargo test --workspace` — several tests exist specifically to
    catch broken asset wiring before it reaches a device build:
    `board::tests::every_component_icon_path_actually_exists_under_game_assets`,
