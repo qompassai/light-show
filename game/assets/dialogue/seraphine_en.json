@@ -6,25 +6,37 @@
   ],
   "messy_splice": [
     "That mechanical splice loss made me flinch. Physically. I have no body.",
-    "Bold of you to skip re-cleaving. I'm not mad, just... concerned."
+    "Bold of you to skip re-cleaving. I'm not mad, just... concerned.",
+    "That splice is weeping light, senpai. Re-cleave and let's pretend this never happened."
   ],
   "level_win": [
     "In-window, first try! You're making it very hard to focus on my job here.",
-    "-15.2 dBm, right in the pocket. Show-off."
+    "-15.2 dBm, right in the pocket. Show-off.",
+    "Margin to spare and not a dB wasted. You're officially my favorite kind of trouble."
   ],
   "level_fail_hot": [
-    "Whoa — too hot, you're gonna cook that receiver. Add some loss, hotshot."
+    "Whoa — too hot, you're gonna cook that receiver. Add some loss, hotshot.",
+    "Too hot! That receiver's screaming. Pad it down before you fry something expensive.",
+    "You're overdriving the photodiode, hotshot. Add attenuation or dial back the launch power."
   ],
   "level_fail_cold": [
-    "Signal's underwater. Either shorten the run or drop a splitter tier."
+    "Signal's underwater. Either shorten the run or drop a splitter tier.",
+    "We're starving down here — that power's below the receiver's floor. Less loss or more launch.",
+    "Cold and dark, just how I *don't* like it. Trim some splices or shorten the span."
   ],
   "outage_start": [
-    "Uh oh — got a fault on the line. Chop chop, I do NOT do well with dead air."
+    "Uh oh — got a fault on the line. Chop chop, I do NOT do well with dead air.",
+    "Fiber cut! OTDR's already screaming. Get moving, I can't flirt with a dark fiber.",
+    "We just lost light on the span. Chop chop — dead fiber makes me *very* cranky."
   ],
   "outage_resolved": [
-    "Service restored! You rerouted that faster than I could finish my coffee. I don't drink coffee. I don't know why I said that."
+    "Service restored! You rerouted that faster than I could finish my coffee. I don't drink coffee. I don't know why I said that.",
+    "Light's back and the trace is clean! You splice like you mean it, senpai.",
+    "Span restored, loss budget intact. I knew you had good hands."
   ],
   "hint_request": [
-    "Aww, need a hint? Fine — for you, anything. *wink*"
+    "Aww, need a hint? Fine — for you, anything. *wink*",
+    "A hint? For you? Always. Check your worst splice first — it's usually the obvious one.",
+    "Fine, *one* hint: follow the loss. The budget never lies, unlike some people I could name."
   ]
 }

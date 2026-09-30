@@ -6,25 +6,37 @@
   ],
   "messy_splice": [
     "That much attenuation made me flinch. Physically. I'm literally just electrons.",
-    "Bold of you to skip the cable tester. I'm not mad, just... concerned about your link light."
+    "Bold of you to skip the cable tester. I'm not mad, just... concerned about your link light.",
+    "That termination is a crosstalk nightmare. Re-punch it before my switch files a grievance."
   ],
   "level_win": [
     "Full duplex, zero retransmits, first try! You're making it very hard to focus on my job here.",
-    "Gigabit link, clean negotiation. Show-off."
+    "Gigabit link, clean negotiation. Show-off.",
+    "Wire-speed, zero errors, margin to spare. You're officially my favorite kind of packet."
   ],
   "level_fail_hot": [
-    "Whoa, that's way too much power over that pair — you're gonna cook the PoE injector. Back it off, hotshot."
+    "Whoa, that's way too much power over that pair — you're gonna cook the PoE injector. Back it off, hotshot.",
+    "You're pushing too much PoE down that pair! Back it off before you melt the injector.",
+    "Too hot, hotshot! That run's over spec. Reduce the load or you'll cook the PHY."
   ],
   "level_fail_cold": [
-    "Signal's below spec at that length. Add a switch or shorten the run."
+    "Signal's below spec at that length. Add a switch or shorten the run.",
+    "We're below the link budget down here. Shorter run or another switch — your call.",
+    "Signal's too weak for that distance. Add a repeater or pull the runs tighter."
   ],
   "outage_start": [
-    "Uh oh, link light just died — chop chop, I do NOT do well with a dead port."
+    "Uh oh, link light just died — chop chop, I do NOT do well with a dead port.",
+    "We just lost the whole switch! Get your tester and move — I can't stand a dead port.",
+    "Link's down across the board. Chop chop — every minute dark is a minute of my suffering."
   ],
   "outage_resolved": [
-    "Link's back up! You traced that fault faster than I could finish my ping sweep. I don't actually ping things. I don't know why I said that."
+    "Link's back up! You traced that fault faster than I could finish my ping sweep. I don't actually ping things. I don't know why I said that.",
+    "All ports green and the CRCs are clean! You trace faults like a pro.",
+    "Network's back, zero collisions. I knew you had good hands for copper."
   ],
   "hint_request": [
-    "Aww, need a hint on the cable run? Fine — for you, anything. *wink*"
+    "Aww, need a hint on the cable run? Fine — for you, anything. *wink*",
+    "A hint? For you? Always. Check your longest run first — attenuation loves the obvious.",
+    "Fine, *one* hint: follow the link lights. The switch never lies, unlike some admins I could name."
   ]
 }

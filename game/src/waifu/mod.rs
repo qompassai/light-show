@@ -137,14 +137,15 @@ impl Companion {
         }
     }
 
-    /// Sprite-sheet asset path — same 6-mood-row × 4-frame 64×64 layout
-    /// convention for every companion (see `docs/ART_STYLE.md`).
+    /// Sprite-sheet asset path — same 6-mood-row × 4-frame 96×192
+    /// full-body layout convention for every companion (see
+    /// `docs/ART_STYLE.md`).
     pub fn sprite_path(&self) -> &'static str {
         match self {
-            Companion::Fiber => "sprites/seraphine/seraphine_sheet.png",
-            Companion::Coax => "sprites/ondine/ondine_sheet.png",
-            Companion::Mobile => "sprites/linka/linka_sheet.png",
-            Companion::Ethernet => "sprites/lattice/lattice_sheet.png",
+            Companion::Fiber => "sprites/seraphine/seraphine_sheet_fullbody.png",
+            Companion::Coax => "sprites/ondine/ondine_sheet_fullbody.png",
+            Companion::Mobile => "sprites/linka/linka_sheet_fullbody.png",
+            Companion::Ethernet => "sprites/lattice/lattice_sheet_fullbody.png",
         }
     }
 }
@@ -168,7 +169,7 @@ pub enum Mood {
 }
 
 impl Mood {
-    /// 64x64 sprite-sheet row index for this mood (see each companion's
+    /// 96x192 sprite-sheet row index for this mood (see each companion's
     /// sprite sheet layout in docs/ART_STYLE.md — identical for all four).
     pub fn sheet_row(&self) -> usize {
         match self {
@@ -199,7 +200,7 @@ fn companion_bundle(
         },
         SpriteBundle {
             texture,
-            transform: Transform::from_xyz(0.0, -400.0, 10.0).with_scale(Vec3::splat(4.0)),
+            transform: Transform::from_xyz(0.0, -240.0, 10.0).with_scale(Vec3::splat(3.0)),
             ..default()
         },
         TextureAtlas {

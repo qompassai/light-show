@@ -6,25 +6,37 @@
   ],
   "messy_splice": [
     "That much path loss made me flinch. Physically. I'm literally just radio waves.",
-    "Bold of you to skip the site survey. I'm not mad, just... concerned about your SINR."
+    "Bold of you to skip the site survey. I'm not mad, just... concerned about your SINR.",
+    "That handoff dropped harder than my last call. Re-tune it before my SINR cries."
   ],
   "level_win": [
     "In-window on the first try! You're making it very hard to focus on my job here.",
-    "Five bars, no jitter. Show-off."
+    "Five bars, no jitter. Show-off.",
+    "Zero drops, full bars, margin to spare. You're officially my favorite kind of handoff."
   ],
   "level_fail_hot": [
-    "Whoa, you're overdriving that PA — you're gonna desense the receiver. Back it off, hotshot."
+    "Whoa, you're overdriving that PA — you're gonna desense the receiver. Back it off, hotshot.",
+    "You're blasting the PA into saturation! Back off the power before you desense everything.",
+    "Too hot, hotshot! That uplink's screaming. Reduce gain or you'll cook the front end."
   ],
   "level_fail_cold": [
-    "Signal's in the noise floor. Add gain or move closer to the tower."
+    "Signal's in the noise floor. Add gain or move closer to the tower.",
+    "We're in a dead zone down here. More gain, better antenna, or move the site — pick one.",
+    "Signal's barely a whisper. Add a repeater or get closer — I can't work with static."
   ],
   "outage_start": [
-    "Uh oh, we dropped to zero bars — chop chop, I do NOT do well with dead air."
+    "Uh oh, we dropped to zero bars — chop chop, I do NOT do well with dead air.",
+    "We just dropped the whole sector! Get moving — I can't flirt with zero bars.",
+    "Carrier lost! Chop chop — dead air makes me *very* cranky."
   ],
   "outage_resolved": [
-    "Bars are back! You re-acquired that carrier faster than I could finish my coffee. I don't drink coffee. I don't know why I said that."
+    "Bars are back! You re-acquired that carrier faster than I could finish my coffee. I don't drink coffee. I don't know why I said that.",
+    "Five bars and the handoff's seamless! You re-acquire like a pro.",
+    "Sector's back, SINR's gorgeous. I knew you had good instincts for RF."
   ],
   "hint_request": [
-    "Aww, need a hint on the link budget? Fine — for you, anything. *wink*"
+    "Aww, need a hint on the link budget? Fine — for you, anything. *wink*",
+    "A hint? For you? Always. Check your weakest link first — it's usually the obvious one.",
+    "Fine, *one* hint: follow the RSRP. The measurements never lie, unlike some engineers I could name."
   ]
 }

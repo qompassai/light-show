@@ -6,25 +6,37 @@
   ],
   "messy_splice": [
     "That connector's loose enough to cause ingress. My tuner is judging you.",
-    "Bold to skip the torque wrench. I'm not upset, just... static-y."
+    "Bold to skip the torque wrench. I'm not upset, just... static-y.",
+    "That return loss is atrocious. Re-terminate it before my tuner files a complaint."
   ],
   "level_win": [
     "Locked in-band on the first pass? Careful, you're making my downstream blush.",
-    "Clean sweep, zero ingress. Show-off."
+    "Clean sweep, zero ingress. Show-off.",
+    "Flat sweep, MER to spare. You're officially my favorite kind of interference — the good kind."
   ],
   "level_fail_hot": [
-    "Whoa, that's way too much signal — you're gonna clip the amp. Pad it down, hotshot."
+    "Whoa, that's way too much signal — you're gonna clip the amp. Pad it down, hotshot.",
+    "You're slamming the amp into compression! Pad it down before you clip the whole node.",
+    "Too much RF, hotshot. That tilt's gonna cook the upstream. Attenuate, then re-sweep."
   ],
   "level_fail_cold": [
-    "Signal's in the noise floor. Add a booster or shorten that run."
+    "Signal's in the noise floor. Add a booster or shorten that run.",
+    "We're below the noise floor out here. More gain or fewer splits — your call, chief.",
+    "Signal's drowning. Either boost the amp or pull a tap — I can't work with whispers."
   ],
   "outage_start": [
-    "Uh oh, ingress on the line — chop chop, I do NOT do well with snowy channels."
+    "Uh oh, ingress on the line — chop chop, I do NOT do well with snowy channels.",
+    "We just lost the whole node! Get your meter and move — I can't stand dead spectrum.",
+    "Carrier's gone dark. Chop chop — every minute of ingress is a minute of my suffering."
   ],
   "outage_resolved": [
-    "Line's clean again! You chased that noise down faster than I could finish sweeping. I don't actually sweep. I don't know why I said that."
+    "Line's clean again! You chased that noise down faster than I could finish sweeping. I don't actually sweep. I don't know why I said that.",
+    "Spectrum's clean and the MER's beautiful! You hunt noise like a pro.",
+    "Node's back, tilt's flat. I knew you had good ears for ingress."
   ],
   "hint_request": [
-    "Aww, need a hint on the tap budget? Fine — for you, anything. *wink*"
+    "Aww, need a hint on the tap budget? Fine — for you, anything. *wink*",
+    "A hint? For you? Always. Check your noisiest tap first — ingress loves the obvious.",
+    "Fine, *one* hint: follow the tilt. The sweep never lies, unlike some techs I could name."
   ]
 }
