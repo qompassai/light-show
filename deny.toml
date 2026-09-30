@@ -1,0 +1,77 @@
+# deny.toml — cargo-deny configuration for light-show (qompassai/light-show)
+#
+# Run: `cargo deny check` from the repo root (cargo-deny 0.20.2 on primo:
+# /usr/bin/cargo-deny). Also wired into Matt's Neovim toolchain via the
+# `rust-development` skill.
+#
+# Policy: this is a GPL-3.0-or-later game. In cargo-deny >= 0.18.4 every
+# license is denied unless explicitly allowed, so the `allow` list IS the
+# policy: permissive licenses plus the GPL-3.0 family (compatible with the
+# project's own license). AGPL and the GPL-2.0 family are denied by
+# omission (network-copyleft and license-compatibility risk).
+
+[graph]
+# The project's real build matrix: desktop Linux plus the three Android
+# ABIs shipped in the AAB. Target-specific dependencies for all of these
+# get license/advisory/ban checks.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-linux-android",
+    "armv7-linux-androideabi",
+    "x86_64-linux-android",
+]
+
+[licenses]
+unused-allowed-license = "warn"
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "Zlib",
+    # GPL-3.0-family is license-compatible with this GPL-3.0-or-later
+    # project; kept as explicit allow entries (not blanket copyleft)
+    # so any new copyleft dependency stays a conscious decision.
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later",
+]
+private = { ignore = true }
+
+[bans]
+# More than one version of the same crate in the tree bloats the APK;
+# warn so it stays visible without blocking the check.
+multiple-versions = "warn"
+# Wildcard version requirements make builds unreproducible.
+wildcards = "deny"
+highlight = "all"
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+# A yanked crate version must never ship in a store build.
+yanked = "deny"
+# Unmaintained-crate advisories fail the check for any crate in the tree.
+unmaintained = "all"
+ignore = [
+    # RUSTSEC-2026-0192: ttf-parser is unmaintained. Transitive via
+    # bevy 0.14 (bevy_text -> ab_glyph -> owned_ttf_parser); the advisory
+    # itself states no safe upgrade is available. Revisit on the bevy
+    # 0.15+ upgrade, which is expected to move off ab_glyph.
+    { id = "RUSTSEC-2026-0192", reason = "transitive via bevy 0.14 ab_glyph; no safe upgrade per advisory; revisit on bevy upgrade" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

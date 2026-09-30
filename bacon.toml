@@ -1,0 +1,59 @@
+# bacon.toml — light-show (qompassai/light-show)
+#
+# Bacon job definitions for the Light Show Bevy game. Matt's Neovim setup
+# (diver `lsp/bacon_ls.lua`) runs `bacon --headless -j bacon-ls` in the
+# background; bacon-ls then reads the `.bacon-locations` export file this
+# produces and publishes the diagnostics as LSP diagnostics.
+#
+# Jobs:
+#   check   — fast type check of the whole workspace (default `bacon` run)
+#   clippy  — the project's real gate: clippy on all targets, warnings denied
+#   test    — full workspace test suite
+#   bacon-ls — JSON-diagnostics job consumed by bacon-ls (see exports below)
+#
+# Run manually: `bacon` (default job), `bacon clippy`, `bacon test`,
+# `bacon --list-jobs` to verify this file parses.
+
+default_job = "clippy"
+
+[jobs.check]
+command = ["cargo", "check", "--workspace", "--all-targets", "--color", "always"]
+need_stdout = false
+
+[jobs.clippy]
+# Mirrors the project's zero-warning gate exactly: warnings are denied.
+command = [
+    "cargo", "clippy",
+    "--workspace", "--all-targets", "--color", "always",
+    "--", "-D", "warnings",
+]
+need_stdout = false
+
+[jobs.test]
+command = ["cargo", "test", "--workspace", "--color", "always"]
+need_stdout = false
+
+[jobs.bacon-ls]
+# Job definition expected by bacon-ls's bacon backend (see
+# https://github.com/crisidev/bacon-ls "Bacon backend options").
+# `--all-features` so diagnostics also cover the
+# `instrumented-test-logging` feature used for on-device test logging.
+command = [
+    "cargo", "clippy",
+    "--workspace", "--all-targets", "--all-features",
+    "--message-format", "json-diagnostic-rendered-ansi",
+]
+analyzer = "cargo_json"
+need_stdout = true
+
+[exports.cargo-json-spans]
+# Export format bacon-ls parses into LSP diagnostics. Written to
+# `.bacon-locations` (gitignored) at the repo root on every run.
+auto = true
+exporter = "analyzer"
+line_format = """\
+  {diagnostic.level}|:|{span.file_name}|:|{span.line_start}|:|{span.line_end}|:\
+  {span.column_start}|:|{span.column_end}|:|{diagnostic.message}|:|{diagnostic.rendered}|:|\
+  {span.suggested_replacement}\
+  """
+path = ".bacon-locations"
