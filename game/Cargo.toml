@@ -79,6 +79,7 @@ instrumented-test-logging = ["dep:log", "dep:android_logger"]
 
 [package.metadata.android]
 package = "ai.qompass.lightshow"
+assets = "assets"
 apk_label = "Light Show"
 target_sdk_version = 34
 min_sdk_version = 26
@@ -87,7 +88,6 @@ opengles_version = [3, 0]
 
 [package.metadata.android.application]
 label = "Light Show"
-icon = "@mipmap/ic_launcher"
 
 [[package.metadata.android.uses_feature]]
 name = "android.hardware.touchscreen"

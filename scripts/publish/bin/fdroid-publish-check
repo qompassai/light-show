@@ -1,0 +1,332 @@
+#!/usr/bin/env python3
+"""fdroid-publish-check: deterministic upstream gates for an F-Droid submission.
+
+Checks the app's own source repo for everything F-Droid reviewers require
+*before* the fdroiddata recipe is written: license, fastlane metadata tree,
+release tags, non-free dependency scan, and version literals.
+
+Usage:
+    fdroid-publish-check --repo PATH --appid com.example.app --vercode 42
+
+Exit 0 only when every gate passes. Prints one line per gate: PASS/FAIL/WARN.
+Part of the fdroid-publish skill.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import struct
+import subprocess
+import sys
+
+MAX_READ_BYTES = 1 << 20  # 1 MiB: enough for any metadata text file
+MAX_SCAN_BYTES = 8 << 20  # 8 MiB: enough for any gradle build file
+MAX_GREP_FILES = 200  # bound on files scanned for non-free markers
+GIT_TIMEOUT_S = 30
+
+TITLE_MAX = 50
+SHORT_DESC_MAX = 80
+FULL_DESC_MAX = 4000
+CHANGELOG_MAX = 500
+ICON_SIZE_PX = 512
+IMG_MIN_PX = 320
+IMG_MAX_PX = 3840
+
+NONFREE_MARKERS = (
+    "google-services.json",
+    "com.google.firebase",
+    "com.google.android.gms",
+    "com.android.vending",
+)
+
+
+class CheckError(Exception):
+    """A gate could not be evaluated (distinct from a gate failing)."""
+
+
+def _read_text(path: str, limit: int = MAX_READ_BYTES) -> str:
+    """Read a text file, bounded. Raises CheckError on I/O or decode failure."""
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read(limit + 1)
+    except OSError as exc:
+        raise CheckError("cannot read %s: %s" % (path, exc)) from exc
+    if len(raw) > limit:
+        raise CheckError("%s exceeds %d bytes" % (path, limit))
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise CheckError("%s is not UTF-8: %s" % (path, exc)) from exc
+
+
+def _png_dimensions(path: str) -> tuple[int, int]:
+    """Return (width, height) of a PNG via its IHDR chunk. Raises CheckError."""
+    try:
+        with open(path, "rb") as fh:
+            header = fh.read(26)
+    except OSError as exc:
+        raise CheckError("cannot read %s: %s" % (path, exc)) from exc
+    if len(header) < 26 or header[:8] != b"\x89PNG\r\n\x1a\n":
+        raise CheckError("%s is not a PNG" % path)
+    width, height = struct.unpack(">II", header[16:24])
+    return width, height
+
+
+def _jpeg_dimensions(path: str) -> tuple[int, int]:
+    """Return (width, height) of a JPEG by scanning for the SOF marker."""
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read(MAX_SCAN_BYTES)
+    except OSError as exc:
+        raise CheckError("cannot read %s: %s" % (path, exc)) from exc
+    if data[:2] != b"\xff\xd8":
+        raise CheckError("%s is not a JPEG" % path)
+    pos = 2
+    end = len(data)
+    while pos + 4 < end:
+        if data[pos] != 0xFF:
+            pos += 1
+            continue
+        marker = data[pos + 1]
+        if marker == 0xD8 or (0xD0 <= marker <= 0xD9):
+            pos += 2
+            continue
+        if 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+            height, width = struct.unpack(">HH", data[pos + 5 : pos + 9])
+            return width, height
+        seg_len = struct.unpack(">H", data[pos + 2 : pos + 4])[0]
+        if seg_len < 2:
+            break
+        pos += 2 + seg_len
+    raise CheckError("%s: no SOF marker found" % path)
+
+
+def _image_dimensions(path: str) -> tuple[int, int]:
+    ext = os.path.splitext(path)[1].lower()
+    if ext == ".png":
+        return _png_dimensions(path)
+    if ext in (".jpg", ".jpeg"):
+        return _jpeg_dimensions(path)
+    raise CheckError("%s: unsupported image extension %r" % (path, ext))
+
+
+def _fastlane_dir(repo: str) -> str | None:
+    """First existing fastlane/Triple-T metadata root, else None."""
+    candidates = (
+        os.path.join(repo, "fastlane", "metadata", "android"),
+        os.path.join(repo, "metadata"),
+    )
+    for cand in candidates:
+        if os.path.isdir(cand):
+            return cand
+    return None
+
+
+def _gate_license(repo: str) -> tuple[str, str]:
+    for name in ("LICENSE", "COPYING", "LICENSE.txt", "LICENSE.md", "COPYING.md"):
+        if os.path.isfile(os.path.join(repo, name)):
+            return "PASS", "license file %s present" % name
+    return "FAIL", "no LICENSE/COPYING file in repo root"
+
+
+def _gate_fastlane(repo: str, vercode: int) -> tuple[str, str]:
+    base = _fastlane_dir(repo)
+    if base is None:
+        return "FAIL", "no fastlane/metadata/android/ or metadata/ tree"
+    locale = os.path.join(base, "en-US")
+    problems: list[str] = []
+    warnings: list[str] = []
+
+    def need(rel: str, max_chars: int | None, single_line: bool = False) -> str | None:
+        path = os.path.join(locale, rel)
+        if not os.path.isfile(path):
+            problems.append("missing %s" % rel)
+            return None
+        try:
+            text = _read_text(path)
+        except CheckError as exc:
+            problems.append(str(exc))
+            return None
+        stripped = text.strip()
+        if max_chars is not None and len(stripped) > max_chars:
+            problems.append("%s is %d chars (max %d)" % (rel, len(stripped), max_chars))
+        if single_line and "\n" in stripped:
+            problems.append("%s must be a single line" % rel)
+        return stripped
+
+    title = need("title.txt", TITLE_MAX)
+    if title is not None and not title:
+        problems.append("title.txt is empty")
+    short = need("short_description.txt", SHORT_DESC_MAX, single_line=True)
+    if short is not None:
+        if short.endswith("."):
+            warnings.append("short_description.txt ends with a dot")
+        if not short:
+            problems.append("short_description.txt is empty")
+    full = need("full_description.txt", FULL_DESC_MAX)
+    if full is not None and not full:
+        problems.append("full_description.txt is empty")
+
+    icon = os.path.join(locale, "images", "icon.png")
+    if not os.path.isfile(icon):
+        problems.append("missing images/icon.png")
+    else:
+        try:
+            w, h = _image_dimensions(icon)
+            if (w, h) != (ICON_SIZE_PX, ICON_SIZE_PX):
+                problems.append("icon.png is %dx%d (want 512x512)" % (w, h))
+        except CheckError as exc:
+            problems.append(str(exc))
+
+    shots_dir = os.path.join(locale, "images", "phoneScreenshots")
+    shots: list[str] = []
+    if os.path.isdir(shots_dir):
+        shots = sorted(
+            f
+            for f in os.listdir(shots_dir)
+            if os.path.splitext(f)[1].lower() in (".png", ".jpg", ".jpeg")
+        )[:50]
+    if not shots:
+        warnings.append("no phoneScreenshots (strongly recommended)")
+    for shot in shots:
+        try:
+            w, h = _image_dimensions(os.path.join(shots_dir, shot))
+        except CheckError as exc:
+            problems.append(str(exc))
+            continue
+        if not (IMG_MIN_PX <= w <= IMG_MAX_PX and IMG_MIN_PX <= h <= IMG_MAX_PX):
+            problems.append("screenshot %s is %dx%d (want 320-3840px)" % (shot, w, h))
+        ratio = w / h
+        if not (0.5 <= ratio <= 2.0):
+            problems.append("screenshot %s aspect %.2f outside 1:2..2:1" % (shot, ratio))
+
+    changelog = os.path.join(locale, "changelogs", "%d.txt" % vercode)
+    if not os.path.isfile(changelog):
+        problems.append("missing changelogs/%d.txt (named by versionCode)" % vercode)
+    else:
+        try:
+            text = _read_text(changelog)
+            if len(text.strip()) > CHANGELOG_MAX:
+                problems.append("changelog exceeds %d chars" % CHANGELOG_MAX)
+        except CheckError as exc:
+            problems.append(str(exc))
+
+    detail = "; ".join(problems + warnings) if (problems or warnings) else "tree complete"
+    if problems:
+        return "FAIL", detail
+    if warnings:
+        return "WARN", detail
+    return "PASS", detail
+
+
+def _gate_tags(repo: str) -> tuple[str, str]:
+    try:
+        proc = subprocess.run(
+            ["git", "tag", "--list"],
+            cwd=repo,
+            capture_output=True,
+            timeout=GIT_TIMEOUT_S,
+            text=True,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "FAIL", "git tag failed: %s" % exc
+    tags = [t for t in proc.stdout.splitlines() if t.strip()]
+    if proc.returncode != 0:
+        return "FAIL", "git tag failed: %s" % proc.stderr.strip()[:200]
+    if not tags:
+        return "FAIL", "no git tags; every release commit needs a tag"
+    return "PASS", "%d tags (e.g. %s)" % (len(tags), tags[-1])
+
+
+def _gate_nonfree(repo: str) -> tuple[str, str]:
+    hits: list[str] = []
+    checked = 0
+    for root, dirs, files in os.walk(repo):
+        dirs[:] = [d for d in dirs if d not in (".git", "build", ".gradle")]
+        for fname in files:
+            if checked >= MAX_GREP_FILES:
+                break
+            if not fname.endswith((".gradle", ".gradle.kts", ".json", ".xml", ".toml")):
+                continue
+            if fname == "google-services.json":
+                hits.append(os.path.join(root, fname))
+                continue
+            checked += 1
+            path = os.path.join(root, fname)
+            try:
+                with open(path, "rb") as fh:
+                    blob = fh.read(MAX_SCAN_BYTES)
+            except OSError:
+                continue
+            low = blob.lower()
+            for marker in NONFREE_MARKERS[1:]:
+                if marker.encode() in low:
+                    hits.append("%s: %s" % (path, marker))
+                    break
+        if checked >= MAX_GREP_FILES:
+            break
+    if hits:
+        return "FAIL", "non-free markers: " + "; ".join(hits[:5])
+    return "PASS", "no Firebase/GMS markers in %d build files" % checked
+
+
+def _gate_version_literals(repo: str) -> tuple[str, str]:
+    cands = [
+        os.path.join(repo, "app", "build.gradle"),
+        os.path.join(repo, "app", "build.gradle.kts"),
+    ]
+    path = next((p for p in cands if os.path.isfile(p)), None)
+    if path is None:
+        return "WARN", "no app/build.gradle(.kts); cannot check version literals"
+    try:
+        text = _read_text(path, MAX_SCAN_BYTES)
+    except CheckError as exc:
+        return "FAIL", str(exc)
+    import re
+
+    vc = re.search(r"versionCode\s*[= ]\s*(\S+)", text)
+    vn = re.search(r'versionName\s*[= ]\s*["\']?([^"\'\s]+)', text)
+    if not vc or not vn:
+        return "WARN", "versionCode/versionName not found as literals"
+    if not vc.group(1).isdigit():
+        return "FAIL", "versionCode is computed (%s); F-Droid needs a literal" % vc.group(1)
+    return "PASS", "versionCode=%s versionName=%s as literals" % (vc.group(1), vn.group(1))
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", required=True, help="path to the app source repo")
+    parser.add_argument("--appid", required=True, help="applicationId (for context only)")
+    parser.add_argument("--vercode", required=True, type=int, help="versionCode to check changelog for")
+    args = parser.parse_args(argv)
+
+    repo = os.path.abspath(args.repo)
+    if not os.path.isdir(repo):
+        print("FAIL repo: not a directory: %s" % repo)
+        return 1
+    if args.vercode <= 0:
+        print("FAIL vercode: must be positive")
+        return 1
+
+    gates = [
+        ("license", lambda: _gate_license(repo)),
+        ("fastlane", lambda: _gate_fastlane(repo, args.vercode)),
+        ("tags", lambda: _gate_tags(repo)),
+        ("nonfree", lambda: _gate_nonfree(repo)),
+        ("versions", lambda: _gate_version_literals(repo)),
+    ]
+    worst = 0  # 0 pass, 1 warn, 2 fail
+    for name, run in gates:
+        try:
+            status, detail = run()
+        except CheckError as exc:
+            status, detail = "FAIL", str(exc)
+        print("%s %s: %s" % (status, name, detail))
+        worst = max(worst, {"PASS": 0, "WARN": 1, "FAIL": 2}[status])
+    print("appid %s: %s" % (args.appid, "READY" if worst == 0 else "NOT READY"))
+    return 0 if worst == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

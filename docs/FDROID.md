@@ -28,8 +28,7 @@ reference copy). Key requirements this project is designed to satisfy:
 
 ```yaml
 Categories:
-  - Games
-  - Science & Education
+  - Puzzle Game
 License: GPL-3.0-or-later
 SourceCode: https://github.com/qompassai/light-show
 IssueTracker: https://github.com/qompassai/light-show/issues
@@ -40,7 +39,8 @@ Repo: https://github.com/qompassai/light-show.git
 Builds:
   - versionName: '0.1.0'
     versionCode: 1
-    commit: v0.1.0
+    commit: 58c0d47c1fc295285681a16cca043d469ff1eaaa
+    ndk: 30.0.16248370
     subdir: game
     sudo:
       - apt-get update

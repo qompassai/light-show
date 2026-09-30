@@ -1,4 +1,4 @@
-# light-show — TODO for store publication (2026-09-29)
+# light-show — TODO for store publication (updated 2026-09-29)
 
 Goal: Google Play + F-Droid (+ Windows). Repo: `qompassai/light-show`
 (Rust + Bevy fiber-optic puzzle game).
@@ -6,43 +6,49 @@ Goal: Google Play + F-Droid (+ Windows). Repo: `qompassai/light-show`
 Items marked ★ need Matt personally (accounts, keys, console clicks).
 Everything else is doable by agents.
 
-## Game completeness (blocks everything)
+## Game completeness
 
-- [ ] **Decide the fate of PR #1.** The outage-repair loop (fault injection,
-      live reroute under a countdown), win/fail results screen, companion
-      dialogue hookup, 4-channel NES-style chiptune synth, and all 9 OSP
-      component icons live in open PR #1 (~3 weeks old, 67 tests green at PR
-      time). Merge it or supersede it before any new code. `main` currently
-      has soft-locking outage levels and a stub results screen.
-      (Phase-1 audit, 2026-09-30. Matt's order: nothing starts here until
-      ONTrack ships.)
-- [ ] **AI portrait art rights: TBD.** Real blocker before any production
-      release, not paperwork.
+- [x] **PR #1 merged** (2026-09-29, commit `58c0d47`, pushed to main).
+      Outage-repair loop, win/fail results screen, companion dialogue,
+      4-channel chiptune (5 tracks), 9 OSP icons now on main. Histories were
+      disconnected (main was a squash); merged with
+      `--allow-unrelated-histories`, PR side won all 42 conflicts
+      (verified newer/complete). Gates on the merged tree: 67/67 tests
+      green, `cargo build` clean, clippy 0 warnings, `cargo fmt --check`
+      clean.
+- [x] **AI portrait art rights: cleared by Matt** (free images, made on
+      primo). No rights action needed.
 
 ## F-Droid
 
-- [ ] Fix the reference recipe in `docs/FDROID.md`: `commit: v0.1.0` is a
-      tag, not a full 40-char SHA (F-Droid rejects tags), and no `v0.1.0`
-      tag exists anyway. Add the missing `ndk:` line.
-- [ ] fastlane gaps (verified by `fdroid-publish-check`, 2026-09-29):
-      add `images/icon.png` (512×512), add phone screenshots (strongly
-      recommended), remove the trailing dot from `short_description.txt`.
-- [ ] Submit the fdroiddata MR (fork fdroiddata, add the recipe, open the
-      MR, answer reviewer questions).
+- [x] `docs/FDROID.md` recipe fixed: `commit:` is now the full 40-char SHA
+      of the merged main, `ndk: 30.0.16248370` added, category corrected
+      to `Puzzle Game` (was invalid `Games` + `Science & Education`).
+- [x] fastlane: `images/icon.png` (512×512, from the app icon art) added;
+      `short_description.txt` trailing dot removed (72 chars, single line).
+- [ ] Phone screenshots: capturing from the real Android build (in
+      progress on primo — emulator + `adb screencap`). `fdroid-publish-check`
+      currently WARNs on these (strongly recommended, not required).
+- [ ] Submit the fdroiddata MR ★ (fork fdroiddata, add the recipe, open
+      the MR, answer reviewer questions — needs Matt's GitLab account).
 
 ## Google Play
 
-- [ ] Build the signed `.aab` on primo (Android SDK + NDK r30 present;
-      see `docs/BUILD.md`; `android/` Gradle project,
-      `applicationId = "ai.qompass.lightshow"`).
-- [ ] ★ Create the upload keystore + key passwords (MISSING — losing the
-      keystore means a new app listing). Locations:
-      `~/workspace/release-scripts/docs/secrets-inventory.md`.
+- [ ] Build the signed `.aab` (Android APK build in progress on primo;
+      keystore script validated — see below).
+- [x] Upload keystore script: `scripts/publish/tbr-keystore.sh` —
+      `--dry-run` proven end-to-end on primo's JDK 17 (throwaway keystore
+      created, verified, deleted). Real creation is Matt's step ★.
+- [x] F-Droid submit helper: `scripts/publish/tbr-fdroid-submit.sh`
+      (runs the real gate check + prints the MR steps).
+- [x] Play Console checklist: `scripts/publish/tbr-play-console.md`
+      (service-account invite, listing copy, Data Safety, first upload).
 - [ ] ★ Invite the service account (`pass` `google/ontrack-fastlane`,
       already exists, shared with ontrack) as release-manager on the
       light-show app in Play Console.
 - [ ] ★ Play Console: create the app, Data Safety answers, store listing,
-      first manual `.aab` upload.
+      first manual `.aab` upload (checklist in
+      `scripts/publish/tbr-play-console.md`).
 
 ## Windows
 
@@ -51,7 +57,8 @@ Everything else is doable by agents.
 
 ---
 
-Ground truth: `fdroid-publish-check` 2026-09-29 → NOT READY (fastlane);
-Phase-1 audit 2026-09-30. Secrets inventory (names only):
+Ground truth: `fdroid-publish-check` 2026-09-29 on the merged tree →
+license/tags/nonfree PASS, fastlane WARN (screenshots pending).
+Secrets inventory (names only):
 `~/workspace/release-scripts/docs/secrets-inventory.md` — Matt handles
 all keys; agents never generate or touch them.
