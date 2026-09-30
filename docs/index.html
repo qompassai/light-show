@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Light Show — Soundtrack</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 1.25rem 1rem 3rem;
+    background: #0b0e1a; color: #e8ecf8;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    max-width: 44rem; margin-inline: auto;
+  }
+  header { text-align: center; margin-bottom: 1.5rem; }
+  header h1 { margin: 0 0 .25rem; font-size: 1.75rem; letter-spacing: .02em; }
+  header p { margin: 0; color: #9aa3c0; }
+  .tier { margin-top: 1.75rem; }
+  .tier h2 {
+    font-size: .8rem; text-transform: uppercase; letter-spacing: .18em;
+    color: #8f9bd8; margin: 0 0 .6rem;
+    border-bottom: 1px solid #232a4d; padding-bottom: .35rem;
+  }
+  .track {
+    background: #141a30; border: 1px solid #232a4d; border-radius: .75rem;
+    padding: .8rem .9rem; margin-bottom: .6rem;
+  }
+  .track .meta { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; margin-bottom: .5rem; }
+  .track .title { font-weight: 600; }
+  .track .artist { color: #9aa3c0; font-size: .85rem; white-space: nowrap; }
+  .track audio { width: 100%; display: block; }
+  .track .dl { font-size: .8rem; margin-top: .35rem; display: inline-block; color: #8f9bd8; }
+  footer { margin-top: 2.5rem; font-size: .8rem; color: #9aa3c0; line-height: 1.6; }
+  footer h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .18em; color: #8f9bd8; }
+  footer a { color: #b9c2ee; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Light Show — Soundtrack</h1>
+  <p>Every track that ships with the game. Tap play to listen.</p>
+</header>
+<main id="tracks"></main>
+<footer>
+  <h2>Music credits</h2>
+  <p>Music: Eric Skiff — Resistor Anthems — available at http://EricSkiff.com/music (CC BY 4.0).<br>
+  “Exhilarate” (CC BY 4.0) and “In a Heartbeat” (CC BY 3.0) by Kevin MacLeod (incompetech.com).<br>
+  “Basic Metal 5” by TeknoAXE | http://teknoaxe.com — royalty-free music by https://www.free-stock-music.com (CC BY 4.0).<br>
+  “Intensive Puzzle Resolution” by Komiku (CC0 1.0 Universal).<br>
+  “Action2 – Army Approaching” and “Action3 – Preparing for Battle” by Juhani Junkala / SubspaceAudio, from JRPG Pack 5: Action (CC0).</p>
+  <p>Full credits live in <code>game/assets/music/ATTRIBUTION.txt</code> in the <a href="https://github.com/qompassai/light-show">light-show repo</a>.</p>
+</footer>
+<script>
+const RAW = "https://raw.githubusercontent.com/qompassai/light-show/main/game/assets/music/";
+const TIERS = [
+  ["Menu", [
+    ["menu/eric-skiff-16-were-all-under-the-stars.mp3", "We\u2019re All Under the Stars", "Eric Skiff"],
+  ]],
+  ["Tutorial", [
+    ["tutorial/komiku-intensive-puzzle-resolution.mp3", "Intensive Puzzle Resolution", "Komiku"],
+  ]],
+  ["Early game", [
+    ["early/eric-skiff-06-searching.mp3", "Searching", "Eric Skiff"],
+    ["early/eric-skiff-08-ascending.mp3", "Ascending", "Eric Skiff"],
+  ]],
+  ["Mid game", [
+    ["mid/eric-skiff-02-underclocked.mp3", "Underclocked (underunderclocked mix)", "Eric Skiff"],
+    ["mid/eric-skiff-03-chibi-ninja.mp3", "Chibi Ninja", "Eric Skiff"],
+  ]],
+  ["Hard", [
+    ["hard/kevin-macleod-exhilarate.mp3", "Exhilarate", "Kevin MacLeod"],
+    ["hard/subspaceaudio-action2-army-approaching.ogg", "Action2 \u2013 Army Approaching", "SubspaceAudio"],
+  ]],
+  ["Boss", [
+    ["boss/teknoaxe-basic-metal-5.mp3", "Basic Metal 5", "TeknoAXE"],
+    ["boss/subspaceaudio-action3-preparing-for-battle.ogg", "Action3 \u2013 Preparing for Battle", "SubspaceAudio"],
+  ]],
+  ["Mystery", [
+    ["mystery/kevin-macleod-in-a-heartbeat.mp3", "In a Heartbeat", "Kevin MacLeod"],
+  ]],
+  ["Victory", [
+    ["victory/eric-skiff-07-were-the-resistors.mp3", "We\u2019re the Resistors", "Eric Skiff"],
+  ]],
+];
+const main = document.getElementById("tracks");
+for (const [tier, tracks] of TIERS) {
+  const section = document.createElement("section");
+  section.className = "tier";
+  const h = document.createElement("h2");
+  h.textContent = tier;
+  section.appendChild(h);
+  for (const [file, title, artist] of tracks) {
+    const url = RAW + file;
+    const div = document.createElement("div");
+    div.className = "track";
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const t = document.createElement("span");
+    t.className = "title"; t.textContent = title;
+    const a = document.createElement("span");
+    a.className = "artist"; a.textContent = artist;
+    meta.append(t, a);
+    const audio = document.createElement("audio");
+    audio.controls = true; audio.preload = "none"; audio.src = url;
+    const dl = document.createElement("a");
+    dl.className = "dl"; dl.href = url; dl.textContent = "Download"; dl.download = "";
+    div.append(meta, audio, dl);
+    section.appendChild(div);
+  }
+  main.appendChild(section);
+}
+</script>
+</body>
+</html>
