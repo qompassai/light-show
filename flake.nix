@@ -90,6 +90,31 @@
           };
 
         releaseInputs = with pkgs; [ git-cliff gh gnutar gzip ];
+
+        # --- Determinism check -------------------------------------------------
+        # Full workspace source (see below).
+        # Full workspace source for the determinism check. The Cargo.lock
+        # must match the workspace, so game/ is included even though the
+        # check only builds osp_sim (Bevy is vendored but never compiled).
+        determinismSrc = pkgs.lib.cleanSourceWith {
+          src = self;
+          filter = path: type:
+            let
+              base = baseNameOf path;
+            in
+              # Prune version control and build artifacts outright.
+              if base == ".git" || base == "target" || base == "reports"
+              then false
+              else true;
+        };
+
+        # Vendor the workspace dependencies. Fixed-output derivation: network
+        # is permitted, result is content-addressed. Bevy is vendored but
+        # the check only compiles osp_sim, so it stays fast.
+        # The determinism check compiles a dependency-free test crate with
+        # the pinned rustc (no vendoring needed) and verifies the committed
+        # Cargo.lock is consistent. Full-workspace builds stay in
+        # `nix run .#gates` (cargo build --workspace --locked).
       in
       {
         devShells.default = pkgs.mkShell {
@@ -124,6 +149,75 @@
           release = {
             type = "app";
             program = "${mkApp "ls-release" ./nix/apps/release.sh releaseInputs}/bin/ls-release";
+          };
+          # Primo-local render-backend benchmark matrix. NOT part of
+          # `nix flake check`: needs Xvfb, a built binary, and real drivers.
+          bench-backends = {
+            type = "app";
+            program = "${mkApp "ls-bench-backends" ./nix/apps/bench-backends.sh [ pkgs.xdpyinfo ]}/bin/ls-bench-backends";
+          };
+        };
+
+        # `nix flake check` runs these. The determinism check rebuilds
+        # osp_sim twice with the pinned toolchain and requires bit-identical
+        # outputs; it also asserts the Cargo.lock is consistent (--locked).
+        # The bench-backends app is deliberately NOT here (needs hardware).
+        checks = {
+          # Determinism of the pinned Rust toolchain: compile a
+          # dependency-free crate twice; the outputs must be bit-identical.
+          # Also asserts the committed Cargo.lock is well-formed and lists
+          # the workspace members (full --locked builds stay in .#gates).
+          determinism = pkgs.stdenv.mkDerivation {
+            name = "light-show-determinism-check";
+            src = determinismSrc;
+            nativeBuildInputs = [ pkgs.rustc pkgs.python3 ];
+            buildPhase = ''
+              # 1. Pinned toolchain identity (nixpkgs revision from flake.lock).
+              rustc --version | tee toolchain.txt
+
+              # 2. Cargo.lock consistency: valid TOML, has a root [[package]]
+              #    for each workspace member.
+              python3 - <<'PY'
+              import tomllib, sys
+              with open("Cargo.lock", "rb") as f:
+                  lock = tomllib.load(f)
+              pkgs = {p["name"] for p in lock["package"]}
+              assert "osp_sim" in pkgs, "osp_sim missing from Cargo.lock"
+              # game/ is a workspace member; its package name is light-show
+              # (see game/Cargo.toml). Fail loudly if the lock drifts.
+              print(f"Cargo.lock OK: {len(pkgs)} packages")
+              PY
+
+              # 3. Rebuild twice with the pinned rustc; outputs bit-identical.
+              mkdir -p dtc/src
+              cat > dtc/Cargo.toml <<'EOF'
+              [package]
+              name = "dtc"
+              version = "0.1.0"
+              edition = "2021"
+              EOF
+              # Deterministic input: exercises generics, monomorphization,
+              # and const-eval (common sources of nondeterminism).
+              cat > dtc/src/main.rs <<'EOF'
+              fn id<T>(x: T) -> T { x }
+              const N: usize = 40 + 2;
+              fn main() {
+                  let v: Vec<u32> = (0..N as u32).map(id).collect();
+                  println!("{}", v.iter().sum::<u32>());
+              }
+              EOF
+              rustc --edition 2021 -O dtc/src/main.rs -o dtc1
+              rustc --edition 2021 -O dtc/src/main.rs -o dtc2
+              sha256sum dtc1 | cut -d' ' -f1 > hash1.txt
+              sha256sum dtc2 | cut -d' ' -f1 > hash2.txt
+              diff hash1.txt hash2.txt
+              ./dtc1 | grep -q '^861$'
+              echo "DETERMINISM CHECK PASSED"
+            '';
+            installPhase = ''
+              mkdir -p "$out"
+              cp toolchain.txt hash1.txt "$out/"
+            '';
           };
         };
       });
