@@ -1,0 +1,15 @@
+[book]
+title = "Light Show"
+authors = ["Qompass AI"]
+description = "Light Show — OSP fiber-optic puzzle game: user guide and code documentation."
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+additional-css = ["hyprland.css"]
