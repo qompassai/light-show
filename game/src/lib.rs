@@ -12,6 +12,8 @@ mod ui;
 mod waifu;
 
 use bevy::prelude::*;
+use bevy::render::renderer::RenderAdapterInfo;
+use bevy::render::{Render, RenderApp};
 use states::GameState;
 
 /// Structured event logging for the on-device instrumentation tests in
@@ -57,6 +59,37 @@ pub fn run() {
     build_app().run();
 }
 
+/// Logs the wgpu backend and adapter the renderer actually initialized,
+/// exactly once, on the first render frame. Reads `RenderAdapterInfo` from
+/// the render sub-app's world (populated by `RenderPlugin::finish`, so it is
+/// only present after the async adapter request completes); a missing
+/// resource is logged as unknown rather than panicking. Uses `eprintln!`
+/// because the desktop feature set does not include `bevy_log`.
+fn log_render_backend_once(
+    adapter_info: Option<Res<RenderAdapterInfo>>,
+    mut already_logged: Local<bool>,
+) {
+    if *already_logged {
+        return;
+    }
+    *already_logged = true;
+    match adapter_info {
+        Some(info) => {
+            let wgpu_info = &info.0;
+            eprintln!(
+                "[light-show] render backend: {} | adapter: {} | vendor: {:#06x} device: {:#06x} | driver: {} ({})",
+                wgpu_info.backend.to_str(),
+                wgpu_info.name,
+                wgpu_info.vendor,
+                wgpu_info.device,
+                wgpu_info.driver,
+                wgpu_info.driver_info,
+            );
+        }
+        None => eprintln!("[light-show] render backend: unknown (no adapter info)"),
+    }
+}
+
 fn build_app() -> App {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -78,5 +111,11 @@ fn build_app() -> App {
         ui::LedgerUiPlugin,
         audio::MusicPlugin,
     ));
+    // The render sub-app only exists once `RenderPlugin` has built; without
+    // it there is no adapter to log. The system one-shots itself via a
+    // `Local<bool>` because the `Render` schedule runs every frame.
+    if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
+        render_app.add_systems(Render, log_render_backend_once);
+    }
     app
 }
