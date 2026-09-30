@@ -258,3 +258,12 @@ https://github.com/cargo-bsp/cargo-bsp`), `version` is honestly marked
 client will pick this up as soon as a compatible server exists on PATH.
 Until then, rebuild queries go through `cargo` directly — BSP is not
 required for any gate in this repo.
+
+## Deterministic builds with Nix
+
+This repo ships a Nix flake (`flake.nix`, `flake.lock`) that pins the
+full toolchain (rustc 1.95.0, lldb 21.1.8, cargo-deny/audit, bacon) and
+turns the deterministic-safe validation scripts into `nix run` apps with
+markdown reports under `reports/`. See [docs/FLAKE.md](FLAKE.md) for the
+app list, the `nix run .#release` flow, and the documented Android gap
+(APK/AAB builds stay primo-local; the Nix toolchain has no Android SDK).
