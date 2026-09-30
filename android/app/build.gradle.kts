@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "ai.qompass.lightshow"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "ai.qompass.lightshow"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
 
@@ -30,6 +30,11 @@ android {
     // (add --features instrumented-test-logging when building for
     // instrumentation tests — see docs/BUILD.md).
     sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
+    // Game data (sprites, music incl. CREDITS.md/ATTRIBUTION.txt, fonts,
+    // dialogue, levels) lives in the Cargo workspace at game/assets.
+    // Without this the AAB would contain no assets and the Bevy
+    // AssetServer would find nothing at runtime.
+    sourceSets["main"].assets.srcDirs("../../game/assets")
 
     buildTypes {
         debug {
