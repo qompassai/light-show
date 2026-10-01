@@ -10,6 +10,7 @@ use crate::level::{self, CurrentLevelIndex, LevelDef};
 use crate::test_log;
 use crate::waifu::dialogue::DialogueBank;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use osp_sim::{Outage, PathGraph, Wavelength};
 
 pub struct PlayingPlugin;
@@ -116,6 +117,7 @@ fn setup_level(
     dialogue: Res<DialogueBank>,
     mut companions: Query<&mut crate::waifu::CompanionSprite>,
     cameras: Query<Entity, With<Camera>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     // Dedicated board camera: the MainMenu camera persists
     // across the transition but does not frame world-space
@@ -157,7 +159,20 @@ fn setup_level(
         .on_enter_line
         .as_deref()
         .and_then(|key| dialogue.random_line(key));
-    board::spawn_board_from_level(&mut commands, &level_def, &asset_server, on_enter_dialogue);
+    // Half the window width in world units (camera zoom is 1:1): keeps
+    // node-label plates on screen. Falls back to the 720-wide design
+    // resolution when no window exists (unit tests).
+    let half_w = windows
+        .get_single()
+        .map(|w| w.width() * 0.5)
+        .unwrap_or(360.0);
+    board::spawn_board_from_level(
+        &mut commands,
+        &level_def,
+        &asset_server,
+        on_enter_dialogue,
+        half_w,
+    );
     // Signals the on-device instrumentation tests (android/app/src/androidTest)
     // that the board has finished spawning and is ready to receive touch
     // input — they poll Logcat for this line before injecting gestures.

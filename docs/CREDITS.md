@@ -43,12 +43,18 @@ copyrightable expression.
 
 ## Fonts
 
-`game/assets/fonts/pixel.ttf` is **Press Start 2P** by The Press Start 2P
-Project Authors (cody@zone38.net), licensed under the SIL Open Font License
-1.1 (full text at `game/assets/fonts/PressStart2P-OFL.txt`), sourced from
-the [Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/pressstart2p).
+`game/assets/fonts/MonaspaceNeon-Regular.otf` and `MonaspaceNeon-Bold.otf`
+are **Monaspace Neon** by GitHub Next (2023), licensed under the SIL Open Font
+License 1.1 (full text at `game/assets/fonts/OFL-Monaspace.txt`), sourced from
+the [Monaspace repository](https://github.com/githubnext/monaspace).
+`game/assets/fonts/Inter-Regular.ttf` and `Inter-Medium.ttf` are **Inter** by
+The Inter Project Authors (2020), licensed under the SIL Open Font License 1.1
+(full text at `game/assets/fonts/OFL-Inter.txt`), sourced from the
+[Inter repository](https://github.com/rsms/inter) (also mirrored in
+[Google Fonts](https://github.com/google/fonts/tree/main/ofl/inter)).
 OFL permits redistribution and use in both the Play Store and F-Droid
-builds without additional licensing action.
+builds without additional licensing action, provided the license texts ship
+with the fonts (they do, in `game/assets/fonts/`).
 
 ## Audio
 

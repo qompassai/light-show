@@ -80,7 +80,9 @@ impl Default for SelectAnimTimer {
 }
 
 fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font: Handle<Font> = asset_server.load("fonts/pixel.ttf");
+    let display: Handle<Font> = asset_server.load(crate::fonts::DISPLAY);
+    let body: Handle<Font> = asset_server.load(crate::fonts::BODY);
+    let body_medium: Handle<Font> = asset_server.load(crate::fonts::BODY_MEDIUM);
     commands
         .spawn((
             SelectRoot,
@@ -131,7 +133,7 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
                 NeonText {
                     marker: (),
                     value: "choose your discipline",
-                    font: font.clone(),
+                    font: display.clone(),
                     font_size: 26.0,
                     core: NEON_GOLD,
                     glow: NEON_CYAN,
@@ -140,10 +142,10 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
                     glow_outer_alpha: 0.25,
                     width: Val::Auto,
                     justify: JustifyText::Center,
-                    },
+                },
             );
             for companion in Companion::ALL {
-                spawn_companion_card(parent, &asset_server, &font, companion);
+                spawn_companion_card(parent, &asset_server, &display, &body, companion);
             }
             parent
                 .spawn((
@@ -162,7 +164,7 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
                     btn.spawn(TextBundle::from_section(
                         "Back",
                         TextStyle {
-                            font: font.clone(),
+                            font: body_medium.clone(),
                             font_size: 18.0,
                             color: Color::WHITE,
                         },
@@ -174,7 +176,8 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn spawn_companion_card(
     parent: &mut ChildBuilder,
     asset_server: &AssetServer,
-    font: &Handle<Font>,
+    display: &Handle<Font>,
+    body: &Handle<Font>,
     companion: Companion,
 ) {
     let stem = companion.picker_stem();
@@ -237,7 +240,7 @@ fn spawn_companion_card(
                     NeonText {
                         marker: (),
                         value: companion.display_name(),
-                        font: font.clone(),
+                        font: display.clone(),
                         font_size: 24.0,
                         core: NEON_CYAN,
                         glow: NEON_GOLD,
@@ -251,7 +254,7 @@ fn spawn_companion_card(
                 text.spawn(TextBundle::from_section(
                     companion.tagline(),
                     TextStyle {
-                        font: font.clone(),
+                        font: body.clone(),
                         font_size: 14.0,
                         color: NEON_DIM,
                     },
@@ -259,7 +262,7 @@ fn spawn_companion_card(
                 text.spawn(TextBundle::from_section(
                     companion.select_hook(),
                     TextStyle {
-                        font: font.clone(),
+                        font: body.clone(),
                         font_size: 14.0,
                         color: NEON_GOLD,
                     },
@@ -363,10 +366,7 @@ mod tests {
 
         world.run_system_once(handle_select_buttons);
 
-        assert_eq!(
-            world.resource::<SelectedCompanion>().0,
-            Companion::Ethernet
-        );
+        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Ethernet);
         assert_eq!(
             world.resource::<CurrentLevelIndex>().0,
             Companion::Ethernet.track_start_index()

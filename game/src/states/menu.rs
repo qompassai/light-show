@@ -107,7 +107,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                 NeonText {
                     marker: (),
                     value: "route the light. hit the window. survive the storm.",
-                    font: asset_server.load("fonts/pixel.ttf"),
+                    font: asset_server.load(crate::fonts::DISPLAY),
                     font_size: 18.0,
                     core: NEON_GOLD,
                     glow: NEON_CYAN,
@@ -116,7 +116,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                     glow_outer_alpha: 0.25,
                     width: Val::Px(TAGLINE_MAX_W),
                     justify: JustifyText::Center,
-                    },
+                },
             );
             parent
                 .spawn((
@@ -138,7 +138,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                         NeonText {
                             marker: (),
                             value: "Start",
-                            font: asset_server.load("fonts/pixel.ttf"),
+                            font: asset_server.load(crate::fonts::BODY_MEDIUM),
                             font_size: 24.0,
                             core: NEON_INK,
                             glow: Color::srgba(0.5, 0.32, 0.1, 0.7),
@@ -147,7 +147,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                             glow_outer_alpha: 0.22,
                             width: Val::Auto,
                             justify: JustifyText::Center,
-                            },
+                        },
                     );
                 });
             parent
@@ -170,7 +170,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                         NeonText {
                             marker: (),
                             value: "Credits",
-                            font: asset_server.load("fonts/pixel.ttf"),
+                            font: asset_server.load(crate::fonts::BODY_MEDIUM),
                             font_size: 18.0,
                             core: NEON_CYAN,
                             glow: NEON_GOLD,
@@ -179,7 +179,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                             glow_outer_alpha: 0.25,
                             width: Val::Auto,
                             justify: JustifyText::Center,
-                            },
+                        },
                     );
                 });
         });

@@ -14,7 +14,7 @@ reference copy). Key requirements this project is designed to satisfy:
   `bevy`'s Android backend (`android-activity`/`game-activity`) is Apache-
   2.0/MIT, part of the free-software `rust-mobile` ecosystem.
 - **No non-free assets.** All art/fonts are original, deterministic
-  tool-generated, or OFL-licensed (Press Start 2P), tracked with full
+  tool-generated, or OFL-licensed (Monaspace Neon, Inter), tracked with full
   attribution in `docs/CREDITS.md`. Background music is licensed
   third-party audio — CC-BY and CC0, 12 tracks under
   `game/assets/music/` — and the required CC-BY attribution ships both as

@@ -188,7 +188,7 @@ fn show_results(
             parent.spawn(TextBundle::from_section(
                 banner_text,
                 TextStyle {
-                    font: asset_server.load("fonts/pixel.ttf"),
+                    font: asset_server.load(crate::fonts::DISPLAY_BOLD),
                     font_size: 48.0,
                     color: banner_color,
                 },
@@ -196,7 +196,7 @@ fn show_results(
             parent.spawn(TextBundle::from_section(
                 format!("World {} — {}", level.world, level.title),
                 TextStyle {
-                    font: asset_server.load("fonts/pixel.ttf"),
+                    font: asset_server.load(crate::fonts::DISPLAY),
                     font_size: 20.0,
                     color: Color::srgb(0.8, 0.8, 0.9),
                 },
@@ -204,7 +204,7 @@ fn show_results(
             parent.spawn(TextBundle::from_section(
                 ledger_text,
                 TextStyle {
-                    font: asset_server.load("fonts/pixel.ttf"),
+                    font: asset_server.load(crate::fonts::DISPLAY),
                     font_size: 16.0,
                     color: Color::srgb(0.357, 0.753, 0.922), // #5bc0eb
                 },
@@ -212,7 +212,7 @@ fn show_results(
             parent.spawn(TextBundle::from_section(
                 format!("\u{201c}{dialogue_line}\u{201d}"),
                 TextStyle {
-                    font: asset_server.load("fonts/pixel.ttf"),
+                    font: asset_server.load(crate::fonts::BODY),
                     font_size: 16.0,
                     color: Color::srgb(1.0, 0.435, 0.682), // #ff6fae
                 },
@@ -292,7 +292,7 @@ fn spawn_result_button(
             btn.spawn(TextBundle::from_section(
                 label,
                 TextStyle {
-                    font: asset_server.load("fonts/pixel.ttf"),
+                    font: asset_server.load(crate::fonts::BODY_MEDIUM),
                     font_size: 20.0,
                     color: Color::WHITE,
                 },

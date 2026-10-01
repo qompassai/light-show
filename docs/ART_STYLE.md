@@ -24,7 +24,7 @@ In-game title treatment:
   glyph with a two-ring luminous halo — eight glow copies at 1 px (~55%
   alpha) plus eight at 2 px (~25% alpha). The alpha falloff is what sells
   "glow" instead of "outline" (see `game/src/ui/neon.rs`). The glyphs stay
-  blocky Press Start 2P by design — the halo softens them; it doesn't replace
+  monospace Monaspace Neon by design — the halo softens them; it doesn't replace
   them.
 
 ## Palette
@@ -149,8 +149,9 @@ covering all companion art.
 
 ## Honest Rendering Notes
 
-- The UI typeface is Press Start 2P throughout — blocky by design. The
-  neon-circuit glow softens it; it does not make it a smooth font.
+- The UI type system pairs Monaspace Neon (display: headings, labels, scores)
+  with Inter (body: briefings, dialogs, buttons). The neon-circuit glow
+  softens the display face; it does not make it a smooth font.
 - Verification screenshots are taken under Xvfb with software rendering.
   That validates layout, art integration, and the full playthrough path; it
   is not physical-GPU or real-device acceptance.

@@ -8,6 +8,7 @@ mod audio;
 #[cfg(debug_assertions)]
 mod bench;
 mod board;
+mod fonts;
 mod level;
 #[cfg(test)]
 mod playthrough;

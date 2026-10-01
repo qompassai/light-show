@@ -31,7 +31,7 @@ const ATTRIBUTION: &str = include_str!("../../assets/music/ATTRIBUTION.txt");
 /// Code/art/font credits shown above the music block. Kept short: the
 /// full licensing detail lives in `docs/CREDITS.md` and
 /// `game/assets/music/CREDITS.md`.
-const CODE_ART_FONT_CREDITS: &str = "Code: Qompass AI (GPL-3.0-or-later).\nArt: original tool-generated sprites; companion\nportraits AI-generated (rights cleared).\nFont: Press Start 2P (SIL OFL 1.1).";
+const CODE_ART_FONT_CREDITS: &str = "Code: Qompass AI (GPL-3.0-or-later).\nArt: original tool-generated sprites; companion\nportraits AI-generated (rights cleared).\nFonts: Monaspace Neon + Inter (SIL OFL 1.1).";
 
 #[derive(Component)]
 struct CreditsRoot;
@@ -61,18 +61,27 @@ fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
         ))
         .with_children(|parent| {
-            let text = |content: &str, size: f32, color: Color| {
+            let display_bold: Handle<Font> = asset_server.load(crate::fonts::DISPLAY_BOLD);
+            let body: Handle<Font> = asset_server.load(crate::fonts::BODY);
+            let body_medium: Handle<Font> = asset_server.load(crate::fonts::BODY_MEDIUM);
+            let text = |font: &Handle<Font>, content: &str, size: f32, color: Color| {
                 TextBundle::from_section(
                     content,
                     TextStyle {
-                        font: asset_server.load("fonts/pixel.ttf"),
+                        font: font.clone(),
                         font_size: size,
                         color,
                     },
                 )
             };
-            parent.spawn(text("CREDITS", 40.0, Color::srgb(0.6, 0.95, 1.0)));
             parent.spawn(text(
+                &display_bold,
+                "CREDITS",
+                40.0,
+                Color::srgb(0.6, 0.95, 1.0),
+            ));
+            parent.spawn(text(
+                &body,
                 CODE_ART_FONT_CREDITS,
                 14.0,
                 Color::srgb(0.8, 0.8, 0.9),
@@ -93,9 +102,14 @@ fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
                     },
                 ))
                 .with_children(|btn| {
-                    btn.spawn(text("Back", 20.0, Color::WHITE));
+                    btn.spawn(text(&body_medium, "Back", 20.0, Color::WHITE));
                 });
-            parent.spawn(text(ATTRIBUTION, 13.0, Color::srgb(0.75, 0.75, 0.85)));
+            parent.spawn(text(
+                &body,
+                ATTRIBUTION,
+                13.0,
+                Color::srgb(0.75, 0.75, 0.85),
+            ));
         });
 }
 

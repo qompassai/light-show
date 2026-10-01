@@ -107,7 +107,7 @@ fn spawn_outage_banner(
             parent.spawn(TextBundle::from_section(
                 outage.kind.flavor_text(),
                 TextStyle {
-                    font: asset_server.load("fonts/pixel.ttf"),
+                    font: asset_server.load(crate::fonts::BODY),
                     font_size: 16.0,
                     color: Color::WHITE,
                 },
@@ -117,7 +117,7 @@ fn spawn_outage_banner(
                 TextBundle::from_section(
                     format!("REPAIR NOW — {:.0}s", outage.time_remaining()),
                     TextStyle {
-                        font: asset_server.load("fonts/pixel.ttf"),
+                        font: asset_server.load(crate::fonts::DISPLAY_BOLD),
                         font_size: 20.0,
                         color: Color::srgb(1.0, 0.82, 0.4), // #ffd166
                     },
@@ -173,12 +173,7 @@ fn check_outage_resolution(
         return;
     }
 
-    if level.is_win_state_with_outage(
-        &live.graph,
-        live.tx_dbm,
-        live.wavelength.0,
-        Some(&outage),
-    ) {
+    if level.is_win_state_with_outage(&live.graph, live.tx_dbm, live.wavelength.0, Some(&outage)) {
         if let Some(active_outage) = active.outage.as_mut() {
             active_outage.resolved = true;
         }

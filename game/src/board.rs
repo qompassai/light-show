@@ -467,16 +467,165 @@ pub fn rebuild_live_graph(
     *graph = fresh;
 }
 
+/// Font size of node labels (world units == px at the default camera zoom).
+const LABEL_FONT_SIZE: f32 = 14.0;
+/// Vertical gap between a node ring and a "near" label plate.
+const LABEL_NEAR_DY: f32 = NODE_RADIUS + 18.0;
+/// Vertical gap used when the near slot is blocked by pills or another
+/// label — one full pill spread further out.
+const LABEL_FAR_DY: f32 = LABEL_NEAR_DY + PILL_SPREAD;
+/// Horizontal gap between a node ring and a side label plate.
+const LABEL_SIDE_GAP: f32 = 10.0;
+/// Obstacle radius treated as solid when placing labels: the ring band
+/// sits at `NODE_RADIUS` / `PILL_RADIUS` with a soft glow halo around it,
+/// so a plate may touch the halo but must not cover the band.
+const LABEL_NODE_OBSTACLE_R: f32 = NODE_RING_SIZE / 2.0;
+const LABEL_PILL_OBSTACLE_R: f32 = PILL_RADIUS + 6.0;
+/// Minimum clearance kept between a label plate and the screen edge.
+const LABEL_EDGE_MARGIN: f32 = 8.0;
+/// Padding added around already-placed plates when testing new ones.
+const LABEL_PLATE_PAD: f32 = 4.0;
+
+/// Dark nameplate size behind a node label. Width is estimated from the
+/// fixed Monaspace Neon advance (0.6x font size, monospace); the 24 px
+/// padding absorbs the estimate. Keep in sync with the label `TextStyle`
+/// in `spawn_board_from_level` — a wider font needs a larger advance here.
+fn label_plate_size(label: &str) -> Vec2 {
+    Vec2::new(
+        label.len() as f32 * LABEL_FONT_SIZE * 0.6 + 24.0,
+        LABEL_FONT_SIZE + 20.0,
+    )
+}
+
+/// One node's label placement request: world position, text, and which
+/// side the row stagger prefers (alternates above/below within a grid row
+/// so same-row neighbors don't start on top of each other).
+struct LabelRequest<'a> {
+    pos: Vec2,
+    label: &'a str,
+    prefer_above: bool,
+}
+
+/// Chosen plate center and size for one node label, in world space.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct LabelPlacement {
+    center: Vec2,
+    plate: Vec2,
+}
+
+fn rect_hits_circle(center: Vec2, half: Vec2, circle: Vec2, radius: f32) -> bool {
+    let closest = Vec2::new(
+        circle.x.clamp(center.x - half.x, center.x + half.x),
+        circle.y.clamp(center.y - half.y, center.y + half.y),
+    );
+    closest.distance_squared(circle) < radius * radius
+}
+
+fn rects_overlap(a_center: Vec2, a_half: Vec2, b_center: Vec2, b_half: Vec2) -> bool {
+    (a_center.x - b_center.x).abs() < a_half.x + b_half.x
+        && (a_center.y - b_center.y).abs() < a_half.y + b_half.y
+}
+
+/// Picks a non-overlapping plate position for every node label. Pure so
+/// the w1l1/c1l1 layouts can be pinned by unit tests: for each node in
+/// order, the stagger-preferred near side is tried first, then the other
+/// near side, then the far sides, then the flanks; the first candidate
+/// that doesn't cover another node's ring, a pill ring, or an
+/// already-placed plate wins (each candidate is clamped horizontally
+/// first, so the winner also fixes the c1l1 "Customer Drop" label
+/// clipping past the right screen edge on phones).
+fn layout_node_labels(
+    requests: &[LabelRequest],
+    pill_centers: &[Vec2],
+    half_w: f32,
+) -> Vec<LabelPlacement> {
+    let mut placed: Vec<LabelPlacement> = Vec::with_capacity(requests.len());
+    for (i, req) in requests.iter().enumerate() {
+        let plate = label_plate_size(req.label);
+        let half = plate * 0.5;
+        let side_dx = half.x + NODE_RADIUS + LABEL_SIDE_GAP;
+        // Preference order keeps the historical stagger look; the far
+        // slots only trigger when pills crowd the near ones (w1l1's
+        // splice pair sits between two pill rings).
+        let mut candidates = if req.prefer_above {
+            vec![
+                Vec2::new(0.0, LABEL_NEAR_DY),
+                Vec2::new(0.0, -LABEL_NEAR_DY),
+                Vec2::new(0.0, LABEL_FAR_DY),
+                Vec2::new(0.0, -LABEL_FAR_DY),
+            ]
+        } else {
+            vec![
+                Vec2::new(0.0, -LABEL_NEAR_DY),
+                Vec2::new(0.0, LABEL_NEAR_DY),
+                Vec2::new(0.0, -LABEL_FAR_DY),
+                Vec2::new(0.0, LABEL_FAR_DY),
+            ]
+        };
+        candidates.push(Vec2::new(-side_dx, 0.0));
+        candidates.push(Vec2::new(side_dx, 0.0));
+
+        let mut best_center = req.pos;
+        let mut best_score = usize::MAX;
+        for offset in &candidates {
+            // Clamp before scoring: a plate wider than the visible area
+            // centers at x = 0 instead of clipping one edge.
+            let max_cx = (half_w - LABEL_EDGE_MARGIN - half.x).max(0.0);
+            let raw = req.pos + *offset;
+            let center = Vec2::new(raw.x.clamp(-max_cx, max_cx), raw.y);
+            let mut score = 0;
+            // Other nodes' rings are solid; the node's own ring is
+            // excluded — every candidate clears its visible band by
+            // construction (near dy and side dx both exceed NODE_RADIUS).
+            for (j, other) in requests.iter().enumerate() {
+                if j != i && rect_hits_circle(center, half, other.pos, LABEL_NODE_OBSTACLE_R) {
+                    score += 1;
+                }
+            }
+            for pill in pill_centers {
+                if rect_hits_circle(center, half, *pill, LABEL_PILL_OBSTACLE_R) {
+                    score += 1;
+                }
+            }
+            for prev in &placed {
+                if rects_overlap(
+                    center,
+                    half + LABEL_PLATE_PAD,
+                    prev.center,
+                    prev.plate * 0.5 + LABEL_PLATE_PAD,
+                ) {
+                    score += 1;
+                }
+            }
+            if score < best_score {
+                best_score = score;
+                best_center = center;
+                if score == 0 {
+                    break;
+                }
+            }
+        }
+        placed.push(LabelPlacement {
+            center: best_center,
+            plate,
+        });
+    }
+    placed
+}
 /// Spawns the board's node-label entities and the ledger overlay text.
 /// Plain function (not a system) so it can be called synchronously from
 /// the `OnEnter(Playing)` setup system, right after loading the level.
+/// `half_w` is half the window width in world units (camera zoom is 1:1),
+/// used to keep label plates on screen.
 pub fn spawn_board_from_level(
     commands: &mut Commands,
     level: &LevelDef,
     asset_server: &AssetServer,
     on_enter_dialogue: Option<&str>,
+    half_w: f32,
 ) {
-    let font: Handle<Font> = asset_server.load("fonts/pixel.ttf");
+    let label_font: Handle<Font> = asset_server.load(crate::fonts::DISPLAY);
+    let body_font: Handle<Font> = asset_server.load(crate::fonts::BODY);
 
     let mut briefing_text = format!(
         "World {} — {}\n{}",
@@ -513,7 +662,7 @@ pub fn spawn_board_from_level(
             parent.spawn(TextBundle::from_section(
                 briefing_text,
                 TextStyle {
-                    font: font.clone(),
+                    font: body_font.clone(),
                     font_size: 14.0,
                     color: BOARD_ACCENT,
                 },
@@ -538,56 +687,65 @@ pub fn spawn_board_from_level(
                     ..default()
                 },
             ));
-            for node in &level.nodes {
-                let pos = grid_to_world(node.grid_x, node.grid_y);
-                // Stagger labels above/below within a row so same-row
-                // neighbors (coax1 runs all four nodes on grid_y = 0)
-                // don't set type on top of each other. Row order is
-                // node-id order: deterministic per level file.
-                let row_index = level
-                    .nodes
-                    .iter()
-                    .filter(|n| n.grid_y == node.grid_y && n.id < node.id)
-                    .count();
-                let label_dy = if row_index % 2 == 0 {
-                    NODE_RADIUS + 18.0
-                } else {
-                    -(NODE_RADIUS + 18.0)
-                };
-                // Dark nameplate behind the label: node labels are long
-                // ("Splice Enclosure 14+00") and pill sprites sit on the
-                // edges between nodes, so text can cross a ring or pill.
-                // The plate keeps every label readable and makes any
-                // overlap look deliberate instead of accidental. Width is
-                // estimated from the fixed Press Start 2P advance
-                // (~1.0x font size); the padding absorbs the estimate.
-                let label_font_size = 14.0;
+            // Pill rings are the main thing labels collide with on crowded
+            // rows (w1l1's splice pair sits between two pill rings), so
+            // their centers feed the label placer alongside the nodes.
+            let pill_centers: Vec<Vec2> = grouped_choices(level)
+                .into_iter()
+                .filter(|(_, indices)| indices.len() > 1)
+                .flat_map(|((from, to), indices)| {
+                    let count = indices.len();
+                    (0..count).filter_map(move |slot| pill_world_pos(level, from, to, slot, count))
+                })
+                .collect();
+            // Row-parity stagger preserved as the placer's preference
+            // order: deterministic per level file (node-id order).
+            let label_requests: Vec<LabelRequest> = level
+                .nodes
+                .iter()
+                .map(|node| {
+                    let row_index = level
+                        .nodes
+                        .iter()
+                        .filter(|n| n.grid_y == node.grid_y && n.id < node.id)
+                        .count();
+                    LabelRequest {
+                        pos: grid_to_world(node.grid_x, node.grid_y),
+                        label: &node.label,
+                        prefer_above: row_index % 2 == 0,
+                    }
+                })
+                .collect();
+            let label_layouts = layout_node_labels(&label_requests, &pill_centers, half_w);
+            for ((node, req), layout) in level
+                .nodes
+                .iter()
+                .zip(label_requests.iter())
+                .zip(label_layouts.iter())
+            {
+                let pos = req.pos;
+                // Dark nameplate behind the label, sized by
+                // `label_plate_size`; the plate keeps every label readable
+                // where text crosses a ring or pill.
                 parent.spawn(SpriteBundle {
                     sprite: Sprite {
                         color: Color::srgba(0.015, 0.02, 0.05, 0.88),
-                        custom_size: Some(Vec2::new(
-                            node.label.len() as f32 * label_font_size + 24.0,
-                            label_font_size + 20.0,
-                        )),
+                        custom_size: Some(layout.plate),
                         ..default()
                     },
-                    transform: Transform::from_translation(
-                        (pos + Vec2::new(0.0, label_dy)).extend(4.9),
-                    ),
+                    transform: Transform::from_translation(layout.center.extend(4.9)),
                     ..default()
                 });
                 parent.spawn(Text2dBundle {
                     text: Text::from_section(
                         node.label.clone(),
                         TextStyle {
-                            font: font.clone(),
-                            font_size: label_font_size,
+                            font: label_font.clone(),
+                            font_size: LABEL_FONT_SIZE,
                             color: BOARD_ACCENT,
                         },
                     ),
-                    transform: Transform::from_translation(
-                        (pos + Vec2::new(0.0, label_dy)).extend(5.0),
-                    ),
+                    transform: Transform::from_translation(layout.center.extend(5.0)),
                     text_anchor: bevy::sprite::Anchor::Center,
                     ..default()
                 });
@@ -668,7 +826,7 @@ pub fn spawn_board_from_level(
                                 text: Text::from_section(
                                     component_short_label(component),
                                     TextStyle {
-                                        font: asset_server.load("fonts/pixel.ttf"),
+                                        font: asset_server.load(crate::fonts::DISPLAY_BOLD),
                                         font_size: 28.0,
                                         color: Color::WHITE,
                                     },
@@ -695,7 +853,7 @@ pub fn spawn_board_from_level(
                     justify_content: JustifyContent::Center,
                     ..default()
                 },
-                background_color: Color::srgba(0.051, 0.051, 0.118, 0.85).into(),
+                background_color: Color::NONE.into(),
                 ..default()
             },
         ))
@@ -705,7 +863,7 @@ pub fn spawn_board_from_level(
                 TextBundle::from_section(
                     "Loss: -- dB",
                     TextStyle {
-                        font,
+                        font: label_font,
                         font_size: 16.0,
                         color: LIGHT_WARM,
                     },
@@ -1808,7 +1966,12 @@ mod tests {
                 },
                 "SPL",
             ),
-            (Component::Macrobend { excess_loss_db: 0.0 }, "BEND"),
+            (
+                Component::Macrobend {
+                    excess_loss_db: 0.0,
+                },
+                "BEND",
+            ),
             (
                 Component::Span {
                     length_km: 1.0,
@@ -2143,5 +2306,177 @@ mod tests {
             .iter(app.world_mut())
             .count();
         assert_eq!(remaining, 0, "cleared outage should despawn streaks");
+    }
+
+    /// w1l1 geometry (from the shipped level file): three nodes in a row
+    /// with two pill rings on the splice->ONT edge. Regression test for
+    /// the shipped bug where the ONT and splice labels sat on top of the
+    /// pill rings.
+    #[test]
+    fn label_layout_w1l1_avoids_pills_and_other_labels() {
+        let requests = vec![
+            LabelRequest {
+                pos: Vec2::new(-200.0, 300.0),
+                label: "OLT (Central Office)",
+                prefer_above: true,
+            },
+            LabelRequest {
+                pos: Vec2::new(0.0, 300.0),
+                label: "Splice Enclosure 14+00",
+                prefer_above: false,
+            },
+            LabelRequest {
+                pos: Vec2::new(200.0, 300.0),
+                label: "ONT (Customer Premise)",
+                prefer_above: true,
+            },
+        ];
+        let pills = vec![Vec2::new(100.0, 265.0), Vec2::new(100.0, 335.0)];
+        let half_w = 450.0; // Matt's phone screenshot width / 2
+        let placed = layout_node_labels(&requests, &pills, half_w);
+        assert_eq!(placed.len(), 3);
+        for (i, placement) in placed.iter().enumerate() {
+            let half = placement.plate * 0.5;
+            // On screen with margin.
+            assert!(
+                placement.center.x - half.x >= -half_w + LABEL_EDGE_MARGIN - 0.01,
+                "label {i} clips the left edge"
+            );
+            assert!(
+                placement.center.x + half.x <= half_w - LABEL_EDGE_MARGIN + 0.01,
+                "label {i} clips the right edge"
+            );
+            // Clear of every pill ring.
+            for pill in &pills {
+                assert!(
+                    !rect_hits_circle(placement.center, half, *pill, LABEL_PILL_OBSTACLE_R),
+                    "label {i} covers a pill ring"
+                );
+            }
+            // Clear of every other node's ring.
+            for (j, req) in requests.iter().enumerate() {
+                if j != i {
+                    assert!(
+                        !rect_hits_circle(placement.center, half, req.pos, LABEL_NODE_OBSTACLE_R),
+                        "label {i} covers node {j}'s ring"
+                    );
+                }
+            }
+            // Clear of every other label plate.
+            for (j, other) in placed.iter().enumerate() {
+                if j != i {
+                    assert!(
+                        !rects_overlap(placement.center, half, other.center, other.plate * 0.5),
+                        "label {i} overlaps label {j}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// c1l1 regression: node 3 ("Customer Drop") sits at world x = 400,
+    /// near the right edge of a phone screen — its plate must be pulled
+    /// on screen instead of clipping.
+    #[test]
+    fn label_layout_clamps_wide_label_onscreen() {
+        let requests = vec![LabelRequest {
+            pos: Vec2::new(400.0, 300.0),
+            label: "Customer Drop",
+            prefer_above: true,
+        }];
+        let placed = layout_node_labels(&requests, &[], 450.0);
+        assert_eq!(placed.len(), 1);
+        let half = placed[0].plate * 0.5;
+        assert!(
+            placed[0].center.x + half.x <= 450.0 - LABEL_EDGE_MARGIN + 0.01,
+            "plate right edge = {}",
+            placed[0].center.x + half.x
+        );
+        assert!(
+            placed[0].center.x - half.x >= -450.0 + LABEL_EDGE_MARGIN - 0.01,
+            "plate left edge = {}",
+            placed[0].center.x - half.x
+        );
+    }
+
+    /// A plate wider than the screen centers at x = 0 rather than
+    /// clipping one edge.
+    #[test]
+    fn label_layout_centers_oversize_plate() {
+        let long_label = "W".repeat(100);
+        let requests = vec![LabelRequest {
+            pos: Vec2::new(100.0, 300.0),
+            label: &long_label,
+            prefer_above: true,
+        }];
+        let placed = layout_node_labels(&requests, &[], 200.0);
+        assert!(
+            placed[0].center.x.abs() < 0.01,
+            "oversize plate should center, got {}",
+            placed[0].center.x
+        );
+    }
+
+    /// Uncrowded nodes keep the historical stagger: above for even rows,
+    /// below for odd.
+    #[test]
+    fn label_layout_prefers_stagger_when_clear() {
+        let requests = vec![
+            LabelRequest {
+                pos: Vec2::new(-200.0, 300.0),
+                label: "A",
+                prefer_above: true,
+            },
+            LabelRequest {
+                pos: Vec2::new(200.0, 300.0),
+                label: "B",
+                prefer_above: false,
+            },
+        ];
+        let placed = layout_node_labels(&requests, &[], 450.0);
+        assert!(
+            placed[0].center.y > 300.0,
+            "even row should sit above, got {}",
+            placed[0].center.y
+        );
+        assert!(
+            placed[1].center.y < 300.0,
+            "odd row should sit below, got {}",
+            placed[1].center.y
+        );
+        // Near slots, not far ones.
+        assert!((placed[0].center.y - 300.0 - LABEL_NEAR_DY).abs() < 0.01);
+        assert!((300.0 - placed[1].center.y - LABEL_NEAR_DY).abs() < 0.01);
+    }
+
+    /// Deterministic: same input, same output, every time.
+    #[test]
+    fn label_layout_is_deterministic() {
+        let requests = vec![
+            LabelRequest {
+                pos: Vec2::new(0.0, 300.0),
+                label: "Splice Enclosure 14+00",
+                prefer_above: false,
+            },
+            LabelRequest {
+                pos: Vec2::new(200.0, 300.0),
+                label: "ONT (Customer Premise)",
+                prefer_above: true,
+            },
+        ];
+        let pills = vec![Vec2::new(100.0, 265.0), Vec2::new(100.0, 335.0)];
+        let a = layout_node_labels(&requests, &pills, 450.0);
+        let b = layout_node_labels(&requests, &pills, 450.0);
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn rect_hits_circle_detects_containment_and_misses() {
+        let center = Vec2::new(0.0, 0.0);
+        let half = Vec2::new(50.0, 20.0);
+        assert!(rect_hits_circle(center, half, Vec2::new(0.0, 0.0), 10.0));
+        assert!(rect_hits_circle(center, half, Vec2::new(60.0, 0.0), 15.0));
+        assert!(!rect_hits_circle(center, half, Vec2::new(200.0, 0.0), 15.0));
+        assert!(!rect_hits_circle(center, half, Vec2::new(0.0, 100.0), 15.0));
     }
 }
