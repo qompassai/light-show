@@ -1,6 +1,7 @@
 //! Top-level game state machine. Each variant owns its own plugin (see
 //! sibling modules) so systems are only scheduled while that state is active.
 
+pub mod companion_select;
 pub mod credits;
 pub mod menu;
 pub mod outage;
@@ -13,12 +14,17 @@ use bevy::prelude::*;
 pub enum GameState {
     #[default]
     MainMenu,
-    /// Normal puzzle solving: player is routing fiber, no active outage.
+    /// Companion/track select: title → here → one companion's themed
+    /// two-level track in `Playing`.
+    CompanionSelect,
+    /// Normal puzzle solving: player is routing the chosen medium, no
+    /// active outage.
     Playing,
     /// An outage event has fired; timer is running and the ledger shows the
     /// fault location until resolved.
     OutageActive,
-    /// Level finished (win or fail) — shows Séraphine's reaction + summary.
+    /// Level finished (win or fail) — shows the companion's reaction +
+    /// summary.
     Results,
     /// In-game credits screen (code/art/font credits + the shipped music
     /// attribution), reachable from the main menu. The CC-BY music

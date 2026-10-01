@@ -1,0 +1,94 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 20.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 0.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 30.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "Linka's rule: distance is the enemy, and amplifiers can't beat geometry. Two 400 m hops at 2.4 GHz stand between the sites \u2014 about 92 dB of free-space loss per hop. An amplifier just shouts the wreckage louder. Place the regenerative repeater that hands the far site a fresh signal inside the [-75, -40] dBm window.",
+  "fixed_edges": [
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 400.0,
+          "frequency_mhz": 2400.0
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 400.0,
+          "frequency_mhz": 2400.0
+        }
+      },
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "id": "m1l1",
+  "medium": "Wireless",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Site A"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Ridge Repeater"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "Valley Relay"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 3,
+      "label": "Site B"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 3,
+  "title": "Close the Link",
+  "tx_dbm": 20.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -40.0,
+  "window_min_dbm": -75.0,
+  "world": 3
+}

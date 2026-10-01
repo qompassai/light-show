@@ -8,9 +8,12 @@
 //! Four companions are offered, one per transmission medium — see
 //! `Companion` and `docs/ART_STYLE.md` for each one's character brief:
 //! Séraphine (fiber, the original), Ondine (coax), Linka (mobile), and
-//! Lattice (Ethernet). The player picks one from the main menu
-//! (`states::menu`); the choice is purely cosmetic/flavor-dialogue — the
-//! link-budget math, outages, and win/fail conditions never depend on it.
+//! Lattice (Ethernet). The player picks one on the companion-select
+//! screen (`states::companion_select`); the pick chooses *which* themed
+//! two-level track they play (see `Companion::track_start_index`). Within
+//! a level, the choice is still purely cosmetic/flavor-dialogue — the
+//! link-budget math, outages, and win/fail conditions never depend on
+//! which companion is on screen.
 
 pub mod dialogue;
 pub mod sprite;
@@ -84,8 +87,9 @@ impl FromWorld for CompanionAtlasLayout {
 #[derive(Resource, Default)]
 pub struct FavorPoints(pub u32);
 
-/// Which companion the player picked on the main menu. Changing this at
-/// runtime (see `states::menu::handle_companion_buttons`) triggers
+/// Which companion the player picked on the companion-select screen.
+/// Changing this at runtime (see
+/// `states::companion_select::handle_select_buttons`) triggers
 /// `respawn_on_companion_change` to swap the on-screen sprite and reload
 /// the matching `DialogueBank` — the only two things that vary per
 /// companion.
@@ -134,6 +138,54 @@ impl Companion {
             Companion::Coax => "Coax / broadband RF",
             Companion::Mobile => "Mobile / cellular RF",
             Companion::Ethernet => "Ethernet / copper LAN",
+        }
+    }
+
+    /// One-liner on the companion-select card: the track's flavor, not
+    /// the mechanics — the briefing teaches those.
+    pub fn select_hook(&self) -> &'static str {
+        match self {
+            Companion::Fiber => "Every decibel is earned. Spend them wisely.",
+            Companion::Coax => "Gain is easy. Balance is the job.",
+            Companion::Mobile => "Distance always wins — unless you regenerate.",
+            Companion::Ethernet => "No decibels here. Just physics and paperwork.",
+        }
+    }
+
+    /// Levels per companion track (see `level::LEVEL_SOURCES`).
+    pub const TRACK_LEN: usize = 2;
+
+    /// Index into `level::LEVEL_SOURCES` of this companion's first level.
+    /// Tracks are laid out two at a time in `Companion::ALL` order.
+    pub fn track_start_index(&self) -> usize {
+        match self {
+            Companion::Fiber => 0,
+            Companion::Coax => 2,
+            Companion::Mobile => 4,
+            Companion::Ethernet => 6,
+        }
+    }
+
+    /// The companion's discipline accent color — the neon outline and FX
+    /// tint on the companion-select card and anywhere else her identity
+    /// needs to read at a glance (see `docs/ART_STYLE.md`).
+    pub fn accent(&self) -> Color {
+        match self {
+            Companion::Fiber => Color::srgb(1.0, 0.435, 0.682), // #ff6fae
+            Companion::Coax => Color::srgb(0.180, 0.769, 0.710), // #2ec4b6
+            Companion::Mobile => Color::srgb(0.220, 0.741, 0.973), // #38bdf8
+            Companion::Ethernet => Color::srgb(0.918, 0.702, 0.031), // #eab308
+        }
+    }
+
+    /// File stem of the companion-select silhouette animation frames:
+    /// `sprites/picker/{stem}_select_{0..6}.png` (see `gen_picker.lua`).
+    pub fn picker_stem(&self) -> &'static str {
+        match self {
+            Companion::Fiber => "seraphine",
+            Companion::Coax => "ondine",
+            Companion::Mobile => "linka",
+            Companion::Ethernet => "lattice",
         }
     }
 

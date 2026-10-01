@@ -19,7 +19,7 @@
 //! `assets/sprites/ui/` (same visual radii as the old gizmo circles, so
 //! the hit-test contract is unchanged).
 
-use crate::level::LevelDef;
+use crate::level::{LevelDef, MediumDef};
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
 use crate::test_log;
@@ -54,14 +54,39 @@ const HAZARD_RED: Color = Color::srgb(1.0, 0.302, 0.302); // #ff4d4d
 const NODE_RING_SIZE: f32 = 80.0;
 const PILL_RING_SIZE: f32 = 96.0;
 
-/// Asset path of the Aseprite-crafted node ring sprite — gold for the
-/// level's source/target endpoints, cyan for every other node (pure, so
-/// tests can pin the wiring without spawning anything).
-fn node_ring_path(is_endpoint: bool) -> &'static str {
-    if is_endpoint {
-        "sprites/ui/node_ring_gold.png"
+/// Which Aseprite node-ring flavor a node gets — gold for the level's
+/// source/target endpoints, the tap-leg ring for nodes whose label names
+/// tap plant, the broadcast-arcs ring for non-endpoint nodes on wireless
+/// levels, cyan for everything else. Pure, so tests can pin the mapping
+/// without spawning anything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NodeRingFlavor {
+    Endpoint,
+    Tap,
+    Site,
+    Standard,
+}
+
+fn node_ring_flavor(level: &LevelDef, node_id: u32, label: &str) -> NodeRingFlavor {
+    if node_id == level.source_node || node_id == level.target_node {
+        NodeRingFlavor::Endpoint
+    } else if label.contains("Tap") {
+        NodeRingFlavor::Tap
+    } else if level.medium == MediumDef::Wireless {
+        NodeRingFlavor::Site
     } else {
-        "sprites/ui/node_ring_cyan.png"
+        NodeRingFlavor::Standard
+    }
+}
+
+/// Asset path of the Aseprite-crafted node ring sprite for a flavor (see
+/// `node_ring_flavor`).
+fn node_ring_path(flavor: NodeRingFlavor) -> &'static str {
+    match flavor {
+        NodeRingFlavor::Endpoint => "sprites/ui/node_ring_gold.png",
+        NodeRingFlavor::Tap => "sprites/ui/node_ring_tap.png",
+        NodeRingFlavor::Site => "sprites/ui/node_ring_site.png",
+        NodeRingFlavor::Standard => "sprites/ui/node_ring_cyan.png",
     }
 }
 
@@ -98,7 +123,7 @@ pub fn grid_to_world(grid_x: f32, grid_y: f32) -> Vec2 {
     Vec2::new((grid_x - 1.0) * 200.0, 300.0 - grid_y * 200.0)
 }
 
-fn node_world_pos(level: &LevelDef, id: u32) -> Option<Vec2> {
+pub(crate) fn node_world_pos(level: &LevelDef, id: u32) -> Option<Vec2> {
     level
         .nodes
         .iter()
@@ -193,6 +218,48 @@ fn component_icon_path(component: &Component) -> Option<&'static str> {
         Component::Splitter { .. } => Some("sprites/components/splitter.png"),
         Component::Macrobend { .. } => Some("sprites/components/macrobend.png"),
         Component::Span { .. } => None,
+        Component::Amplifier { .. } => Some("sprites/components/amplifier.png"),
+        Component::Tap { .. } => Some("sprites/components/tap.png"),
+        Component::CoaxSpan { .. } => Some("sprites/components/coax_span.png"),
+        Component::WirelessHop { .. } => Some("sprites/components/wireless_hop.png"),
+        Component::Repeater { .. } => Some("sprites/components/repeater.png"),
+        Component::EthernetRun { .. } => Some("sprites/components/ethernet_run.png"),
+        Component::Switch { .. } => Some("sprites/components/switch.png"),
+    }
+}
+
+/// Three-letter pill label for a component, drawn as `Text2d` when it has
+/// no icon sprite (see `component_icon_path`) — today only `Span`, which
+/// is never offered as a pill choice, so this is a safety net rather
+/// than a render path.
+fn component_short_label(component: &Component) -> &'static str {
+    match component {
+        Component::Splice {
+            kind: osp_sim::SpliceType::Fusion,
+            ..
+        } => "FUS",
+        Component::Splice {
+            kind: osp_sim::SpliceType::Mechanical,
+            ..
+        } => "MEC",
+        Component::Connector {
+            kind: osp_sim::ConnectorType::Upc,
+            ..
+        } => "UPC",
+        Component::Connector {
+            kind: osp_sim::ConnectorType::Apc,
+            ..
+        } => "APC",
+        Component::Splitter { .. } => "SPL",
+        Component::Macrobend { .. } => "BEND",
+        Component::Span { .. } => "SPAN",
+        Component::Amplifier { .. } => "AMP",
+        Component::Tap { .. } => "TAP",
+        Component::CoaxSpan { .. } => "COAX",
+        Component::WirelessHop { .. } => "AIR",
+        Component::Repeater { .. } => "RPT",
+        Component::EthernetRun { .. } => "CAT",
+        Component::Switch { .. } => "SW",
     }
 }
 
@@ -206,7 +273,7 @@ struct ComponentIcon;
 /// Groups `available_components` entries by their `(from, to)` pair,
 /// preserving first-encounter order, and records each entry's original
 /// index so it can be resolved back against `available_components` later.
-fn grouped_choices(level: &LevelDef) -> Vec<((u32, u32), Vec<usize>)> {
+pub(crate) fn grouped_choices(level: &LevelDef) -> Vec<((u32, u32), Vec<usize>)> {
     let mut order: Vec<(u32, u32)> = Vec::new();
     let mut groups: HashMap<(u32, u32), Vec<usize>> = HashMap::new();
     for (idx, choice) in level.available_components.iter().enumerate() {
@@ -228,7 +295,7 @@ fn grouped_choices(level: &LevelDef) -> Vec<((u32, u32), Vec<usize>)> {
 /// World position of the Nth pill offered for a given `(from, to)` edge —
 /// spaced perpendicular to the edge so multiple choices get distinct tap
 /// targets instead of overlapping.
-fn pill_world_pos(
+pub(crate) fn pill_world_pos(
     level: &LevelDef,
     from: u32,
     to: u32,
@@ -456,31 +523,84 @@ pub fn spawn_board_from_level(
     commands
         .spawn((BoardRoot, SpatialBundle::default()))
         .with_children(|parent| {
+            // Circuit-texture backdrop fitted to the level's node extents,
+            // far behind everything else (z = -10).
+            let (backdrop_center, backdrop_size) = board_backdrop_frame(level);
+            parent.spawn((
+                BoardBackdrop,
+                SpriteBundle {
+                    texture: asset_server.load("sprites/ui/board_bg.png"),
+                    transform: Transform::from_translation(backdrop_center.extend(-10.0)),
+                    sprite: Sprite {
+                        custom_size: Some(backdrop_size),
+                        ..default()
+                    },
+                    ..default()
+                },
+            ));
             for node in &level.nodes {
                 let pos = grid_to_world(node.grid_x, node.grid_y);
+                // Stagger labels above/below within a row so same-row
+                // neighbors (coax1 runs all four nodes on grid_y = 0)
+                // don't set type on top of each other. Row order is
+                // node-id order: deterministic per level file.
+                let row_index = level
+                    .nodes
+                    .iter()
+                    .filter(|n| n.grid_y == node.grid_y && n.id < node.id)
+                    .count();
+                let label_dy = if row_index % 2 == 0 {
+                    NODE_RADIUS + 18.0
+                } else {
+                    -(NODE_RADIUS + 18.0)
+                };
+                // Dark nameplate behind the label: node labels are long
+                // ("Splice Enclosure 14+00") and pill sprites sit on the
+                // edges between nodes, so text can cross a ring or pill.
+                // The plate keeps every label readable and makes any
+                // overlap look deliberate instead of accidental. Width is
+                // estimated from the fixed Press Start 2P advance
+                // (~1.0x font size); the padding absorbs the estimate.
+                let label_font_size = 14.0;
+                parent.spawn(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::srgba(0.015, 0.02, 0.05, 0.88),
+                        custom_size: Some(Vec2::new(
+                            node.label.len() as f32 * label_font_size + 24.0,
+                            label_font_size + 20.0,
+                        )),
+                        ..default()
+                    },
+                    transform: Transform::from_translation(
+                        (pos + Vec2::new(0.0, label_dy)).extend(4.9),
+                    ),
+                    ..default()
+                });
                 parent.spawn(Text2dBundle {
                     text: Text::from_section(
                         node.label.clone(),
                         TextStyle {
                             font: font.clone(),
-                            font_size: 14.0,
+                            font_size: label_font_size,
                             color: BOARD_ACCENT,
                         },
                     ),
                     transform: Transform::from_translation(
-                        (pos + Vec2::new(0.0, NODE_RADIUS + 18.0)).extend(5.0),
+                        (pos + Vec2::new(0.0, label_dy)).extend(5.0),
                     ),
                     text_anchor: bevy::sprite::Anchor::Center,
                     ..default()
                 });
                 // Aseprite-crafted neon ring under the label; the band
                 // sits exactly on NODE_RADIUS so the hit-test contract
-                // (NODE_HIT_RADIUS) is unchanged.
-                let is_endpoint = node.id == level.source_node || node.id == level.target_node;
+                // (NODE_HIT_RADIUS) is unchanged. The flavor follows the
+                // node: gold endpoints, tap leg for tap plant, broadcast
+                // arcs for wireless sites, cyan otherwise.
+                let flavor = node_ring_flavor(level, node.id, &node.label);
                 parent.spawn((
                     NodeRing,
                     SpriteBundle {
-                        texture: asset_server.load(node_ring_path(is_endpoint)),
+                        texture: asset_server.load(node_ring_path(flavor)),
                         transform: Transform::from_translation(pos.extend(4.0)),
                         sprite: Sprite {
                             custom_size: Some(Vec2::splat(NODE_RING_SIZE)),
@@ -507,11 +627,7 @@ pub fn spawn_board_from_level(
                     let Some(pos) = pill_world_pos(level, from, to, slot, count) else {
                         continue;
                     };
-                    let Some(icon_path) =
-                        component_icon_path(&level.available_components[idx].component)
-                    else {
-                        continue;
-                    };
+                    let component = &level.available_components[idx].component;
                     // Aseprite-crafted neon ring under the icon; the band
                     // sits exactly on PILL_RADIUS so the hit-test contract
                     // is unchanged. The texture swaps to hot pink via
@@ -528,18 +644,40 @@ pub fn spawn_board_from_level(
                             ..default()
                         },
                     ));
-                    parent.spawn((
-                        ComponentIcon,
-                        SpriteBundle {
-                            texture: asset_server.load(icon_path),
-                            transform: Transform::from_translation(pos.extend(6.0)),
-                            sprite: Sprite {
-                                custom_size: Some(Vec2::splat(48.0)),
+                    if let Some(icon_path) = component_icon_path(component) {
+                        parent.spawn((
+                            ComponentIcon,
+                            SpriteBundle {
+                                texture: asset_server.load(icon_path),
+                                transform: Transform::from_translation(pos.extend(6.0)),
+                                sprite: Sprite {
+                                    custom_size: Some(Vec2::splat(48.0)),
+                                    ..default()
+                                },
                                 ..default()
                             },
-                            ..default()
-                        },
-                    ));
+                        ));
+                    } else {
+                        // Icon-less components (only `Span`, never offered
+                        // as a choice) render a three-letter text pill
+                        // instead — same ring, same position, no
+                        // missing-texture magenta.
+                        parent.spawn((
+                            ComponentIcon,
+                            Text2dBundle {
+                                text: Text::from_section(
+                                    component_short_label(component),
+                                    TextStyle {
+                                        font: asset_server.load("fonts/pixel.ttf"),
+                                        font_size: 28.0,
+                                        color: Color::WHITE,
+                                    },
+                                ),
+                                transform: Transform::from_translation(pos.extend(6.0)),
+                                ..default()
+                            },
+                        ));
+                    }
                 }
             }
         });
@@ -765,10 +903,222 @@ pub fn update_pill_rings(
     }
 }
 
+/// Marks the circuit-texture backdrop sprite (`sprites/ui/board_bg.png`)
+/// fitted to the level's node extents, far behind the board (z = -10).
+#[derive(Component)]
+struct BoardBackdrop;
+
+/// Native pixel size of `sprites/ui/board_bg.png`.
+const BOARD_BG_NATIVE: Vec2 = Vec2::new(1200.0, 1800.0);
+
+/// Frame (center, world size) for the board backdrop: the level's node
+/// extents plus a 200-unit margin on each side, scaled up from the
+/// texture's native size just enough to cover (aspect preserved). Pure,
+/// so tests can pin the fit without spawning anything.
+fn board_backdrop_frame(level: &LevelDef) -> (Vec2, Vec2) {
+    let mut min = Vec2::splat(f32::MAX);
+    let mut max = Vec2::splat(f32::MIN);
+    for node in &level.nodes {
+        let p = grid_to_world(node.grid_x, node.grid_y);
+        min = min.min(p);
+        max = max.max(p);
+    }
+    if level.nodes.is_empty() {
+        min = Vec2::new(-600.0, -800.0);
+        max = Vec2::new(600.0, 1000.0);
+    }
+    let center = (min + max) / 2.0;
+    let span = (max - min).max(Vec2::splat(400.0)) + Vec2::splat(400.0);
+    let scale = (span.x / BOARD_BG_NATIVE.x).max(span.y / BOARD_BG_NATIVE.y);
+    (center, BOARD_BG_NATIVE * scale)
+}
+
+/// Largest number of signal pulses alive at once — one per lit edge in
+/// the worst case. A dense level can't grow an unbounded sprite fleet.
+const MAX_SIGNAL_PULSES: usize = 24;
+/// Seconds between pulse spawns: each lit edge gets a fresh pulse about
+/// twice a second, staggered by the repeating timer.
+const PULSE_SPAWN_INTERVAL_SECS: f32 = 0.45;
+/// World units a pulse travels per second.
+const PULSE_SPEED: f32 = 260.0;
+
+/// A light packet traveling a placed (lit) edge. `progress` runs 0.0 at
+/// `from` to 1.0 at `to`; the system despawns it on arrival.
+#[derive(Component)]
+pub(crate) struct SignalPulse {
+    from_id: u32,
+    to_id: u32,
+    from: Vec2,
+    to: Vec2,
+    progress: f32,
+}
+
+/// Repeating timer that staggers signal-pulse spawns.
+#[derive(Resource)]
+pub struct PulseSpawnTimer(Timer);
+
+impl Default for PulseSpawnTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(
+            PULSE_SPAWN_INTERVAL_SECS,
+            TimerMode::Repeating,
+        ))
+    }
+}
+
+/// Spawns one pulse per lit edge (a placed component in `LiveGraph`) each
+/// timer tick, skipping edges that already carry a pulse and stopping at
+/// `MAX_SIGNAL_PULSES`. Pulses are `BoardRoot` children so level teardown
+/// sweeps them with the rest of the board.
+// One parameter per input/state resource this spawn pass needs; the same
+// shape as `handle_pointer_input` below would only move the list around.
+#[allow(clippy::too_many_arguments)]
+pub fn spawn_signal_pulses(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut timer: ResMut<PulseSpawnTimer>,
+    live_graph: Res<LiveGraph>,
+    level: Res<LevelDef>,
+    asset_server: Res<AssetServer>,
+    pulses: Query<&SignalPulse>,
+    board_roots: Query<Entity, With<BoardRoot>>,
+) {
+    timer.0.tick(time.delta());
+    if !timer.0.just_finished() {
+        return;
+    }
+    let Ok(board_root) = board_roots.get_single() else {
+        return;
+    };
+    let mut live_count = pulses.iter().count();
+    for edge in &live_graph.graph.edges {
+        if live_count >= MAX_SIGNAL_PULSES {
+            break;
+        }
+        if pulses
+            .iter()
+            .any(|p| p.from_id == edge.from && p.to_id == edge.to)
+        {
+            continue;
+        }
+        let (Some(from), Some(to)) = (
+            node_world_pos(&level, edge.from),
+            node_world_pos(&level, edge.to),
+        ) else {
+            continue;
+        };
+        commands.entity(board_root).with_children(|parent| {
+            parent.spawn((
+                SignalPulse {
+                    from_id: edge.from,
+                    to_id: edge.to,
+                    from,
+                    to,
+                    progress: 0.0,
+                },
+                SpriteBundle {
+                    texture: asset_server.load("sprites/fx/pulse_dot.png"),
+                    transform: Transform::from_translation(from.extend(7.0)),
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::splat(24.0)),
+                        ..default()
+                    },
+                    ..default()
+                },
+            ));
+        });
+        live_count += 1;
+    }
+}
+
+/// Advances every signal pulse along its edge and despawns it on arrival.
+pub fn move_signal_pulses(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut pulses: Query<(Entity, &mut SignalPulse, &mut Transform)>,
+) {
+    for (entity, mut pulse, mut transform) in &mut pulses {
+        let edge_len = pulse.from.distance(pulse.to).max(1.0);
+        pulse.progress += PULSE_SPEED * time.delta_seconds() / edge_len;
+        if pulse.progress >= 1.0 {
+            commands.entity(entity).despawn();
+            continue;
+        }
+        transform.translation = pulse.from.lerp(pulse.to, pulse.progress).extend(7.0);
+    }
+}
+
+/// Largest number of rain streaks alive during an outage.
+const MAX_STORM_STREAKS: usize = 40;
+/// Streaks spawned per frame until the sky is full — avoids a 40-sprite
+/// burst in a single frame when the outage hits.
+const STREAKS_PER_FRAME: usize = 2;
+/// Fall speed of a streak, world units per second.
+const STREAK_FALL_SPEED: f32 = 520.0;
+/// Rain spawns across this x band, from above the camera view, and wraps
+/// back to the top once it falls past the bottom.
+const RAIN_SPAWN_HALF_WIDTH: f32 = 620.0;
+const RAIN_TOP_Y: f32 = 1200.0;
+const RAIN_BOTTOM_Y: f32 = -900.0;
+
+/// A diagonal storm streak, alive only while an outage is active.
+#[derive(Component)]
+pub(crate) struct StormStreak;
+
+/// Holds the storm sky at `MAX_STORM_STREAKS` falling streaks while
+/// `ActiveOutage.outage` is `Some`, and sweeps every streak the moment it
+/// clears. Spawn lanes spread deterministically (golden-ratio stride, no
+/// RNG resource in the hot path); streaks are `BoardRoot` children so
+/// level teardown covers them too.
+pub fn update_storm_rain(
+    mut commands: Commands,
+    time: Res<Time>,
+    active_outage: Res<ActiveOutage>,
+    asset_server: Res<AssetServer>,
+    board_roots: Query<Entity, With<BoardRoot>>,
+    mut streaks: Query<(Entity, &mut Transform), With<StormStreak>>,
+) {
+    if active_outage.outage.is_none() {
+        for (entity, _) in &streaks {
+            commands.entity(entity).despawn();
+        }
+        return;
+    }
+    let Ok(board_root) = board_roots.get_single() else {
+        return;
+    };
+    let mut live_count = streaks.iter().count();
+    if live_count < MAX_STORM_STREAKS {
+        commands.entity(board_root).with_children(|parent| {
+            for _ in 0..STREAKS_PER_FRAME.min(MAX_STORM_STREAKS - live_count) {
+                // 0.61803… stride spreads lanes without clumping.
+                let lane = (live_count as f32 * 0.61803) % 1.0;
+                let x = (lane * 2.0 - 1.0) * RAIN_SPAWN_HALF_WIDTH;
+                let y = RAIN_TOP_Y + (live_count as f32 * 37.0) % 160.0;
+                parent.spawn((
+                    StormStreak,
+                    SpriteBundle {
+                        texture: asset_server.load("sprites/fx/storm_streak.png"),
+                        transform: Transform::from_translation(Vec3::new(x, y, 3.0)),
+                        ..default()
+                    },
+                ));
+                live_count += 1;
+            }
+        });
+    }
+    for (_, mut transform) in &mut streaks {
+        transform.translation.y -= STREAK_FALL_SPEED * time.delta_seconds();
+        if transform.translation.y < RAIN_BOTTOM_Y {
+            transform.translation.y = RAIN_TOP_Y;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::level::{ComponentChoice, LevelEdge, LevelNode, WavelengthDef};
+    use crate::level::{ComponentChoice, LevelEdge, LevelNode, MediumDef, WavelengthDef};
     use crate::states::playing::WavelengthWrapper;
     use osp_sim::component::PlantType;
     use osp_sim::{Component, SpliceType};
@@ -788,10 +1138,14 @@ mod tests {
             title: "Test Level".into(),
             world: 0,
             briefing: String::new(),
+            medium: MediumDef::Fiber,
             tx_dbm: 3.0,
             wavelength: WavelengthDef::Nm1490,
             window_min_dbm: -27.0,
             window_max_dbm: -8.0,
+            endpoint_poe_draw_w: None,
+            required_bandwidth_mbps: None,
+            max_segment_length_m: None,
             nodes,
             fixed_edges,
             available_components,
@@ -1382,6 +1736,114 @@ mod tests {
             None,
             "Span is fixed background plant, never a pill choice, and has no icon"
         );
+        // The per-medium components have Aseprite icons now (see
+        // `gen_components.lua`): each must resolve to its own sprite so
+        // pills never fall back to the text label.
+        for (component, expected) in [
+            (
+                Component::Amplifier { gain_db: 5.0 },
+                "sprites/components/amplifier.png",
+            ),
+            (
+                Component::Tap { tap_loss_db: 8.0 },
+                "sprites/components/tap.png",
+            ),
+            (
+                Component::CoaxSpan { length_m: 100.0 },
+                "sprites/components/coax_span.png",
+            ),
+            (
+                Component::WirelessHop {
+                    distance_m: 400.0,
+                    frequency_mhz: 2400.0,
+                },
+                "sprites/components/wireless_hop.png",
+            ),
+            (
+                Component::Repeater { tx_dbm: 20.0 },
+                "sprites/components/repeater.png",
+            ),
+            (
+                Component::EthernetRun {
+                    length_m: 65.0,
+                    category: osp_sim::component::CableCategory::Cat5e,
+                },
+                "sprites/components/ethernet_run.png",
+            ),
+            (
+                Component::Switch { poe_budget_w: 0.0 },
+                "sprites/components/switch.png",
+            ),
+        ] {
+            assert_eq!(
+                component_icon_path(&component),
+                Some(expected),
+                "per-medium component must resolve to its Aseprite icon"
+            );
+        }
+    }
+
+    #[test]
+    fn component_short_label_covers_every_variant_with_unique_labels() {
+        let labels = [
+            (fusion_splice(), "FUS"),
+            (mechanical_splice(), "MEC"),
+            (
+                Component::Connector {
+                    kind: osp_sim::ConnectorType::Upc,
+                    contamination_db: 0.0,
+                },
+                "UPC",
+            ),
+            (
+                Component::Connector {
+                    kind: osp_sim::ConnectorType::Apc,
+                    contamination_db: 0.0,
+                },
+                "APC",
+            ),
+            (
+                Component::Splitter {
+                    ratio: osp_sim::component::SplitterRatio::OneByFour,
+                },
+                "SPL",
+            ),
+            (Component::Macrobend { excess_loss_db: 0.0 }, "BEND"),
+            (
+                Component::Span {
+                    length_km: 1.0,
+                    plant: osp_sim::component::PlantType::Buried,
+                },
+                "SPAN",
+            ),
+            (Component::Amplifier { gain_db: 5.0 }, "AMP"),
+            (Component::Tap { tap_loss_db: 8.0 }, "TAP"),
+            (Component::CoaxSpan { length_m: 100.0 }, "COAX"),
+            (
+                Component::WirelessHop {
+                    distance_m: 400.0,
+                    frequency_mhz: 2400.0,
+                },
+                "AIR",
+            ),
+            (Component::Repeater { tx_dbm: 20.0 }, "RPT"),
+            (
+                Component::EthernetRun {
+                    length_m: 65.0,
+                    category: osp_sim::component::CableCategory::Cat5e,
+                },
+                "CAT",
+            ),
+            (Component::Switch { poe_budget_w: 0.0 }, "SW"),
+        ];
+        let mut seen = std::collections::HashSet::new();
+        for (component, expected) in labels {
+            assert_eq!(component_short_label(&component), expected);
+            assert!(
+                seen.insert(expected),
+                "short label {expected} must be unique across components"
+            );
+        }
     }
 
     #[test]
@@ -1471,9 +1933,81 @@ mod tests {
     }
 
     #[test]
-    fn node_ring_path_is_gold_for_endpoints_and_cyan_otherwise() {
-        assert_eq!(node_ring_path(true), "sprites/ui/node_ring_gold.png");
-        assert_eq!(node_ring_path(false), "sprites/ui/node_ring_cyan.png");
+    fn node_ring_path_maps_every_flavor() {
+        assert_eq!(
+            node_ring_path(NodeRingFlavor::Endpoint),
+            "sprites/ui/node_ring_gold.png"
+        );
+        assert_eq!(
+            node_ring_path(NodeRingFlavor::Tap),
+            "sprites/ui/node_ring_tap.png"
+        );
+        assert_eq!(
+            node_ring_path(NodeRingFlavor::Site),
+            "sprites/ui/node_ring_site.png"
+        );
+        assert_eq!(
+            node_ring_path(NodeRingFlavor::Standard),
+            "sprites/ui/node_ring_cyan.png"
+        );
+    }
+
+    #[test]
+    fn node_ring_flavor_picks_endpoint_tap_site_and_standard() {
+        let mut level = fixture(
+            vec![
+                LevelNode {
+                    id: 1,
+                    label: "Headend".into(),
+                    grid_x: 0.0,
+                    grid_y: 0.0,
+                },
+                LevelNode {
+                    id: 2,
+                    label: "Tap".into(),
+                    grid_x: 1.0,
+                    grid_y: 0.0,
+                },
+                LevelNode {
+                    id: 3,
+                    label: "Customer Drop".into(),
+                    grid_x: 2.0,
+                    grid_y: 0.0,
+                },
+            ],
+            vec![],
+            vec![],
+            1,
+            3,
+        );
+        // Coax level: endpoints gold, the "Tap"-labeled node gets the tap
+        // leg, everything else standard cyan.
+        level.medium = MediumDef::Coax;
+        assert_eq!(
+            node_ring_flavor(&level, 1, "Headend"),
+            NodeRingFlavor::Endpoint
+        );
+        assert_eq!(
+            node_ring_flavor(&level, 3, "Customer Drop"),
+            NodeRingFlavor::Endpoint
+        );
+        assert_eq!(node_ring_flavor(&level, 2, "Tap"), NodeRingFlavor::Tap);
+        // Wireless level: a non-endpoint, non-tap node gets broadcast arcs.
+        level.medium = MediumDef::Wireless;
+        assert_eq!(
+            node_ring_flavor(&level, 2, "Ridge Repeater"),
+            NodeRingFlavor::Site
+        );
+        assert_eq!(
+            node_ring_flavor(&level, 1, "Site A"),
+            NodeRingFlavor::Endpoint
+        );
+        // Fiber level, unknown node: standard cyan.
+        level.medium = MediumDef::Fiber;
+        assert_eq!(
+            node_ring_flavor(&level, 9, "Splice Enclosure"),
+            NodeRingFlavor::Standard
+        );
     }
 
     #[test]
@@ -1488,5 +2022,126 @@ mod tests {
         // halo and the diagonal circuit ticks.
         assert_eq!(NODE_RING_SIZE, NODE_RADIUS * 2.0 + 28.0);
         assert_eq!(PILL_RING_SIZE, PILL_RADIUS * 2.0 + 28.0);
+    }
+
+    #[test]
+    fn spawn_signal_pulses_places_one_pulse_per_lit_edge() {
+        use bevy::asset::AssetPlugin;
+        use bevy_ecs::system::RunSystemOnce;
+        use std::time::Duration;
+
+        let level = fixture(
+            vec![node(0, 0.0, 0.0), node(1, 1.0, 0.0)],
+            vec![LevelEdge {
+                from: 0,
+                to: 1,
+                component: Component::Span {
+                    length_km: 8.0,
+                    plant: PlantType::Buried,
+                },
+            }],
+            vec![],
+            0,
+            1,
+        );
+        let mut live = LiveGraph {
+            graph: PathGraph::default(),
+            wavelength: WavelengthWrapper(level.wavelength.into()),
+            tx_dbm: level.tx_dbm,
+        };
+        rebuild_live_graph(&level, &PlacedChoices::default(), None, &mut live.graph);
+        assert_eq!(live.graph.edges.len(), 1);
+
+        // Standalone `AssetPlugin` (no `TimePlugin`): the pulse system gets
+        // a real `AssetServer` for `load()`, while `Time<()>` stays fully
+        // under this test's control via `advance_by`.
+        let mut app = App::new();
+        app.add_plugins((
+            bevy::core::TaskPoolPlugin::default(),
+            AssetPlugin::default(),
+        ));
+        app.init_asset::<Image>();
+        app.init_resource::<Time>();
+        app.world_mut()
+            .resource_mut::<Time>()
+            .advance_by(Duration::from_secs_f32(1.0));
+        app.world_mut().insert_resource(PulseSpawnTimer::default());
+        app.world_mut().insert_resource(live);
+        app.world_mut().insert_resource(level);
+        app.world_mut().spawn(BoardRoot);
+        app.world_mut().run_system_once(spawn_signal_pulses);
+
+        let world = app.world_mut();
+        let pulses: Vec<(u32, u32)> = world
+            .query::<&SignalPulse>()
+            .iter(world)
+            .map(|p| (p.from_id, p.to_id))
+            .collect();
+        assert_eq!(pulses, vec![(0, 1)]);
+    }
+
+    #[test]
+    fn move_signal_pulses_advances_and_despawns_at_the_far_end() {
+        use bevy_ecs::system::RunSystemOnce;
+        use std::time::Duration;
+
+        let mut world = World::new();
+        world.init_resource::<Time>();
+        world
+            .resource_mut::<Time>()
+            .advance_by(Duration::from_secs_f32(1.0));
+        let entity = world
+            .spawn((
+                SignalPulse {
+                    from_id: 0,
+                    to_id: 1,
+                    from: Vec2::new(0.0, 300.0),
+                    to: Vec2::new(200.0, 300.0),
+                    progress: 0.99,
+                },
+                Transform::default(),
+            ))
+            .id();
+        world.run_system_once(move_signal_pulses);
+        // 260 u/s over a 200 u edge crosses the last 1% in one 1 s step.
+        assert!(world.get_entity(entity).is_none());
+    }
+
+    #[test]
+    fn update_storm_rain_spawns_streaks_during_an_outage_and_clears_them_after() {
+        use bevy::asset::AssetPlugin;
+        use bevy::core::TaskPoolPlugin;
+        use bevy_ecs::system::RunSystemOnce;
+        use std::time::Duration;
+
+        let mut app = App::new();
+        app.add_plugins((TaskPoolPlugin::default(), AssetPlugin::default()));
+        app.init_asset::<Image>();
+        app.init_resource::<Time>();
+        app.world_mut()
+            .resource_mut::<Time>()
+            .advance_by(Duration::from_secs_f32(1.0));
+        app.world_mut().spawn(BoardRoot);
+        // Outage present: streaks spawn up to the per-frame batch size.
+        app.world_mut().insert_resource(ActiveOutage {
+            outage: Some(Outage::new(osp_sim::OutageKind::AerialDamage, 0, 1)),
+        });
+        app.world_mut().run_system_once(update_storm_rain);
+        let spawned = app
+            .world_mut()
+            .query::<&StormStreak>()
+            .iter(app.world_mut())
+            .count();
+        assert!(spawned > 0, "outage should spawn streaks");
+
+        // Outage cleared: all streaks despawn.
+        app.world_mut().resource_mut::<ActiveOutage>().outage = None;
+        app.world_mut().run_system_once(update_storm_rain);
+        let remaining = app
+            .world_mut()
+            .query::<&StormStreak>()
+            .iter(app.world_mut())
+            .count();
+        assert_eq!(remaining, 0, "cleared outage should despawn streaks");
     }
 }

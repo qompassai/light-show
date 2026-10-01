@@ -9,6 +9,8 @@ mod audio;
 mod bench;
 mod board;
 mod level;
+#[cfg(test)]
+mod playthrough;
 mod states;
 mod ui;
 mod waifu;
@@ -112,6 +114,7 @@ fn build_app() -> App {
         .init_state::<GameState>()
         .add_plugins((
             states::menu::MenuPlugin,
+            states::companion_select::CompanionSelectPlugin,
             states::credits::CreditsPlugin,
             states::playing::PlayingPlugin,
             states::outage::OutagePlugin,

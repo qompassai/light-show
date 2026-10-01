@@ -9,20 +9,21 @@ use super::{GameState, LevelOutcome};
 use crate::board;
 use crate::level::{self, CurrentLevelIndex, LevelDef};
 use crate::waifu::dialogue::DialogueBank;
-use crate::waifu::FavorPoints;
+use crate::waifu::{Companion, FavorPoints, SelectedCompanion};
 use bevy::prelude::*;
 
 pub struct ResultsPlugin;
 
 impl Plugin for ResultsPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(WinRingTimer::default());
         app.add_systems(
             OnEnter(GameState::Results),
             (board::teardown_board, show_results),
         )
         .add_systems(
             Update,
-            handle_result_buttons.run_if(in_state(GameState::Results)),
+            (handle_result_buttons, animate_win_ring).run_if(in_state(GameState::Results)),
         )
         .add_systems(OnExit(GameState::Results), teardown_results);
     }
@@ -32,11 +33,65 @@ impl Plugin for ResultsPlugin {
 struct ResultsRoot;
 
 /// Which follow-up action a results-screen button performs when pressed.
-#[derive(Component, Clone, Copy)]
-enum ResultAction {
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ResultAction {
     ContinueNextLevel,
     RetrySameLevel,
     ReturnToMenu,
+    /// At the end of a companion's track: back to the discipline picker
+    /// so the player can start another medium's track.
+    ReturnToSelect,
+}
+
+/// Frames in the win-ring one-shot (see `gen_board_art.lua`).
+const WIN_RING_FRAMES: usize = 6;
+/// Seconds per win-ring frame (matches the 0.12 s Aseprite frame timing).
+const WIN_RING_FRAME_SECS: f32 = 0.12;
+
+/// Tags the results-screen win ring; `index` advances through the strip
+/// frames and the entity despawns after the last one (one-shot).
+#[derive(Component)]
+struct WinRing {
+    frames: [Handle<Image>; WIN_RING_FRAMES],
+    index: usize,
+}
+
+/// Paces the win-ring one-shot.
+#[derive(Resource)]
+struct WinRingTimer(Timer);
+
+impl Default for WinRingTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(
+            WIN_RING_FRAME_SECS,
+            TimerMode::Repeating,
+        ))
+    }
+}
+
+/// Advances the win ring one frame per tick and despawns it after the
+/// last frame.
+fn animate_win_ring(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut timer: ResMut<WinRingTimer>,
+    mut rings: Query<(Entity, &mut WinRing, &mut UiImage)>,
+) {
+    if rings.is_empty() {
+        return;
+    }
+    timer.0.tick(time.delta());
+    if !timer.0.just_finished() {
+        return;
+    }
+    for (entity, mut ring, mut image) in &mut rings {
+        ring.index += 1;
+        if ring.index >= WIN_RING_FRAMES {
+            commands.entity(entity).despawn();
+        } else {
+            image.texture = ring.frames[ring.index].clone();
+        }
+    }
 }
 
 // Bevy systems idiomatically take one parameter per resource/query they
@@ -52,6 +107,7 @@ fn show_results(
     live: Res<LiveGraph>,
     active_outage: Res<ActiveOutage>,
     index: Res<CurrentLevelIndex>,
+    selected: Res<SelectedCompanion>,
     dialogue: Res<DialogueBank>,
     asset_server: Res<AssetServer>,
     mut favor: ResMut<FavorPoints>,
@@ -66,12 +122,10 @@ fn show_results(
         favor.0 = favor.0.saturating_add(FAVOR_PER_WIN);
     }
 
-    let ledger = live.graph.compute_link_budget_with_outage(
-        level.source_node,
-        level.target_node,
+    let ledger_text = level.signal_ledger(
+        &live.graph,
         live.tx_dbm,
         live.wavelength.0,
-        level.receive_window(),
         active_outage.outage.as_ref(),
     );
 
@@ -79,14 +133,6 @@ fn show_results(
         ("SERVICE RESTORED", Color::srgb(0.4, 0.9, 0.5))
     } else {
         ("OUTAGE TIMED OUT", Color::srgb(1.0, 0.302, 0.302)) // #ff4d4d
-    };
-
-    let ledger_text = match ledger {
-        Ok(result) => format!(
-            "Loss: {:.2} dB  |  Rx: {:.2} dBm  |  Margin: {:.2} dB",
-            result.total_loss_db, result.received_dbm, result.margin_db
-        ),
-        Err(_) => "Link disconnected — no route completed.".to_string(),
     };
 
     let dialogue_key = if outcome.won {
@@ -99,7 +145,8 @@ fn show_results(
         .unwrap_or("...")
         .to_string();
 
-    let has_next_level = index.0 + 1 < level::LEVEL_SOURCES.len();
+    let track_end = selected.0.track_start_index() + Companion::TRACK_LEN - 1;
+    let has_next_level = index.0 < track_end;
 
     commands
         .spawn((
@@ -119,6 +166,25 @@ fn show_results(
             },
         ))
         .with_children(|parent| {
+            if outcome.won {
+                // Expanding gold ring, played once: the win FX.
+                let frames: [Handle<Image>; WIN_RING_FRAMES] = std::array::from_fn(|i| {
+                    asset_server.load(format!("sprites/fx/win_ring_{i}.png"))
+                });
+                let first_frame = frames[0].clone();
+                parent.spawn((
+                    WinRing { frames, index: 0 },
+                    ImageBundle {
+                        style: Style {
+                            width: Val::Px(256.0),
+                            height: Val::Px(256.0),
+                            ..default()
+                        },
+                        image: UiImage::new(first_frame),
+                        ..default()
+                    },
+                ));
+            }
             parent.spawn(TextBundle::from_section(
                 banner_text,
                 TextStyle {
@@ -173,14 +239,15 @@ fn show_results(
                                 Color::srgb(0.9, 0.4, 0.6),
                             );
                         } else {
-                            row.spawn(TextBundle::from_section(
-                                "All bundled levels complete!",
-                                TextStyle {
-                                    font: asset_server.load("fonts/pixel.ttf"),
-                                    font_size: 16.0,
-                                    color: Color::srgb(0.8, 0.8, 0.9),
-                                },
-                            ));
+                            // Track complete — offer the other disciplines
+                            // instead of a dead end.
+                            spawn_result_button(
+                                row,
+                                &asset_server,
+                                ResultAction::ReturnToSelect,
+                                "Pick Another Track",
+                                Color::srgb(0.9, 0.4, 0.6),
+                            );
                         }
                     } else {
                         spawn_result_button(
@@ -256,6 +323,9 @@ fn handle_result_buttons(
             ResultAction::ReturnToMenu => {
                 index.0 = 0;
                 next_state.set(GameState::MainMenu);
+            }
+            ResultAction::ReturnToSelect => {
+                next_state.set(GameState::CompanionSelect);
             }
         }
     }

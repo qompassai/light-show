@@ -22,6 +22,7 @@ impl Plugin for PlayingPlugin {
             .insert_resource(board::PlacedChoices::default())
             .insert_resource(board::DragState::default())
             .insert_resource(board::PointerWorld::default())
+            .insert_resource(board::PulseSpawnTimer::default())
             .insert_resource(LevelOutcome::default())
             .add_systems(OnEnter(GameState::Playing), setup_level)
             // Board teardown moved off `OnExit(Playing)`: that would also
@@ -38,6 +39,9 @@ impl Plugin for PlayingPlugin {
                     board::handle_pointer_input,
                     board::draw_board_gizmos,
                     board::update_pill_rings,
+                    board::spawn_signal_pulses,
+                    board::move_signal_pulses,
+                    board::update_storm_rain,
                 )
                     .run_if(
                         in_state(GameState::Playing).or_else(in_state(GameState::OutageActive)),
@@ -217,16 +221,7 @@ fn check_win_condition(
     if level.scripted_outage.is_some() {
         return;
     }
-    let Ok(result) = live.graph.compute_link_budget(
-        level.source_node,
-        level.target_node,
-        live.tx_dbm,
-        live.wavelength.0,
-        level.receive_window(),
-    ) else {
-        return;
-    };
-    if result.in_window {
+    if level.is_win_state(&live.graph, live.tx_dbm, live.wavelength.0) {
         outcome.won = true;
         for mut sprite in &mut companions {
             sprite.mood = crate::waifu::Mood::Celebrate;

@@ -1,18 +1,26 @@
-//! osp_sim — Outside Plant fiber-optic link-budget simulation core.
+//! osp_sim — Outside Plant link-budget simulation core.
 //!
 //! This crate contains no rendering or engine code. It is the pure "physics"
 //! of Light Show: model an OSP path as a graph of components, compute the
-//! received optical power at the far end, and evaluate outage hazards.
-//! Kept engine-agnostic so it can be unit tested on its own and reused by
-//! any future frontend (Bevy today, something else tomorrow).
+//! received signal at the far end, and evaluate outage hazards. Fiber,
+//! coax, and wireless share the dB-budget machinery (see
+//! [`Medium`](crate::medium::Medium)); Ethernet is evaluated against
+//! structured-cabling constraints instead. Kept engine-agnostic so it can
+//! be unit tested on its own and reused by any future frontend (Bevy today,
+//! something else tomorrow).
 
 pub mod component;
 pub mod graph;
+pub mod medium;
 pub mod outage;
 pub mod wavelength;
 
-pub use component::{Component, ConnectorType, SpliceType};
-pub use graph::{LinkBudgetResult, PathGraph, PathNode};
+pub use component::{
+    free_space_path_loss_db, CableCategory, Component, ConnectorType, SpliceType,
+    COAX_LOSS_DB_PER_M,
+};
+pub use graph::{EthernetEval, EthernetViolation, LinkBudgetResult, PathGraph, PathNode};
+pub use medium::Medium;
 pub use outage::{Outage, OutageKind};
 pub use wavelength::Wavelength;
 

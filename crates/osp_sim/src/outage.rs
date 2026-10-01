@@ -18,6 +18,18 @@ pub enum OutageKind {
     ConnectorContamination,
     /// Someone staples/kinks a drop cable below minimum bend radius.
     Macrobend,
+    /// A coax line amplifier fails outright: the cascade loses its gain
+    /// and the downstream level collapses — a full cut for the purposes
+    /// of the win check.
+    AmplifierFailure,
+    /// Ingress noise on the coax plant (bad shielding, loose connectors):
+    /// the noise floor climbs steadily, so a level that started in-window
+    /// drifts out unless the player rebalances gain.
+    IngressNoise,
+    /// RF interference on a wireless link (a new transmitter, weather):
+    /// raises the effective noise floor the same way ingress does on
+    /// coax, but on Linka's medium.
+    WirelessInterference,
 }
 
 impl OutageKind {
@@ -29,10 +41,12 @@ impl OutageKind {
     /// into a wildcard default.
     pub fn is_full_cut(&self) -> bool {
         match self {
-            OutageKind::FiberCut | OutageKind::AerialDamage => true,
+            OutageKind::FiberCut | OutageKind::AerialDamage | OutageKind::AmplifierFailure => true,
             OutageKind::WaterIntrusion
             | OutageKind::ConnectorContamination
-            | OutageKind::Macrobend => false,
+            | OutageKind::Macrobend
+            | OutageKind::IngressNoise
+            | OutageKind::WirelessInterference => false,
         }
     }
 
@@ -51,6 +65,15 @@ impl OutageKind {
             OutageKind::Macrobend => {
                 "Drop cable stapled way under minimum bend radius. It's basically whispering now."
             }
+            OutageKind::AmplifierFailure => {
+                "A line amplifier just died — the cascade lost its gain."
+            }
+            OutageKind::IngressNoise => {
+                "Ingress noise is climbing — the floor is rising under your signal."
+            }
+            OutageKind::WirelessInterference => {
+                "Interference is stomping on the link — the floor is rising."
+            }
         }
     }
 
@@ -63,6 +86,9 @@ impl OutageKind {
             OutageKind::WaterIntrusion => 120.0,
             OutageKind::ConnectorContamination => 60.0,
             OutageKind::Macrobend => 60.0,
+            OutageKind::AmplifierFailure => 90.0,
+            OutageKind::IngressNoise => 110.0,
+            OutageKind::WirelessInterference => 100.0,
         }
     }
 }
@@ -101,12 +127,18 @@ impl Outage {
         !self.resolved && self.time_remaining() <= 0.0
     }
 
-    /// For water intrusion specifically, loss grows the longer it's
-    /// unresolved — this is the value to add to the affected splice's
-    /// `degradation_db`.
+    /// For degrading hazards, loss grows the longer the outage is
+    /// unresolved — this is the value to add on top of the link budget.
+    /// Water intrusion climbs fastest (15 dB cap); ingress noise and
+    /// wireless interference climb a little slower (12 dB cap), which is
+    /// what gives the coax/wireless repair levels their rebalancing
+    /// window.
     pub fn accumulated_extra_loss_db(&self) -> f64 {
         match self.kind {
             OutageKind::WaterIntrusion => (self.elapsed_seconds / 10.0).min(15.0),
+            OutageKind::IngressNoise | OutageKind::WirelessInterference => {
+                (self.elapsed_seconds / 10.0).min(12.0)
+            }
             _ => 0.0,
         }
     }
@@ -120,9 +152,12 @@ mod tests {
     fn full_cut_classification_is_exhaustive_and_correct() {
         assert!(OutageKind::FiberCut.is_full_cut());
         assert!(OutageKind::AerialDamage.is_full_cut());
+        assert!(OutageKind::AmplifierFailure.is_full_cut());
         assert!(!OutageKind::WaterIntrusion.is_full_cut());
         assert!(!OutageKind::ConnectorContamination.is_full_cut());
         assert!(!OutageKind::Macrobend.is_full_cut());
+        assert!(!OutageKind::IngressNoise.is_full_cut());
+        assert!(!OutageKind::WirelessInterference.is_full_cut());
     }
 
     #[test]
@@ -138,6 +173,37 @@ mod tests {
         let mut o = Outage::new(OutageKind::ConnectorContamination, 1, 2);
         o.tick(61.0);
         assert!(o.is_expired());
+    }
+
+    #[test]
+    fn degrade_hazards_climb_and_cap() {
+        let mut ingress = Outage::new(OutageKind::IngressNoise, 1, 2);
+        ingress.tick(50.0);
+        assert_relative_eq_local(ingress.accumulated_extra_loss_db(), 5.0);
+
+        let mut interference = Outage::new(OutageKind::WirelessInterference, 1, 2);
+        interference.tick(200.0);
+        assert_relative_eq_local(interference.accumulated_extra_loss_db(), 12.0);
+
+        let cut = Outage::new(OutageKind::AmplifierFailure, 1, 2);
+        assert_relative_eq_local(cut.accumulated_extra_loss_db(), 0.0);
+    }
+
+    #[test]
+    fn every_kind_has_flavor_text_and_a_timer() {
+        for kind in [
+            OutageKind::FiberCut,
+            OutageKind::AerialDamage,
+            OutageKind::WaterIntrusion,
+            OutageKind::ConnectorContamination,
+            OutageKind::Macrobend,
+            OutageKind::AmplifierFailure,
+            OutageKind::IngressNoise,
+            OutageKind::WirelessInterference,
+        ] {
+            assert!(!kind.flavor_text().is_empty());
+            assert!(kind.base_timer_seconds() > 0.0);
+        }
     }
 
     fn assert_relative_eq_local(a: f64, b: f64) {

@@ -1,0 +1,97 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 3.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 12.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 21.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "Night shift. The plant was balanced at dusk, but ingress noise is seeping in through a cracked shield \u2014 the noise floor is rising under your signal about a decibel every ten seconds. It starts in window on the 3 dB amp. Watch the ledger: when the floor climbs past your signal, swap in more gain before the timer runs out.",
+  "fixed_edges": [
+    {
+      "component": {
+        "CoaxSpan": {
+          "length_m": 400.0
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Tap": {
+          "tap_loss_db": 8.0
+        }
+      },
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "id": "c1l2",
+  "medium": "Coax",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Headend"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Amplifier Station"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "Tap"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 3,
+      "label": "Customer Drop"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "outage_resolved",
+  "scripted_outage": {
+    "edge_from": 1,
+    "edge_to": 2,
+    "fires_after_seconds": 15.0,
+    "kind": "IngressNoise"
+  },
+  "source_node": 0,
+  "target_node": 3,
+  "title": "Ingress at Night",
+  "tx_dbm": 35.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": 15.0,
+  "window_min_dbm": 0.0,
+  "world": 2
+}

@@ -173,18 +173,12 @@ fn check_outage_resolution(
         return;
     }
 
-    let Ok(result) = live.graph.compute_link_budget_with_outage(
-        level.source_node,
-        level.target_node,
+    if level.is_win_state_with_outage(
+        &live.graph,
         live.tx_dbm,
         live.wavelength.0,
-        level.receive_window(),
         Some(&outage),
-    ) else {
-        return;
-    };
-
-    if result.in_window {
+    ) {
         if let Some(active_outage) = active.outage.as_mut() {
             active_outage.resolved = true;
         }
@@ -202,7 +196,7 @@ fn check_outage_resolution(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::level::{ComponentChoice, LevelNode, WavelengthDef};
+    use crate::level::{ComponentChoice, LevelNode, MediumDef, WavelengthDef};
     use crate::states::playing::WavelengthWrapper;
     use bevy_ecs::system::RunSystemOnce;
     use osp_sim::component::PlantType;
@@ -219,10 +213,14 @@ mod tests {
             title: "Test".into(),
             world: 0,
             briefing: String::new(),
+            medium: MediumDef::Fiber,
             tx_dbm: -15.0,
             wavelength: WavelengthDef::Nm1490,
             window_min_dbm: -27.0,
             window_max_dbm: -8.0,
+            endpoint_poe_draw_w: None,
+            required_bandwidth_mbps: None,
+            max_segment_length_m: None,
             nodes: vec![
                 LevelNode {
                     id: 0,

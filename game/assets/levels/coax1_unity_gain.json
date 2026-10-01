@@ -1,0 +1,92 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 5.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 20.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 35.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "Ondine's first rule of coax: a cascade is a balancing act. The headend launches at +35 dBmV, and your plant eats 34.95 dB before the customer's tap. Pick the line amplifier whose gain lands the carrier inside the [0, 15] dBmV window \u2014 too cold and the picture snows, too hot and it distorts.",
+  "fixed_edges": [
+    {
+      "component": {
+        "CoaxSpan": {
+          "length_m": 490.0
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Tap": {
+          "tap_loss_db": 8.0
+        }
+      },
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "id": "c1l1",
+  "medium": "Coax",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Headend"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Amplifier Station"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "Tap"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 3,
+      "label": "Customer Drop"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 3,
+  "title": "Unity Gain",
+  "tx_dbm": 35.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": 15.0,
+  "window_min_dbm": 0.0,
+  "world": 2
+}

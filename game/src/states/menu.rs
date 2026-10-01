@@ -1,8 +1,10 @@
-//! Main menu: title, companion picker, world/level select.
+//! Main menu: keeper title artwork, tagline, Start (→ companion-select),
+//! Credits. The companion picker lives on the companion-select screen
+//! now (`states::companion_select`); this screen is just the title card.
 
 use super::GameState;
 use crate::board;
-use crate::waifu::{Companion, SelectedCompanion};
+use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_GOLD, NEON_INK};
 use bevy::prelude::*;
 
 pub struct MenuPlugin;
@@ -20,13 +22,7 @@ impl Plugin for MenuPlugin {
         )
         .add_systems(
             Update,
-            (
-                handle_start_button,
-                handle_credits_button,
-                handle_companion_buttons,
-                update_companion_ui,
-            )
-                .run_if(in_state(GameState::MainMenu)),
+            (handle_start_button, handle_credits_button).run_if(in_state(GameState::MainMenu)),
         )
         .add_systems(OnExit(GameState::MainMenu), teardown_menu);
     }
@@ -36,39 +32,23 @@ impl Plugin for MenuPlugin {
 struct MenuRoot;
 
 #[derive(Component)]
-struct StartButton;
+pub(crate) struct StartButton;
 
 /// Opens the in-game credits screen (`GameState::Credits`), where the
 /// CC-BY music attribution is user-visible as the licenses require.
 #[derive(Component)]
 struct CreditsButton;
-/// Tags one of the four companion-picker buttons with the companion it
-/// selects when pressed.
-#[derive(Component)]
-struct CompanionButton(Companion);
 
-/// The "Companion: <name>" label kept in sync with `SelectedCompanion`.
-#[derive(Component)]
-struct CompanionLabel;
+/// Maximum width of the menu tagline text node: the 48-character tagline
+/// at 18px overflows the 720px window without a width constraint, wrapping
+/// and clipping at the left edge. Kept in sync with the window resolution
+/// in `lib.rs` (`WindowPlugin`).
+const TAGLINE_MAX_W: f32 = 680.0;
 
-/// The one-line medium description under `CompanionLabel` (e.g. "Fiber-optic
-/// OSP splicing"), kept in sync with `SelectedCompanion` the same way.
-#[derive(Component)]
-struct CompanionTagline;
-
-/// Neon-circuit menu palette, sampled from the keeper title artwork
-/// (angular cyan-to-gold letterforms, circuit-bracket frame, night-city
-/// dark). Companion buttons keep their per-companion accent colors from
-/// `companion_button_color` instead.
-const MENU_CYAN: Color = Color::srgb(0.435, 0.949, 1.0); // #6ff2ff
-const MENU_GOLD: Color = Color::srgb(1.0, 0.82, 0.4); // #ffd166
-const MENU_DIM: Color = Color::srgb(0.55, 0.62, 0.72); // dim slate-cyan
-const MENU_INK: Color = Color::srgb(0.04, 0.055, 0.1); // night-city dark
-
-/// Native pixel size of `assets/sprites/ui/title_logo.png`, hand-crafted
-/// in Aseprite (see `title_logo.aseprite` next to it).
-const TITLE_LOGO_W: f32 = 400.0;
-const TITLE_LOGO_H: f32 = 240.0;
+/// Bottom padding for the menu column: the keeper title artwork carries the
+/// "LIGHT SHOW" title in its center, so the interactive column (tagline,
+/// buttons) lives in the lower third, over the dark night city.
+const MENU_BOTTOM_PAD: f32 = 72.0;
 
 fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Query<&Camera>) {
     // The Credits screen reuses this camera (menu teardown only despawns
@@ -87,95 +67,57 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                     height: Val::Percent(100.0),
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
+                    // The keeper title artwork (see `image` below) carries
+                    // the "LIGHT SHOW" title in its center, so the column
+                    // sits in the lower third, over the dark night city.
+                    justify_content: JustifyContent::FlexEnd,
+                    padding: UiRect::bottom(Val::Px(MENU_BOTTOM_PAD)),
                     row_gap: Val::Px(24.0),
                     ..default()
                 },
+                // Shown while the artwork texture streams in; the artwork
+                // covers the full 720x1280 window once loaded.
                 background_color: Color::srgb(0.05, 0.05, 0.12).into(),
                 ..default()
             },
         ))
         .with_children(|parent| {
-            // Hand-crafted Aseprite title logo: angular neon letterforms
-            // with a cyan-to-gold gradient inside a circuit-bracket frame
-            // with hex nodes, matching the keeper title artwork.
+            // Keeper title artwork as the full-screen menu backdrop. It is
+            // the first child and absolutely positioned (out of the flex
+            // flow), so it paints behind everything below. It carries the
+            // "LIGHT SHOW" title baked into its center, which is why the
+            // old Aseprite title logo is gone — showing both would double
+            // the title.
             parent.spawn(ImageBundle {
                 style: Style {
-                    width: Val::Px(TITLE_LOGO_W),
-                    height: Val::Px(TITLE_LOGO_H),
+                    position_type: PositionType::Absolute,
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
                     ..default()
                 },
-                image: UiImage::new(asset_server.load("sprites/ui/title_logo.png")),
+                image: UiImage::new(asset_server.load("sprites/ui/title_artwork.png")),
                 ..default()
             });
-            parent.spawn(TextBundle::from_section(
-                "route the light. hit the window. survive the storm.",
-                TextStyle {
+            // Width-constrained and centered: without a width the
+            // 48-character tagline overflows the 720px window, wraps, and
+            // clips at the left edge. Gold core with a cyan halo, echoing
+            // the title card's cyan-to-gold letterforms.
+            spawn_neon_text(
+                parent,
+                NeonText {
+                    marker: (),
+                    value: "route the light. hit the window. survive the storm.",
                     font: asset_server.load("fonts/pixel.ttf"),
                     font_size: 18.0,
-                    color: MENU_GOLD,
-                },
-            ));
-            parent.spawn((
-                CompanionLabel,
-                TextBundle::from_section(
-                    format!("Companion: {}", Companion::default().display_name()),
-                    TextStyle {
-                        font: asset_server.load("fonts/pixel.ttf"),
-                        font_size: 16.0,
-                        color: MENU_CYAN,
+                    core: NEON_GOLD,
+                    glow: NEON_CYAN,
+                    glow_px: 1.0,
+                    glow_inner_alpha: 0.55,
+                    glow_outer_alpha: 0.25,
+                    width: Val::Px(TAGLINE_MAX_W),
+                    justify: JustifyText::Center,
                     },
-                ),
-            ));
-            parent.spawn((
-                CompanionTagline,
-                TextBundle::from_section(
-                    Companion::default().tagline(),
-                    TextStyle {
-                        font: asset_server.load("fonts/pixel.ttf"),
-                        font_size: 13.0,
-                        color: MENU_DIM,
-                    },
-                ),
-            ));
-            parent
-                .spawn(NodeBundle {
-                    style: Style {
-                        flex_direction: FlexDirection::Row,
-                        column_gap: Val::Px(12.0),
-                        ..default()
-                    },
-                    ..default()
-                })
-                .with_children(|row| {
-                    for companion in Companion::ALL {
-                        row.spawn((
-                            CompanionButton(companion),
-                            ButtonBundle {
-                                style: Style {
-                                    padding: UiRect::axes(Val::Px(14.0), Val::Px(8.0)),
-                                    ..default()
-                                },
-                                background_color: companion_button_color(
-                                    companion,
-                                    companion == Companion::default(),
-                                )
-                                .into(),
-                                ..default()
-                            },
-                        ))
-                        .with_children(|btn| {
-                            btn.spawn(TextBundle::from_section(
-                                companion.display_name(),
-                                TextStyle {
-                                    font: asset_server.load("fonts/pixel.ttf"),
-                                    font_size: 16.0,
-                                    color: Color::WHITE,
-                                },
-                            ));
-                        });
-                    }
-                });
+            );
             parent
                 .spawn((
                     StartButton,
@@ -184,19 +126,29 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                             padding: UiRect::axes(Val::Px(28.0), Val::Px(14.0)),
                             ..default()
                         },
-                        background_color: MENU_GOLD.into(),
+                        background_color: NEON_GOLD.into(),
                         ..default()
                     },
                 ))
                 .with_children(|btn| {
-                    btn.spawn(TextBundle::from_section(
-                        "Start Splicing",
-                        TextStyle {
+                    // Ink core with a deep-gold offset halo for depth on
+                    // the bright gold face.
+                    spawn_neon_text(
+                        btn,
+                        NeonText {
+                            marker: (),
+                            value: "Start",
                             font: asset_server.load("fonts/pixel.ttf"),
                             font_size: 24.0,
-                            color: MENU_INK,
-                        },
-                    ));
+                            core: NEON_INK,
+                            glow: Color::srgba(0.5, 0.32, 0.1, 0.7),
+                            glow_px: 1.0,
+                            glow_inner_alpha: 0.5,
+                            glow_outer_alpha: 0.22,
+                            width: Val::Auto,
+                            justify: JustifyText::Center,
+                            },
+                    );
                 });
             parent
                 .spawn((
@@ -211,39 +163,37 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                     },
                 ))
                 .with_children(|btn| {
-                    btn.spawn(TextBundle::from_section(
-                        "Credits",
-                        TextStyle {
+                    // Cyan core with a gold halo on the dark slate face:
+                    // the closest thing on this screen to a neon sign.
+                    spawn_neon_text(
+                        btn,
+                        NeonText {
+                            marker: (),
+                            value: "Credits",
                             font: asset_server.load("fonts/pixel.ttf"),
                             font_size: 18.0,
-                            color: MENU_CYAN,
-                        },
-                    ));
+                            core: NEON_CYAN,
+                            glow: NEON_GOLD,
+                            glow_px: 1.0,
+                            glow_inner_alpha: 0.55,
+                            glow_outer_alpha: 0.25,
+                            width: Val::Auto,
+                            justify: JustifyText::Center,
+                            },
+                    );
                 });
         });
 }
 
-/// Accent color per companion (mirrors each one's palette in
-/// docs/ART_STYLE.md), dimmed to a neutral slate when not selected.
-fn companion_button_color(companion: Companion, active: bool) -> Color {
-    if !active {
-        return Color::srgb(0.2, 0.2, 0.28);
-    }
-    match companion {
-        Companion::Fiber => Color::srgb(0.9, 0.4, 0.6), // seraphine_magenta-ish
-        Companion::Coax => Color::srgb(0.72, 0.45, 0.2), // copper
-        Companion::Mobile => Color::srgb(0.49, 0.23, 0.91), // electric violet
-        Companion::Ethernet => Color::srgb(0.15, 0.39, 0.92), // networking blue
-    }
-}
-
+/// Start goes to the companion-select screen, not straight into play:
+/// the companion pick chooses which themed two-level track comes next.
 fn handle_start_button(
     interactions: Query<&Interaction, (Changed<Interaction>, With<StartButton>)>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     for interaction in &interactions {
         if *interaction == Interaction::Pressed {
-            next_state.set(GameState::Playing);
+            next_state.set(GameState::CompanionSelect);
         }
     }
 }
@@ -261,42 +211,6 @@ fn handle_credits_button(
     }
 }
 
-/// Sets `SelectedCompanion` when a companion-picker button is pressed.
-/// The actual sprite/dialogue swap happens in
-/// `waifu::respawn_on_companion_change`, which reacts to that resource.
-fn handle_companion_buttons(
-    interactions: Query<(&Interaction, &CompanionButton), Changed<Interaction>>,
-    mut selected: ResMut<SelectedCompanion>,
-) {
-    for (interaction, button) in &interactions {
-        if *interaction == Interaction::Pressed {
-            selected.0 = button.0;
-        }
-    }
-}
-
-/// Keeps the companion label text and button highlight colors in sync
-/// with `SelectedCompanion` after a pick.
-fn update_companion_ui(
-    selected: Res<SelectedCompanion>,
-    mut buttons: Query<(&CompanionButton, &mut BackgroundColor)>,
-    mut labels: Query<&mut Text, (With<CompanionLabel>, Without<CompanionTagline>)>,
-    mut taglines: Query<&mut Text, (With<CompanionTagline>, Without<CompanionLabel>)>,
-) {
-    if !selected.is_changed() {
-        return;
-    }
-    for (button, mut bg) in &mut buttons {
-        *bg = companion_button_color(button.0, button.0 == selected.0).into();
-    }
-    for mut text in &mut labels {
-        text.sections[0].value = format!("Companion: {}", selected.0.display_name());
-    }
-    for mut text in &mut taglines {
-        text.sections[0].value = selected.0.tagline().to_string();
-    }
-}
-
 fn teardown_menu(mut commands: Commands, query: Query<Entity, With<MenuRoot>>) {
     for entity in &query {
         commands.entity(entity).despawn_recursive();
@@ -308,12 +222,6 @@ mod tests {
     use super::*;
     use bevy_ecs::system::RunSystemOnce;
 
-    fn world_with_selected(initial: Companion) -> World {
-        let mut world = World::new();
-        world.insert_resource(SelectedCompanion(initial));
-        world
-    }
-
     fn world_with_next_state() -> World {
         let mut world = World::new();
         world.insert_resource(NextState::<GameState>::default());
@@ -321,23 +229,29 @@ mod tests {
     }
 
     #[test]
-    fn pressing_a_companion_button_updates_selected_companion() {
-        let mut world = world_with_selected(Companion::Fiber);
-        world.spawn((CompanionButton(Companion::Coax), Interaction::Pressed));
+    fn pressing_start_requests_the_companion_select_state() {
+        let mut world = world_with_next_state();
+        world.spawn((StartButton, Interaction::Pressed));
 
-        world.run_system_once(handle_companion_buttons);
+        world.run_system_once(handle_start_button);
 
-        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Coax);
+        assert!(matches!(
+            world.resource::<NextState<GameState>>(),
+            NextState::Pending(GameState::CompanionSelect)
+        ));
     }
 
     #[test]
-    fn hovering_a_companion_button_does_not_change_selection() {
-        let mut world = world_with_selected(Companion::Fiber);
-        world.spawn((CompanionButton(Companion::Mobile), Interaction::Hovered));
+    fn hovering_start_requests_no_state_change() {
+        let mut world = world_with_next_state();
+        world.spawn((StartButton, Interaction::Hovered));
 
-        world.run_system_once(handle_companion_buttons);
+        world.run_system_once(handle_start_button);
 
-        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Fiber);
+        assert!(matches!(
+            world.resource::<NextState<GameState>>(),
+            NextState::Unchanged
+        ));
     }
 
     #[test]
@@ -364,104 +278,5 @@ mod tests {
             world.resource::<NextState<GameState>>(),
             NextState::Unchanged
         ));
-    }
-
-    #[test]
-    fn pressing_the_start_button_still_requests_the_playing_state() {
-        let mut world = world_with_next_state();
-        world.spawn((StartButton, Interaction::Pressed));
-
-        world.run_system_once(handle_start_button);
-
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::Playing)
-        ));
-    }
-
-    #[test]
-    fn update_companion_ui_relabels_and_recolors_after_a_selection_change() {
-        let mut world = world_with_selected(Companion::Fiber);
-        world.spawn((
-            CompanionLabel,
-            TextBundle::from_section("placeholder", TextStyle::default()),
-        ));
-        world.spawn((
-            CompanionButton(Companion::Ethernet),
-            BackgroundColor(companion_button_color(Companion::Ethernet, false)),
-        ));
-
-        // Simulate the menu button press changing the resource, then run
-        // the sync system exactly like `Update` would.
-        world.resource_mut::<SelectedCompanion>().0 = Companion::Ethernet;
-        world.run_system_once(update_companion_ui);
-
-        let label = world
-            .query::<&Text>()
-            .iter(&world)
-            .find(|t| t.sections[0].value.starts_with("Companion:"))
-            .expect("companion label should exist");
-        assert_eq!(label.sections[0].value, "Companion: Lattice");
-
-        let bg = world
-            .query::<(&CompanionButton, &BackgroundColor)>()
-            .iter(&world)
-            .next()
-            .expect("companion button should exist");
-        assert_eq!(bg.1 .0, companion_button_color(Companion::Ethernet, true));
-    }
-
-    #[test]
-    fn update_companion_ui_is_a_no_op_when_selection_is_unchanged() {
-        // Resources are always "changed" on the frame they're inserted,
-        // so run the system once first to clear that flag before
-        // asserting the no-op branch actually short-circuits.
-        let mut world = world_with_selected(Companion::Fiber);
-        world.run_system_once(update_companion_ui);
-
-        world.spawn((
-            CompanionButton(Companion::Coax),
-            BackgroundColor(companion_button_color(Companion::Coax, false)),
-        ));
-        world.run_system_once(update_companion_ui);
-
-        // Selection never changed after the initial clear, so the freshly
-        // spawned button should keep its inactive color untouched.
-        let bg = world
-            .query::<(&CompanionButton, &BackgroundColor)>()
-            .iter(&world)
-            .next()
-            .unwrap();
-        assert_eq!(bg.1 .0, companion_button_color(Companion::Coax, false));
-    }
-
-    #[test]
-    fn update_companion_ui_relabels_the_tagline_after_a_selection_change() {
-        let mut world = world_with_selected(Companion::Fiber);
-        world.spawn((
-            CompanionTagline,
-            TextBundle::from_section("placeholder", TextStyle::default()),
-        ));
-
-        world.resource_mut::<SelectedCompanion>().0 = Companion::Ethernet;
-        world.run_system_once(update_companion_ui);
-
-        let tagline = world
-            .query::<(&CompanionTagline, &Text)>()
-            .iter(&world)
-            .next()
-            .expect("tagline label should exist");
-        assert_eq!(tagline.1.sections[0].value, Companion::Ethernet.tagline());
-    }
-
-    #[test]
-    fn companion_button_color_highlights_only_the_active_companion() {
-        for companion in Companion::ALL {
-            assert_ne!(
-                companion_button_color(companion, true),
-                companion_button_color(companion, false),
-                "active and inactive colors must differ for {companion:?}"
-            );
-        }
     }
 }
