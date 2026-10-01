@@ -42,7 +42,6 @@ struct StartButton;
 /// CC-BY music attribution is user-visible as the licenses require.
 #[derive(Component)]
 struct CreditsButton;
-
 /// Tags one of the four companion-picker buttons with the companion it
 /// selects when pressed.
 #[derive(Component)]
@@ -56,6 +55,20 @@ struct CompanionLabel;
 /// OSP splicing"), kept in sync with `SelectedCompanion` the same way.
 #[derive(Component)]
 struct CompanionTagline;
+
+/// Neon-circuit menu palette, sampled from the keeper title artwork
+/// (angular cyan-to-gold letterforms, circuit-bracket frame, night-city
+/// dark). Companion buttons keep their per-companion accent colors from
+/// `companion_button_color` instead.
+const MENU_CYAN: Color = Color::srgb(0.435, 0.949, 1.0); // #6ff2ff
+const MENU_GOLD: Color = Color::srgb(1.0, 0.82, 0.4); // #ffd166
+const MENU_DIM: Color = Color::srgb(0.55, 0.62, 0.72); // dim slate-cyan
+const MENU_INK: Color = Color::srgb(0.04, 0.055, 0.1); // night-city dark
+
+/// Native pixel size of `assets/sprites/ui/title_logo.png`, hand-crafted
+/// in Aseprite (see `title_logo.aseprite` next to it).
+const TITLE_LOGO_W: f32 = 400.0;
+const TITLE_LOGO_H: f32 = 240.0;
 
 fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Query<&Camera>) {
     // The Credits screen reuses this camera (menu teardown only despawns
@@ -83,20 +96,24 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
             },
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                "LIGHT SHOW",
-                TextStyle {
-                    font: asset_server.load("fonts/pixel.ttf"),
-                    font_size: 56.0,
-                    color: Color::srgb(0.6, 0.95, 1.0),
+            // Hand-crafted Aseprite title logo: angular neon letterforms
+            // with a cyan-to-gold gradient inside a circuit-bracket frame
+            // with hex nodes, matching the keeper title artwork.
+            parent.spawn(ImageBundle {
+                style: Style {
+                    width: Val::Px(TITLE_LOGO_W),
+                    height: Val::Px(TITLE_LOGO_H),
+                    ..default()
                 },
-            ));
+                image: UiImage::new(asset_server.load("sprites/ui/title_logo.png")),
+                ..default()
+            });
             parent.spawn(TextBundle::from_section(
                 "route the light. hit the window. survive the storm.",
                 TextStyle {
                     font: asset_server.load("fonts/pixel.ttf"),
                     font_size: 18.0,
-                    color: Color::srgb(0.8, 0.8, 0.9),
+                    color: MENU_GOLD,
                 },
             ));
             parent.spawn((
@@ -106,7 +123,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                     TextStyle {
                         font: asset_server.load("fonts/pixel.ttf"),
                         font_size: 16.0,
-                        color: Color::srgb(0.8, 0.8, 0.9),
+                        color: MENU_CYAN,
                     },
                 ),
             ));
@@ -117,7 +134,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                     TextStyle {
                         font: asset_server.load("fonts/pixel.ttf"),
                         font_size: 13.0,
-                        color: Color::srgb(0.55, 0.55, 0.68),
+                        color: MENU_DIM,
                     },
                 ),
             ));
@@ -167,7 +184,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                             padding: UiRect::axes(Val::Px(28.0), Val::Px(14.0)),
                             ..default()
                         },
-                        background_color: Color::srgb(0.9, 0.4, 0.6).into(),
+                        background_color: MENU_GOLD.into(),
                         ..default()
                     },
                 ))
@@ -177,7 +194,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                         TextStyle {
                             font: asset_server.load("fonts/pixel.ttf"),
                             font_size: 24.0,
-                            color: Color::WHITE,
+                            color: MENU_INK,
                         },
                     ));
                 });
@@ -189,7 +206,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                             padding: UiRect::axes(Val::Px(28.0), Val::Px(10.0)),
                             ..default()
                         },
-                        background_color: Color::srgb(0.2, 0.2, 0.28).into(),
+                        background_color: Color::srgb(0.13, 0.15, 0.22).into(),
                         ..default()
                     },
                 ))
@@ -199,7 +216,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                         TextStyle {
                             font: asset_server.load("fonts/pixel.ttf"),
                             font_size: 18.0,
-                            color: Color::WHITE,
+                            color: MENU_CYAN,
                         },
                     ));
                 });

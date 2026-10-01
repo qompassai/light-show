@@ -106,7 +106,7 @@ struct BenchRun {
 /// Installs the bench driver. Call only for a real bench run
 /// (`args.frames.is_some()`); normal runs must not call this.
 pub fn add_bench_systems(app: &mut App, frames: u32) {
-    let target = frames.min(BENCH_FRAMES_MAX).max(1);
+    let target = frames.clamp(1, BENCH_FRAMES_MAX);
     // `usize` conversion of a u32 clamped to 100_000 cannot fail, but
     // `try_into` keeps the bound explicit instead of trusting it.
     let capacity: usize = target.try_into().unwrap_or(BENCH_FRAMES_MAX as usize);

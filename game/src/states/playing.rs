@@ -37,6 +37,7 @@ impl Plugin for PlayingPlugin {
                     board::track_pointer,
                     board::handle_pointer_input,
                     board::draw_board_gizmos,
+                    board::update_pill_rings,
                 )
                     .run_if(
                         in_state(GameState::Playing).or_else(in_state(GameState::OutageActive)),

@@ -12,7 +12,12 @@
 //!   splice), for players who want to compare options before connecting.
 //!
 //! Colors follow the palette in `docs/ART_STYLE.md` (board schematic
-//! blues/greys, warm amber "light" accent, hot pink Séraphine accent).
+//! blues/greys, warm amber "light" accent, hot pink Séraphine accent),
+//! restyled to the keeper title artwork's neon-circuit look: fibers are
+//! drawn with a layered glow pass (`neon_line_2d`) and the node/pill
+//! circles are hand-crafted Aseprite ring sprites under
+//! `assets/sprites/ui/` (same visual radii as the old gizmo circles, so
+//! the hit-test contract is unchanged).
 
 use crate::level::LevelDef;
 use crate::states::outage::ActiveOutage;
@@ -41,6 +46,48 @@ const BOARD_ACCENT: Color = Color::srgb(0.357, 0.753, 0.922); // #5bc0eb
 const LIGHT_WARM: Color = Color::srgb(1.0, 0.82, 0.4); // #ffd166
 const LIGHT_HOT: Color = Color::srgb(1.0, 0.435, 0.682); // #ff6fae
 const HAZARD_RED: Color = Color::srgb(1.0, 0.302, 0.302); // #ff4d4d
+
+/// Canvas edge length (px) of the Aseprite-crafted ring sprites. One
+/// world unit maps to one sprite pixel, so each drawn ring band sits
+/// exactly on `NODE_RADIUS` / `PILL_RADIUS`; the 14 px margin around it
+/// holds the glow halo and the diagonal circuit ticks.
+const NODE_RING_SIZE: f32 = 80.0;
+const PILL_RING_SIZE: f32 = 96.0;
+
+/// Asset path of the Aseprite-crafted node ring sprite — gold for the
+/// level's source/target endpoints, cyan for every other node (pure, so
+/// tests can pin the wiring without spawning anything).
+fn node_ring_path(is_endpoint: bool) -> &'static str {
+    if is_endpoint {
+        "sprites/ui/node_ring_gold.png"
+    } else {
+        "sprites/ui/node_ring_cyan.png"
+    }
+}
+
+/// Asset path of the Aseprite-crafted pill ring sprite — hot pink once
+/// the player has picked that slot, cyan while it is only an offer.
+fn pill_ring_path(selected: bool) -> &'static str {
+    if selected {
+        "sprites/ui/pill_ring_selected.png"
+    } else {
+        "sprites/ui/pill_ring_normal.png"
+    }
+}
+
+/// Marks a node-ring sprite (see `node_ring_path`).
+#[derive(Component)]
+struct NodeRing;
+
+/// Marks a pill-ring sprite so `update_pill_rings` can swap its texture
+/// when the player's pick changes. `slot` is the position within the
+/// pair's choice group (same indexing as `pill_world_pos`).
+#[derive(Component)]
+pub(crate) struct PillRing {
+    pub(crate) from: u32,
+    pub(crate) to: u32,
+    pub(crate) slot: usize,
+}
 
 /// Maps a level's abstract `grid_x`/`grid_y` node coordinates onto world
 /// space. `grid_x = 1` sits at world `x = 0` and each grid column is 200
@@ -426,6 +473,22 @@ pub fn spawn_board_from_level(
                     text_anchor: bevy::sprite::Anchor::Center,
                     ..default()
                 });
+                // Aseprite-crafted neon ring under the label; the band
+                // sits exactly on NODE_RADIUS so the hit-test contract
+                // (NODE_HIT_RADIUS) is unchanged.
+                let is_endpoint = node.id == level.source_node || node.id == level.target_node;
+                parent.spawn((
+                    NodeRing,
+                    SpriteBundle {
+                        texture: asset_server.load(node_ring_path(is_endpoint)),
+                        transform: Transform::from_translation(pos.extend(4.0)),
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::splat(NODE_RING_SIZE)),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                ));
             }
 
             // One icon sprite per offered component choice, positioned at
@@ -449,6 +512,22 @@ pub fn spawn_board_from_level(
                     else {
                         continue;
                     };
+                    // Aseprite-crafted neon ring under the icon; the band
+                    // sits exactly on PILL_RADIUS so the hit-test contract
+                    // is unchanged. The texture swaps to hot pink via
+                    // `update_pill_rings` once the player picks this slot.
+                    parent.spawn((
+                        PillRing { from, to, slot },
+                        SpriteBundle {
+                            texture: asset_server.load(pill_ring_path(false)),
+                            transform: Transform::from_translation(pos.extend(4.0)),
+                            sprite: Sprite {
+                                custom_size: Some(Vec2::splat(PILL_RING_SIZE)),
+                                ..default()
+                            },
+                            ..default()
+                        },
+                    ));
                     parent.spawn((
                         ComponentIcon,
                         SpriteBundle {
@@ -595,6 +674,18 @@ pub fn handle_pointer_input(
     }
 }
 
+/// Draws a fiber line with a neon-tube glow: a wide faint halo pass on
+/// both sides plus the bright core, echoing the light streams in the
+/// keeper title artwork.
+fn neon_line_2d(gizmos: &mut Gizmos, from: Vec2, to: Vec2, core: Color) {
+    let dir = (to - from).normalize_or_zero();
+    let perp = Vec2::new(-dir.y, dir.x);
+    let halo = core.with_alpha(0.22);
+    gizmos.line_2d(from + perp * 3.0, to + perp * 3.0, halo);
+    gizmos.line_2d(from - perp * 3.0, to - perp * 3.0, halo);
+    gizmos.line_2d(from, to, core);
+}
+
 fn draw_dashed_line(gizmos: &mut Gizmos, from: Vec2, to: Vec2, color: Color) {
     const SEGMENTS: i32 = 12;
     for i in 0..SEGMENTS {
@@ -603,13 +694,16 @@ fn draw_dashed_line(gizmos: &mut Gizmos, from: Vec2, to: Vec2, color: Color) {
         }
         let t0 = i as f32 / SEGMENTS as f32;
         let t1 = (i + 1) as f32 / SEGMENTS as f32;
-        gizmos.line_2d(from.lerp(to, t0), from.lerp(to, t1), color);
+        neon_line_2d(gizmos, from.lerp(to, t0), from.lerp(to, t1), color);
     }
 }
 
-/// Draws the board every frame: node circles, fixed edges (solid), open
-/// choice edges (dashed, bright once placed), component pills, and an
-/// active drag-preview line following the pointer.
+/// Draws the board's fibers every frame with a neon glow: fixed edges
+/// (solid), open choice edges (dashed, bright once placed), and an active
+/// drag-preview line following the pointer. Node and pill rings are
+/// Aseprite-crafted sprites spawned once by `spawn_board_from_level`, and
+/// their selection glow is updated by `update_pill_rings` — no circles
+/// are drawn here.
 pub fn draw_board_gizmos(
     mut gizmos: Gizmos,
     level: Res<LevelDef>,
@@ -628,7 +722,7 @@ pub fn draw_board_gizmos(
             if is_edge_severed(outage, edge.from, edge.to) {
                 draw_dashed_line(&mut gizmos, a, b, HAZARD_RED);
             } else {
-                gizmos.line_2d(a, b, LIGHT_WARM);
+                neon_line_2d(&mut gizmos, a, b, LIGHT_WARM);
             }
         }
     }
@@ -646,41 +740,28 @@ pub fn draw_board_gizmos(
         }
     }
 
-    for node in &level.nodes {
-        let pos = grid_to_world(node.grid_x, node.grid_y);
-        let is_endpoint = node.id == level.source_node || node.id == level.target_node;
-        let color = if is_endpoint {
-            LIGHT_WARM
-        } else {
-            BOARD_ACCENT
-        };
-        gizmos.circle_2d(pos, NODE_RADIUS, color);
-    }
-
-    for ((from, to), indices) in grouped_choices(&level) {
-        let count = indices.len();
-        if count <= 1 {
-            // A single unambiguous choice needs no pill — the drag
-            // gesture alone places it.
-            continue;
-        }
-        let selected_slot = placed.0.get(&(from, to)).copied();
-        for slot in 0..count {
-            if let Some(pos) = pill_world_pos(&level, from, to, slot, count) {
-                let color = if selected_slot == Some(slot) {
-                    LIGHT_HOT
-                } else {
-                    BOARD_ACCENT
-                };
-                gizmos.circle_2d(pos, PILL_RADIUS, color);
-            }
-        }
-    }
-
     if let (Some(from_id), Some(pointer_pos)) = (drag.from, pointer.0) {
         if let Some(from_pos) = node_world_pos(&level, from_id) {
-            gizmos.line_2d(from_pos, pointer_pos, LIGHT_HOT);
+            neon_line_2d(&mut gizmos, from_pos, pointer_pos, LIGHT_HOT);
         }
+    }
+}
+
+/// Swaps pill-ring sprite textures when the player's picks change: the
+/// chosen slot glows hot pink, the rest stay cyan. Runs only on the
+/// frames `PlacedChoices` actually changed, and only touches the texture
+/// handle — the sprites themselves are spawned once per level.
+pub fn update_pill_rings(
+    placed: Res<PlacedChoices>,
+    asset_server: Res<AssetServer>,
+    mut rings: Query<(&PillRing, &mut Handle<Image>)>,
+) {
+    if !placed.is_changed() {
+        return;
+    }
+    for (ring, mut texture) in &mut rings {
+        let selected = placed.0.get(&(ring.from, ring.to)).copied() == Some(ring.slot);
+        *texture = asset_server.load(pill_ring_path(selected));
     }
 }
 
@@ -1387,5 +1468,25 @@ mod tests {
             .unwrap();
         assert_eq!(sprite.mood, crate::waifu::Mood::Pout);
         assert_eq!(sprite.frame, 0);
+    }
+
+    #[test]
+    fn node_ring_path_is_gold_for_endpoints_and_cyan_otherwise() {
+        assert_eq!(node_ring_path(true), "sprites/ui/node_ring_gold.png");
+        assert_eq!(node_ring_path(false), "sprites/ui/node_ring_cyan.png");
+    }
+
+    #[test]
+    fn pill_ring_path_is_pink_when_selected_and_cyan_otherwise() {
+        assert_eq!(pill_ring_path(true), "sprites/ui/pill_ring_selected.png");
+        assert_eq!(pill_ring_path(false), "sprites/ui/pill_ring_normal.png");
+    }
+
+    #[test]
+    fn ring_sprite_sizes_match_their_visual_radii() {
+        // 1 world unit == 1 sprite px; the 14 px margin holds the glow
+        // halo and the diagonal circuit ticks.
+        assert_eq!(NODE_RING_SIZE, NODE_RADIUS * 2.0 + 28.0);
+        assert_eq!(PILL_RING_SIZE, PILL_RADIUS * 2.0 + 28.0);
     }
 }
