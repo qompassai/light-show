@@ -1,16 +1,17 @@
-//! Sprite-sheet layout constants shared by all four companions' 96x192
-//! full-body pixel-art frames (Séraphine, Ondine, Linka, Lattice all use
-//! the same 6-mood-row x 4-frame layout). See `docs/ART_STYLE.md` for the
-//! full art direction brief given to artists/AI-art tooling.
+//! Sprite-sheet layout constants shared by all four companions' 288x576
+//! full-body frames (Séraphine, Ondine, Linka, Lattice all use the same
+//! 6-mood-row x 4-frame layout). These are the mature-redesign sheets;
+//! the archived base set uses 96x192 frames. See `docs/ART_STYLE.md` for
+//! the full art direction brief given to artists/AI-art tooling.
 
-pub const FRAME_W: u32 = 96;
-pub const FRAME_H: u32 = 192;
+pub const FRAME_W: u32 = 288;
+pub const FRAME_H: u32 = 576;
 pub const FRAMES_PER_ROW: u32 = 4;
 pub const MOOD_ROWS: u32 = 6; // idle, blush, wink, pout, celebrate, alarmed
 
 /// Builds the shared grid layout every companion's sprite sheet uses.
 /// One layout asset is reused across all four companions since they all
-/// follow the identical 96x192, 4-column, 6-row convention.
+/// follow the identical 288x576, 4-column, 6-row convention.
 pub fn atlas_layout() -> bevy::sprite::TextureAtlasLayout {
     bevy::sprite::TextureAtlasLayout::from_grid(
         bevy::math::UVec2::new(FRAME_W, FRAME_H),

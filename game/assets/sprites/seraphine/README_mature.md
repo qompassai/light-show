@@ -1,31 +1,28 @@
-# Séraphine — MATURE Variant Sheet
+# Séraphine — MATURE Sheet (2026 redesign)
 
-Mature/adult-proportioned variant of the séraphine full-body set. Same
-character, same outfit, same art style — an older, less youthful read.
+Mature variant of the séraphine full-body set, redesigned from scratch
+in 2026-10 (supersedes the transform-derived variant): a whole new
+21-year-old model drawn as a full illustration per expression, then
+converted through the shared-palette pixel pipeline at 288×576.
 
-## What changed
+## The design
 
-- **Head**: smaller relative to body (compressed to ~31% height), jaw
-  narrowed slightly — reads adult rather than chibi.
-- **Body**: legs lengthened, feet stay planted; torso proportions
-  adjusted to match.
-- Derived from the repaired base sheet (see Pout repair note below), so
-  all four pout frames carry clean frowns with no smile remnants.
+- 21-year-old Québécoise woman (Québec, Canada); athletic build,
+  planted stance, naturally proportioned eyes, both hands empty.
+- Magenta-pink hair in a high ponytail with a glowing cyan-pink
+  fiber-optic braid; clear light-pipe visor glasses; utility vest over
+  a hoodie; full fiber kit worn hands-free.
+- Country signifier: blue fleur-de-lis patch on the left shoulder.
+- Design lock: v2b (see keeper chain).
 
 ## What's preserved
 
-- Outfit, fiber-braid ponytail, light-pipe visor, color palette, and
-  all accessories — pixel-identical design, only proportions change.
-- Mood-row layout, frame order, and timing: 6 rows × 4 frames @ 180 ms,
-  6 px mood bar, same wink-and-spin celebrate animation.
+- Mood-row layout, frame order, and timing: 6 rows × 4 frames @ 180 ms.
+- Frames within a row are breathing-bob offsets of the one locked
+  expression illustration per mood.
 - `seraphine_sheet_fullbody_mature.aseprite` is the editable project and
   round-trips pixel-identical to the PNG.
+- The base 96×192 standard sheet is unchanged and stays in the tree.
 
-## Pout repair note
-
-The shipped base sheet had a paint-over defect in the pout row: the
-smile's left half was never erased, leaving a smile remnant beside the
-right-shifted frown in all four frames (plus a black smear in frame 3).
-The smile region was erased to clean cheek and the frown completed
-symmetrically from its clean right arm; this mature sheet was derived
-from the repaired base.
+Full keeper chain (files, snapshot IDs, SHA-256):
+`~/workspace/light-show-expressions/mature_models/seraphine_trial/KEEPER_CHAIN.md`

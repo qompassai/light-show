@@ -46,8 +46,20 @@ Sampled from the keeper artwork:
 
 ## Companion Sprites
 
-All four companions share one sprite contract: **96×192 per frame, 6 mood
-rows × 4 frames** (24 cells; cell index = mood row × 4 + frame):
+All four companions share one sprite contract: **6 mood rows × 4 frames**
+(24 cells; cell index = mood row × 4 + frame). Two art tiers follow it:
+
+- **Mature set (active in game): 288×576 per frame**, 1152×3456 sheets
+  (`<name>_sheet_fullbody_mature.png`, displayed at scale 1.0). The
+  2026-10 redesign: new 21-year-old models drawn as full illustrations
+  per expression, converted through the shared-palette pixel pipeline
+  (96 k-means colors + blush rose per character). Frames within a row
+  are breathing-bob offsets of the locked expression art.
+- **Base set (archived): 96×192 per frame**, 384×1152 sheets
+  (`<name>_sheet_fullbody.png`, formerly displayed at 3.0×). Kept in
+  the tree as the standard set for the Play flavor.
+
+The mood rows are:
 
 1. Idle (gentle bob/blink loop)
 2. Blush (reacts to compliments / clean splices)

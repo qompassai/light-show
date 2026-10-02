@@ -189,15 +189,16 @@ impl Companion {
         }
     }
 
-    /// Sprite-sheet asset path — same 6-mood-row × 4-frame 96×192
+    /// Sprite-sheet asset path — same 6-mood-row × 4-frame 288×576
     /// full-body layout convention for every companion (see
-    /// `docs/ART_STYLE.md`).
+    /// `docs/ART_STYLE.md`). Loads the mature-redesign sheets; the
+    /// base 96×192 sheets remain in the tree as the standard set.
     pub fn sprite_path(&self) -> &'static str {
         match self {
-            Companion::Fiber => "sprites/seraphine/seraphine_sheet_fullbody.png",
-            Companion::Coax => "sprites/ondine/ondine_sheet_fullbody.png",
-            Companion::Mobile => "sprites/linka/linka_sheet_fullbody.png",
-            Companion::Ethernet => "sprites/lattice/lattice_sheet_fullbody.png",
+            Companion::Fiber => "sprites/seraphine/seraphine_sheet_fullbody_mature.png",
+            Companion::Coax => "sprites/ondine/ondine_sheet_fullbody_mature.png",
+            Companion::Mobile => "sprites/linka/linka_sheet_fullbody_mature.png",
+            Companion::Ethernet => "sprites/lattice/lattice_sheet_fullbody_mature.png",
         }
     }
 }
@@ -252,7 +253,7 @@ fn companion_bundle(
         },
         SpriteBundle {
             texture,
-            transform: Transform::from_xyz(0.0, -240.0, 10.0).with_scale(Vec3::splat(3.0)),
+            transform: Transform::from_xyz(0.0, -240.0, 10.0).with_scale(Vec3::splat(1.0)),
             ..default()
         },
         TextureAtlas {

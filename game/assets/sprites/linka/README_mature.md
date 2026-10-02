@@ -1,30 +1,30 @@
-# Linka — MATURE Variant Sheet
+# Linka — MATURE Sheet (2026 redesign)
 
-Mature/adult-proportioned variant of the linka full-body set. Same
-character, same outfit, same art style — an older, less youthful read.
+Mature variant of the linka full-body set, redesigned from scratch in
+2026-10 (supersedes the transform-derived variant): a whole new
+21-year-old model drawn as a full illustration per expression, then
+converted through the shared-palette pixel pipeline at 288×576.
 
-## What changed
+## The design
 
-- **Head**: smaller relative to body (compressed to ~32% height), jaw
-  narrowed slightly — reads adult rather than chibi.
-- **Body**: legs lengthened, feet stay planted; torso proportions
-  adjusted to match.
-- Derived from the repaired base sheet (see Pout repair note below), so
-  all four pout frames carry clean frowns with no smile remnants.
+- 21-year-old Czech woman; fair skin, light freckles, athletic build,
+  planted stance, naturally proportioned eyes, both hands empty.
+- Violet hair in the antenna-fin side ponytail with glowing signal
+  bars (her shipped in-game hairstyle); signal-bar hair clips;
+  translucent holographic visor; RF spectrum analyzer on the forearm,
+  antenna tools in a thigh holster, coiled cable at the hip.
+- Country signifiers: Czech flag patch + Charles Bridge tower
+  silhouette patch on the left shoulder.
+- Design lock: v2 (see keeper chain).
 
 ## What's preserved
 
-- Outfit, antenna-fin ponytail, visor, color palette, and all
-  accessories — pixel-identical design, only proportions change.
-- Mood-row layout, frame order, and timing: 6 rows × 4 frames @ 180 ms,
-  6 px mood bar, same double-bounce celebrate animation.
+- Mood-row layout, frame order, and timing: 6 rows × 4 frames @ 180 ms.
+- Frames within a row are breathing-bob offsets of the one locked
+  expression illustration per mood.
 - `linka_sheet_fullbody_mature.aseprite` is the editable project and
   round-trips pixel-identical to the PNG.
+- The base 96×192 standard sheet is unchanged and stays in the tree.
 
-## Pout repair note
-
-The shipped base sheet had a paint-over defect in the pout row: an open
-smile was left visible beneath the small frown in all four frames. The
-smile pixels were removed (color-keyed) and the area filled from
-same-row cheek skin; this mature sheet was derived from the repaired
-base.
+Full keeper chain (files, snapshot IDs, SHA-256):
+`~/workspace/light-show-expressions/mature_models/linka_trial/KEEPER_CHAIN.md`

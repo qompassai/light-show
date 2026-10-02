@@ -1,29 +1,34 @@
-# Lattice — MATURE Variant Sheet
+# Lattice — MATURE Sheet (2026 redesign)
 
-Mature/adult-proportioned variant of the lattice full-body set. Same
-character, same outfit, same art style — an older, less youthful read.
+Mature variant of the lattice full-body set, redesigned from scratch in
+2026-10 (supersedes the transform-derived variant): a whole new
+21-year-old model drawn as a full illustration per expression, then
+converted through the shared-palette pixel pipeline at 288×576.
 
-## What changed
+## The design
 
-- **Head**: smaller relative to body (compressed to ~37% height), jaw
-  narrowed slightly — reads adult rather than chibi.
-- **Body**: legs lengthened, feet stay planted; torso proportions
-  adjusted to match.
-- Derived from the repaired base sheet (see Pout repair note below), so
-  all four pout frames carry clean frowns with no smile remnants.
+- 21-year-old South Korean woman (origin changed from USA by Matt,
+  2026-10-01; the name Lattice stays — it is her established identity,
+  and 격자, Korean for a lattice/grid, is on her jacket).
+- Fair skin, light freckles, amber eyes; deep-blue patch-cable braids
+  with gold bands, braid ends tipped with clear RJ45 plugs; gold RJ45
+  hair pin; white grid-pattern jacket; cable tester, crimper, and tone
+  probe worn hands-free; both hands empty.
+- Country signifiers: taegeukgi (South Korean flag) patches on both
+  sleeves + a 격자 Hangul patch under the left-shoulder flag.
+- Design lock: v2b (see keeper chain). Pixel note: the wink frame's
+  raised arm and probe cable enclosed a background pocket that
+  segmentation filled opaque; 3,931 px were cleared back to transparent
+  against the reference.
 
 ## What's preserved
 
-- Outfit, patch-cable braids, color palette, and all accessories —
-  pixel-identical design, only proportions change.
-- Mood-row layout, frame order, and timing: 6 rows × 4 frames @ 180 ms,
-  6 px mood bar, same celebrate fist-pump animation.
+- Mood-row layout, frame order, and timing: 6 rows × 4 frames @ 180 ms.
+- Frames within a row are breathing-bob offsets of the one locked
+  expression illustration per mood.
 - `lattice_sheet_fullbody_mature.aseprite` is the editable project and
   round-trips pixel-identical to the PNG.
+- The base 96×192 standard sheet is unchanged and stays in the tree.
 
-## Pout repair note
-
-The shipped base sheet had a paint-over defect in the pout row (frame 3:
-black smear across the mouth). It was repaired by transplanting the
-clean mouth zone from frame 1; this mature sheet was derived from the
-repaired base.
+Full keeper chain (files, snapshot IDs, SHA-256):
+`~/workspace/light-show-expressions/mature_models/lattice_trial/KEEPER_CHAIN.md`

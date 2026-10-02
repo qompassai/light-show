@@ -1,18 +1,14 @@
-# Light Show
+![Light Show hero art](assets/art/hero_header.jpg)
 
-![Light Show companions](assets/art/companions/app_icon_group.jpg)
+# Light Show
 
 A puzzle game about real Outside Plant (OSP) fiber-optic engineering, built
 in Rust with [Bevy](https://bevyengine.org/), for Android (Google Play +
 F-Droid), with a squad of anime-styled AI companions — one per access
 technology — who react to every splice you make.
 
-Route light from the OLT (Point A) to the customer's ONT (Point B). Hit the
-target receive-power window. Survive outages. All the loss figures are
-real: fusion vs. mechanical splice loss, UPC vs. APC connectors, PON
-splitter ratios, wavelength-dependent fiber attenuation.
-
-## Quick start
+<details>
+<summary><img src="assets/art/companions/linka_profile_64.png" width="28" valign="middle"> Quick start</summary>
 
 ```sh
 cargo run -p light-show
@@ -23,7 +19,10 @@ See [`docs/BUILD.md`](docs/BUILD.md) for Android build instructions
 [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) for the full design doc,
 including the link-budget model and level progression.
 
-## Meet the companions
+</details>
+
+<details>
+<summary><img src="assets/art/companions/seraphine_profile_64.png" width="28" valign="middle"><img src="assets/art/companions/ondine_profile_64.png" width="28" valign="middle"><img src="assets/art/companions/linka_profile_64.png" width="28" valign="middle"><img src="assets/art/companions/lattice_profile_64.png" width="28" valign="middle"> Meet the companions</summary>
 
 Pick a companion from the menu before you start splicing — each one is tied
 to a real access technology, has her own dialogue bank, and reacts to your
@@ -36,36 +35,42 @@ splices, outages, and level results in her own voice.
 Full character briefs, palettes, and mood-sheet specs live in
 [`docs/ART_STYLE.md`](docs/ART_STYLE.md).
 
-## Gameplay
+</details>
+
+<details>
+<summary><img src="assets/art/companions/seraphine_profile_64.png" width="28" valign="middle"> Gameplay</summary>
 
 Real captures from the desktop build (scripted input driving the actual
 game under Xvfb — no mockups). MP4 versions alongside each GIF.
 
-![Level 1: drag to splice, tap a pill to pick the component](docs/gameplay/light-show-level1.gif)
+![World 2, Unity Gain: pick the line amplifier, ledger recomputes, SERVICE RESTORED](docs/gameplay/light-show-level1.gif)
 
-**World 1 – First Light.** Drag from the splice enclosure to the ONT to
-place the default fusion splice, then tap a component pill to switch to
-the mechanical splice. The ledger at the bottom recomputes the live
-link budget on every change: loss, received power, and where it lands
-against the GPON receive window.
+**World 2 – Unity Gain.** The coax cascade is pre-wired except the line
+amplifier: pick the gain that lands the carrier inside the [0, 15] dBmV
+window. The ledger at the bottom recomputes the live link budget on
+every change. This capture runs the full loop — the first pick (20 dB)
+runs hot at Rx: 20.05 dBmV, OUT OF WINDOW; swapping in the 5 dB amp
+lands Rx: 5.05 dBmV — SERVICE RESTORED. Captured with the mature
+288×576 companion set (see `docs/ART_STYLE.md`); the previous base-set
+captures are kept alongside as `*_base.gif`/`*_base.mp4`, and the title
+screen as `title-screen.png` / `title-screen_base.png`.
 
 ![Storm Season: outage fires, reroute over the protection path](docs/gameplay/light-show-outage.gif)
 
 **World 4 – Storm Season.** The aerial route goes up first; 20 seconds
 in, the scripted storm outage cuts it and the repair banner starts its
 countdown. Dragging from the protection-route splice to the ONT brings
-the backup path live.
+the backup path live — SERVICE RESTORED at Loss: 2.22 dB |
+Rx: −10.22 dBm | Margin: 2.22 dB | IN WINDOW.
 
-Two honest caveats. First, the outage clip was captured with a
-temporary build that starts at level 2 — level select doesn't exist yet,
-and level 2 is only reachable through the results screen. Second, as
-shipped, neither bundled level's link budget can actually land inside
-the receive window (level 1's best case is Rx 0.36 dBm against a −8 dBm
-window ceiling), so these clips show real play up to the win check, not
-a victory. The level numbers need a balance pass before the win path is
-reachable.
+One honest caveat: the outage clip was captured with a temporary build
+that starts at level 2 — level select doesn't exist yet, and level 2 is
+only reachable through the results screen.
 
-## Project layout
+</details>
+
+<details>
+<summary><img src="assets/art/companions/lattice_profile_64.png" width="28" valign="middle"> Project layout</summary>
 
 ```
 crates/osp_sim/       Engine-agnostic fiber-optic link-budget simulation core
@@ -82,7 +87,10 @@ fastlane/              Shared Play Store / F-Droid store listing metadata
 tools/                 Art + music generation scripts (placeholder art, companion art, chiptune)
 ```
 
-## Status
+</details>
+
+<details>
+<summary><img src="assets/art/companions/ondine_profile_64.png" width="28" valign="middle"> Status</summary>
 
 Feature-complete gameplay loop: core simulation (`osp_sim`) is fully
 implemented and tested; the Bevy front-end has a working state machine
@@ -102,13 +110,18 @@ logistics rather than code: a signing keystore, real device
 screenshots, and the Play Console/`fdroiddata` listing steps — see
 [`docs/BUILD.md`](docs/BUILD.md) and [`docs/FDROID.md`](docs/FDROID.md).
 
-## License
+</details>
+
+<details>
+<summary>License</summary>
 
 GPL-3.0-or-later. See [`LICENSE`](LICENSE) and
 [`docs/CREDITS.md`](docs/CREDITS.md) for asset attribution.
 
+</details>
 
-## Music
+<details>
+<summary>Music</summary>
 
 Twelve licensed tracks ship with the game, grouped below by the music-manager
 tier that plays them (`game/src/audio.rs`). Click a group to expand it, then a
@@ -187,8 +200,8 @@ http://EricSkiff.com/music · CC BY 4.0 · Plays on: mid levels.
 
 ▶ [Listen](https://github.com/qompassai/light-show/blob/main/game/assets/music/mid/eric-skiff-02-underclocked.mp3)
 
-Music: Eric Skiff - Underclocked (underunderclocked mix) - Resistor Anthems -
-Available at http://EricSkiff.com/music · CC BY 4.0 · Plays on: mid levels.
+Music: Eric Skiff - Underclocked (underunderclocked mix) - Available at
+http://EricSkiff.com/music · CC BY 4.0 · Plays on: mid levels.
 </details>
 
 </details>
@@ -272,8 +285,14 @@ Plays on: mystery events.
 Full attribution lives in [`game/assets/music/ATTRIBUTION.txt`](https://github.com/qompassai/light-show/blob/main/game/assets/music/ATTRIBUTION.txt)
 (also shown in-game on the credits screen) and
 [`game/assets/music/CREDITS.md`](https://github.com/qompassai/light-show/blob/main/game/assets/music/CREDITS.md).
-## Store compliance
+
+</details>
+
+<details>
+<summary>Store compliance</summary>
 
 No ads, no in-app purchases, no tracking, no network permission requested —
 the same build ships unmodified to both Google Play and F-Droid. See
 [`docs/FDROID.md`](docs/FDROID.md) for the anti-features checklist.
+
+</details>
