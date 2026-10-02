@@ -75,7 +75,7 @@ fn animate_win_ring(
     mut commands: Commands,
     time: Res<Time>,
     mut timer: ResMut<WinRingTimer>,
-    mut rings: Query<(Entity, &mut WinRing, &mut UiImage)>,
+    mut rings: Query<(Entity, Option<&Parent>, &mut WinRing, &mut UiImage)>,
 ) {
     if rings.is_empty() {
         return;
@@ -84,9 +84,15 @@ fn animate_win_ring(
     if !timer.0.just_finished() {
         return;
     }
-    for (entity, mut ring, mut image) in &mut rings {
+    for (entity, parent, mut ring, mut image) in &mut rings {
         ring.index += 1;
         if ring.index >= WIN_RING_FRAMES {
+            // Detach from the results root first: a plain despawn leaves a
+            // stale entry in the parent Children list, which teardown_results
+            // would then trip over (B0003).
+            if let Some(parent) = parent {
+                commands.entity(parent.get()).remove_children(&[entity]);
+            }
             commands.entity(entity).despawn();
         } else {
             image.texture = ring.frames[ring.index].clone();

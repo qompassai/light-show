@@ -1193,12 +1193,18 @@ pub fn spawn_signal_pulses(
 pub fn move_signal_pulses(
     mut commands: Commands,
     time: Res<Time>,
-    mut pulses: Query<(Entity, &mut SignalPulse, &mut Transform)>,
+    mut pulses: Query<(Entity, Option<&Parent>, &mut SignalPulse, &mut Transform)>,
 ) {
-    for (entity, mut pulse, mut transform) in &mut pulses {
+    for (entity, parent, mut pulse, mut transform) in &mut pulses {
         let edge_len = pulse.from.distance(pulse.to).max(1.0);
         pulse.progress += PULSE_SPEED * time.delta_seconds() / edge_len;
         if pulse.progress >= 1.0 {
+            // Detach from the board root first: a plain despawn leaves a
+            // stale entry in the parent Children list, which teardown_board
+            // would then trip over (B0003).
+            if let Some(parent) = parent {
+                commands.entity(parent.get()).remove_children(&[entity]);
+            }
             commands.entity(entity).despawn();
             continue;
         }
@@ -1234,10 +1240,14 @@ pub fn update_storm_rain(
     active_outage: Res<ActiveOutage>,
     asset_server: Res<AssetServer>,
     board_roots: Query<Entity, With<BoardRoot>>,
-    mut streaks: Query<(Entity, &mut Transform), With<StormStreak>>,
+    mut streaks: Query<(Entity, Option<&Parent>, &mut Transform), With<StormStreak>>,
 ) {
     if active_outage.outage.is_none() {
-        for (entity, _) in &streaks {
+        for (entity, parent, _) in &streaks {
+            // Detach from the board root first (see move_signal_pulses).
+            if let Some(parent) = parent {
+                commands.entity(parent.get()).remove_children(&[entity]);
+            }
             commands.entity(entity).despawn();
         }
         return;
@@ -1265,7 +1275,7 @@ pub fn update_storm_rain(
             }
         });
     }
-    for (_, mut transform) in &mut streaks {
+    for (_, _, mut transform) in &mut streaks {
         transform.translation.y -= STREAK_FALL_SPEED * time.delta_seconds();
         if transform.translation.y < RAIN_BOTTOM_Y {
             transform.translation.y = RAIN_TOP_Y;
