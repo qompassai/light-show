@@ -5,7 +5,9 @@
 
 use super::outage::ActiveOutage;
 use super::{GameState, LevelOutcome};
+use crate::anim::{Ease, TransitionRequest};
 use crate::board;
+use crate::waifu::trigger_mood_pop;
 use crate::level::{self, CurrentLevelIndex, LevelDef};
 use crate::test_log;
 use crate::waifu::dialogue::DialogueBank;
@@ -40,6 +42,7 @@ impl Plugin for PlayingPlugin {
                     board::handle_pointer_input,
                     board::draw_board_gizmos,
                     board::update_pill_rings,
+                    board::animate_pill_pops,
                     board::spawn_signal_pulses,
                     board::move_signal_pulses,
                     board::update_storm_rain,
@@ -52,7 +55,8 @@ impl Plugin for PlayingPlugin {
                 Update,
                 (tick_clock, check_scripted_outage, check_win_condition)
                     .run_if(in_state(GameState::Playing)),
-            );
+            )
+            .add_systems(Update, lerp_camera);
     }
 }
 
@@ -102,8 +106,39 @@ pub struct LevelClock {
 // mutate; splitting it up would just move the same resource list into an
 // artificial bag type for no clarity gain (see `board::handle_pointer_input`
 // for the same tradeoff).
+/// Seconds to lerp the persistent camera to the board framing (Finding 3).
+const CAMERA_LERP_SECS: f32 = 0.5;
+/// Board framing: nodes sit around y=300 in world space; centering at
+/// y=200 keeps the board clear of the briefing text at the top.
+const BOARD_CAM_POS: Vec3 = Vec3::new(0.0, 200.0, 0.0);
+
+/// Persistent-camera lerp marker (Finding 3). Inserted on the existing
+/// camera by `setup_level`; `lerp_camera` eases `from` -> `to` and then
+/// removes this component.
 #[derive(Component)]
-struct PlayingCamera;
+struct CameraLerp {
+    from: Vec3,
+    to: Vec3,
+    elapsed_secs: f32,
+}
+
+/// Eases the persistent camera from its current framing to the board
+/// framing over 0.5s with CubicInOut (Finding 3).
+fn lerp_camera(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Transform, &mut CameraLerp)>,
+) {
+    for (entity, mut transform, mut lerp) in &mut query {
+        lerp.elapsed_secs += time.delta_seconds();
+        let t = (lerp.elapsed_secs / CAMERA_LERP_SECS).clamp(0.0, 1.0);
+        transform.translation = lerp.from.lerp(lerp.to, Ease::CubicInOut.sample(t));
+        if t >= 1.0 {
+            transform.translation = lerp.to;
+            commands.entity(entity).remove::<CameraLerp>();
+        }
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
 fn setup_level(
@@ -115,33 +150,42 @@ fn setup_level(
     mut active_outage: ResMut<ActiveOutage>,
     asset_server: Res<AssetServer>,
     dialogue: Res<DialogueBank>,
-    mut companions: Query<&mut crate::waifu::CompanionSprite>,
-    cameras: Query<Entity, With<Camera>>,
+    mut companions: Query<(Entity, &mut crate::waifu::CompanionSprite)>,
+    cameras: Query<(Entity, &Transform), With<Camera>>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
-    // Dedicated board camera: the MainMenu camera persists
-    // across the transition but does not frame world-space
-    // content correctly on Android (verified 2026-09-30).
-    for entity in &cameras {
-        commands.entity(entity).despawn_recursive();
+    // Persistent camera (Finding 3): the MainMenu camera is a plain
+    // Camera2dBundle, identical to what was spawned here before, so the
+    // Android framing fix (verified 2026-09-30) is preserved — only the
+    // despawn/respawn cut is gone, replaced by a 0.5s ease to the board
+    // framing.
+    match cameras.get_single() {
+        Ok((entity, transform)) => {
+            let from = transform.translation;
+            commands.entity(entity).insert(CameraLerp {
+                from,
+                to: BOARD_CAM_POS,
+                elapsed_secs: 0.0,
+            });
+        }
+        Err(_) => {
+            // Defensive: no camera exists (the menu always spawns one, so
+            // this shouldn't happen). Spawn directly at the board framing.
+            commands.spawn(Camera2dBundle {
+                transform: Transform::from_translation(BOARD_CAM_POS),
+                ..default()
+            });
+        }
     }
-    // Board nodes sit around y=300 in world space; center the camera
-    // there so the board clears the briefing text at the top.
-    commands.spawn((
-        PlayingCamera,
-        Camera2dBundle {
-            transform: Transform::from_xyz(0.0, 200.0, 0.0),
-            ..default()
-        },
-    ));
     let level_def = level::load_level(index.0);
 
     placed.0.clear();
     clock.elapsed_seconds = 0.0;
     active_outage.outage = None;
-    for mut sprite in &mut companions {
+    for (entity, mut sprite) in &mut companions {
         sprite.mood = crate::waifu::Mood::Idle;
         sprite.frame = 0;
+        trigger_mood_pop(&mut commands, entity);
     }
     board::rebuild_live_graph(
         &level_def,
@@ -197,7 +241,7 @@ fn check_scripted_outage(
     placed: Res<board::PlacedChoices>,
     mut live: ResMut<LiveGraph>,
     mut active_outage: ResMut<ActiveOutage>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut request: ResMut<TransitionRequest>,
 ) {
     let Some(scripted) = &level.scripted_outage else {
         return;
@@ -214,7 +258,7 @@ fn check_scripted_outage(
             active_outage.outage.as_ref(),
             &mut live.graph,
         );
-        next_state.set(GameState::OutageActive);
+        request.0 = Some(GameState::OutageActive);
     }
 }
 
@@ -227,21 +271,29 @@ fn check_scripted_outage(
 /// 20s) would win immediately and the outage/repair content -- the whole
 /// point of the level -- would never fire.
 fn check_win_condition(
+    mut commands: Commands,
     live: Res<LiveGraph>,
     level: Res<LevelDef>,
     mut outcome: ResMut<LevelOutcome>,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut companions: Query<&mut crate::waifu::CompanionSprite>,
+    mut request: ResMut<TransitionRequest>,
+    mut companions: Query<(Entity, &mut crate::waifu::CompanionSprite)>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     if level.scripted_outage.is_some() {
         return;
     }
     if level.is_win_state(&live.graph, live.tx_dbm, live.wavelength.0) {
+        sfx.play(&mut commands, crate::audio::SfxKind::Win);
         outcome.won = true;
-        for mut sprite in &mut companions {
-            sprite.mood = crate::waifu::Mood::Celebrate;
-            sprite.frame = 0;
+        // Guarded: this system keeps running during the 0.3s fade-out,
+        // and re-popping every frame would restart the animation forever.
+        for (entity, mut sprite) in &mut companions {
+            if sprite.mood != crate::waifu::Mood::Celebrate {
+                sprite.mood = crate::waifu::Mood::Celebrate;
+                sprite.frame = 0;
+                trigger_mood_pop(&mut commands, entity);
+            }
         }
-        next_state.set(GameState::Results);
+        request.0 = Some(GameState::Results);
     }
 }

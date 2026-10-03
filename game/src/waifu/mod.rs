@@ -39,6 +39,7 @@ impl Plugin for SeraphinePlugin {
                     sync_companion_atlas_index,
                     react_to_splice_events,
                     respawn_on_companion_change,
+                    animate_mood_pop,
                 ),
             );
     }
@@ -51,19 +52,69 @@ impl Plugin for SeraphinePlugin {
 #[derive(Event, Clone, Copy)]
 pub struct SpliceReaction(pub Mood);
 
+/// Seconds for the mood-change scale pop (Finding 1).
+const MOOD_POP_SECS: f32 = 0.15;
+/// Peak scale of the mood pop: 1.0 -> 1.08 -> 1.0.
+const MOOD_POP_PEAK: f32 = 1.08;
+
+/// Scale-pop marker inserted on the companion sprite whenever its mood
+/// changes (Finding 1). Reads as a visible reaction without needing
+/// dual-sprite crossfade blending.
+#[derive(Component)]
+pub(crate) struct MoodPop {
+    elapsed_secs: f32,
+}
+
+/// Triggers the mood-change scale pop on `entity`. Re-inserting while a
+/// pop is in flight restarts it, so call sites must only call this when
+/// the mood actually changes (not every frame of a steady state).
+pub(crate) fn trigger_mood_pop(commands: &mut Commands, entity: Entity) {
+    commands.entity(entity).insert(MoodPop { elapsed_secs: 0.0 });
+}
+
+/// Plays the 0.15s mood pop: scale 1.0 -> 1.08 -> 1.0, both halves eased
+/// with [`crate::anim::Ease::BackOut`] for a springy reaction feel.
+fn animate_mood_pop(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Transform, &mut MoodPop)>,
+) {
+    use crate::anim::Ease;
+    for (entity, mut transform, mut pop) in &mut query {
+        pop.elapsed_secs += time.delta_seconds();
+        let t = (pop.elapsed_secs / MOOD_POP_SECS).clamp(0.0, 1.0);
+        let scale = if t < 0.5 {
+            1.0 + (MOOD_POP_PEAK - 1.0) * Ease::BackOut.sample(t * 2.0)
+        } else {
+            MOOD_POP_PEAK - (MOOD_POP_PEAK - 1.0) * Ease::BackOut.sample((t - 0.5) * 2.0)
+        };
+        transform.scale = Vec3::splat(scale.max(0.01));
+        if t >= 1.0 {
+            transform.scale = Vec3::splat(1.0);
+            commands.entity(entity).remove::<MoodPop>();
+        }
+    }
+}
+
 /// Applies the most recent `SpliceReaction` to every companion sprite
 /// (there's only ever one on screen). Resets `frame` too so the new mood
 /// starts its animation loop from the top.
 pub(crate) fn react_to_splice_events(
+    mut commands: Commands,
     mut events: EventReader<SpliceReaction>,
-    mut query: Query<&mut CompanionSprite>,
+    mut query: Query<(Entity, &mut CompanionSprite)>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     let Some(reaction) = events.read().last() else {
         return;
     };
-    for mut sprite in &mut query {
+    // The companion visibly reacts (new mood + dialogue line): a soft
+    // blip marks the moment, distinct from the splice thunk itself.
+    sfx.play(&mut commands, crate::audio::SfxKind::Dialogue);
+    for (entity, mut sprite) in &mut query {
         sprite.mood = reaction.0;
         sprite.frame = 0;
+        trigger_mood_pop(&mut commands, entity);
     }
 }
 

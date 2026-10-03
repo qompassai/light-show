@@ -50,7 +50,10 @@ const EMPTY_BOARD_SPOT: Vec2 = Vec2::new(5000.0, 5000.0);
 
 /// Build the headless playthrough app: the real game plugins over headless
 /// Bevy. `MusicPlugin` is excluded (needs an audio device); benches are
-/// excluded (not part of the playthrough path).
+/// excluded (not part of the playthrough path). The `Sfx` resource is
+/// present with dummy handles so the event systems under test run their
+/// real `Sfx::play` call sites — no audio system runs headless, so the
+/// handles are never resolved and nothing needs a device.
 fn playthrough_app() -> App {
     let mut app = App::new();
     app.add_plugins((
@@ -79,6 +82,11 @@ fn playthrough_app() -> App {
         .insert(GizmoConfig::default(), DefaultGizmoConfigGroup);
     app.init_resource::<GizmoStorage<DefaultGizmoConfigGroup, ()>>();
     app.init_state::<GameState>();
+    app.insert_resource(crate::audio::Sfx::for_tests());
+    // `AnimPlugin` (in the real game app) initializes this; the headless
+    // app doesn't add that plugin, so init it here. Idempotent if the
+    // plugin later does the same.
+    app.init_resource::<crate::anim::TransitionRequest>();
     app.add_plugins((
         MenuPlugin,
         CompanionSelectPlugin,
@@ -88,6 +96,10 @@ fn playthrough_app() -> App {
         SeraphinePlugin,
         LedgerUiPlugin,
     ));
+    // Instant transitions for logic tests: the real fade lives in
+    // AnimPlugin (excluded here); this drains the request queue straight
+    // into NextState so `settle()` still converges in a few frames.
+    app.add_systems(Update, crate::anim::apply_transition_requests_instantly);
     app
 }
 

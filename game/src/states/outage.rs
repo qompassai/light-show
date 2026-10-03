@@ -11,8 +11,9 @@
 
 use super::playing::LiveGraph;
 use super::{GameState, LevelOutcome};
+use crate::anim::{Ease, TransitionRequest};
 use crate::level::LevelDef;
-use crate::waifu::{CompanionSprite, Mood};
+use crate::waifu::{trigger_mood_pop, CompanionSprite, Mood};
 use bevy::prelude::*;
 use osp_sim::Outage;
 
@@ -31,7 +32,8 @@ impl Plugin for OutagePlugin {
                     .chain()
                     .run_if(in_state(GameState::OutageActive)),
             )
-            .add_systems(OnExit(GameState::OutageActive), teardown_outage_banner);
+            .add_systems(OnExit(GameState::OutageActive), teardown_outage_banner)
+            .add_systems(Update, (animate_banner_entrance, animate_banner_exit));
     }
 }
 
@@ -52,7 +54,36 @@ struct OutageBanner;
 #[derive(Component)]
 struct OutageBannerText;
 
-fn announce_outage(active: Res<ActiveOutage>) {
+/// Seconds for the banner slide-down entrance (Finding 4).
+const BANNER_SLIDE_IN_SECS: f32 = 0.35;
+/// Seconds for the banner slide-up exit (Finding 4).
+const BANNER_SLIDE_OUT_SECS: f32 = 0.25;
+/// Banner resting alpha once fully entered.
+const BANNER_ALPHA: f32 = 0.85;
+/// Banner start/end offset for the slide (px above the viewport top).
+const BANNER_HIDDEN_TOP_PX: f32 = -80.0;
+
+/// Marker for the banner entrance animation: slides the banner down
+/// from `top: -80px` to `top: 0` with a BackOut overshoot while fading
+/// its alpha 0 -> 0.85 (Finding 4).
+#[derive(Component)]
+struct BannerSlide {
+    elapsed_secs: f32,
+}
+
+/// Marker for the banner exit animation: reverses the entrance with a
+/// 0.25s slide-up + fade-out instead of an instant despawn (Finding 4).
+#[derive(Component)]
+struct BannerSlideOut {
+    elapsed_secs: f32,
+}
+
+fn announce_outage(
+    mut commands: Commands,
+    active: Res<ActiveOutage>,
+    sfx: Res<crate::audio::Sfx>,
+) {
+    sfx.play(&mut commands, crate::audio::SfxKind::Alarm);
     if let Some(outage) = &active.outage {
         info!(
             "OUTAGE: {} (timer: {:.0}s)",
@@ -67,10 +98,11 @@ fn announce_outage(active: Res<ActiveOutage>) {
 /// the storm/fault rather than mid-idle-loop. There's only ever one
 /// companion spawned at a time (see `waifu::respawn_on_companion_change`),
 /// but this iterates the query rather than assuming that invariant.
-fn alarm_companion(mut query: Query<&mut CompanionSprite>) {
-    for mut sprite in &mut query {
+fn alarm_companion(mut commands: Commands, mut query: Query<(Entity, &mut CompanionSprite)>) {
+    for (entity, mut sprite) in &mut query {
         sprite.mood = Mood::Alarmed;
         sprite.frame = 0;
+        trigger_mood_pop(&mut commands, entity);
     }
 }
 
@@ -88,18 +120,21 @@ fn spawn_outage_banner(
     commands
         .spawn((
             OutageBanner,
+            // The banner starts above the viewport and fully transparent;
+            // `animate_banner_entrance` slides/fades it in (Finding 4).
+            BannerSlide { elapsed_secs: 0.0 },
             NodeBundle {
                 style: Style {
                     width: Val::Percent(100.0),
                     position_type: PositionType::Absolute,
-                    top: Val::Px(0.0),
+                    top: Val::Px(BANNER_HIDDEN_TOP_PX),
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
                     padding: UiRect::vertical(Val::Px(10.0)),
                     row_gap: Val::Px(4.0),
                     ..default()
                 },
-                background_color: Color::srgba(0.65, 0.0, 0.05, 0.85).into(),
+                background_color: Color::srgba(0.65, 0.0, 0.05, 0.0).into(),
                 ..default()
             },
         ))
@@ -138,15 +173,82 @@ fn update_outage_banner(
     }
 }
 
-fn teardown_outage_banner(mut commands: Commands, query: Query<Entity, With<OutageBanner>>) {
+fn teardown_outage_banner(
+    mut commands: Commands,
+    query: Query<Entity, (With<OutageBanner>, Without<BannerSlideOut>)>,
+) {
+    // Don't despawn instantly: hand the banner to `animate_banner_exit`
+    // for the 0.25s slide-up + fade-out (Finding 4). The fullscreen fade
+    // covers the state swap anyway, so this plays out underneath it.
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).insert(BannerSlideOut { elapsed_secs: 0.0 });
     }
 }
 
-fn tick_outage(time: Res<Time>, mut active: ResMut<ActiveOutage>) {
-    if let Some(outage) = &mut active.outage {
-        outage.tick(time.delta_seconds_f64());
+/// Slides the banner down from `top: -80px` to `top: 0` over 0.35s with
+/// a BackOut overshoot (the "alarm" feel) while fading alpha 0 -> 0.85.
+fn animate_banner_entrance(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Style, &mut BackgroundColor, &mut BannerSlide)>,
+) {
+    for (entity, mut style, mut background, mut slide) in &mut query {
+        slide.elapsed_secs += time.delta_seconds();
+        let t = (slide.elapsed_secs / BANNER_SLIDE_IN_SECS).clamp(0.0, 1.0);
+        let eased = Ease::BackOut.sample(t);
+        style.top = Val::Px(BANNER_HIDDEN_TOP_PX + -BANNER_HIDDEN_TOP_PX * eased);
+        background.0 = Color::srgba(0.65, 0.0, 0.05, BANNER_ALPHA * eased.clamp(0.0, 1.0));
+        if t >= 1.0 {
+            style.top = Val::Px(0.0);
+            background.0 = Color::srgba(0.65, 0.0, 0.05, BANNER_ALPHA);
+            commands.entity(entity).remove::<BannerSlide>();
+        }
+    }
+}
+
+/// Reverses the entrance: 0.25s slide-up + fade-out, then despawns.
+fn animate_banner_exit(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Style, &mut BackgroundColor, &mut BannerSlideOut)>,
+) {
+    for (entity, mut style, mut background, mut slide_out) in &mut query {
+        slide_out.elapsed_secs += time.delta_seconds();
+        let t = (slide_out.elapsed_secs / BANNER_SLIDE_OUT_SECS).clamp(0.0, 1.0);
+        let eased = Ease::CubicInOut.sample(t);
+        style.top = Val::Px(BANNER_HIDDEN_TOP_PX * eased);
+        background.0 = Color::srgba(0.65, 0.0, 0.05, BANNER_ALPHA * (1.0 - eased));
+        if t >= 1.0 {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
+/// Final-seconds countdown window for the repair tick: one tick per
+/// whole second, so the player hears the clock running out.
+const TICK_WINDOW_SECONDS: f64 = 5.0;
+
+fn tick_outage(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut active: ResMut<ActiveOutage>,
+    sfx: Res<crate::audio::Sfx>,
+    mut last_whole_second: Local<u32>,
+) {
+    let Some(outage) = &mut active.outage else {
+        return;
+    };
+    outage.tick(time.delta_seconds_f64());
+    let remaining = outage.time_remaining();
+    if remaining > TICK_WINDOW_SECONDS {
+        // Outside the window: re-arm so re-entering it always ticks.
+        *last_whole_second = u32::MAX;
+        return;
+    }
+    let whole = remaining.ceil() as u32;
+    if whole < *last_whole_second {
+        *last_whole_second = whole;
+        sfx.play(&mut commands, crate::audio::SfxKind::Tick);
     }
 }
 
@@ -156,20 +258,23 @@ fn tick_outage(time: Res<Time>, mut active: ResMut<ActiveOutage>) {
 /// outcomes go straight to `Results` — see the module doc comment for
 /// why this never routes back to `Playing`.
 fn check_outage_resolution(
+    mut commands: Commands,
     mut active: ResMut<ActiveOutage>,
     live: Res<LiveGraph>,
     level: Res<LevelDef>,
     mut outcome: ResMut<LevelOutcome>,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut companions: Query<&mut CompanionSprite>,
+    mut request: ResMut<TransitionRequest>,
+    mut companions: Query<(Entity, &mut CompanionSprite)>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     let Some(outage) = active.outage.clone() else {
         return;
     };
 
     if outage.is_expired() {
+        sfx.play(&mut commands, crate::audio::SfxKind::Lose);
         outcome.won = false;
-        next_state.set(GameState::Results);
+        request.0 = Some(GameState::Results);
         return;
     }
 
@@ -177,14 +282,20 @@ fn check_outage_resolution(
         if let Some(active_outage) = active.outage.as_mut() {
             active_outage.resolved = true;
         }
+        sfx.play(&mut commands, crate::audio::SfxKind::Win);
         outcome.won = true;
         // A "nice save" reaction distinct from a plain, drama-free clear
         // (see `states::playing::check_win_condition`'s `Mood::Celebrate`).
-        for mut sprite in &mut companions {
-            sprite.mood = Mood::Wink;
-            sprite.frame = 0;
+        // Guarded: this system keeps running during the 0.3s fade-out, and
+        // re-popping every frame would restart the animation forever.
+        for (entity, mut sprite) in &mut companions {
+            if sprite.mood != Mood::Wink {
+                sprite.mood = Mood::Wink;
+                sprite.frame = 0;
+                trigger_mood_pop(&mut commands, entity);
+            }
         }
-        next_state.set(GameState::Results);
+        request.0 = Some(GameState::Results);
     }
 }
 
@@ -278,15 +389,16 @@ mod tests {
         world.insert_resource(connected_live_graph());
         world.insert_resource(fixture_level((0, 1)));
         world.insert_resource(LevelOutcome { won: true });
-        world.init_resource::<NextState<GameState>>();
+        world.init_resource::<TransitionRequest>();
+        world.insert_resource(crate::audio::Sfx::for_tests());
 
         world.run_system_once(check_outage_resolution);
 
         assert!(!world.resource::<LevelOutcome>().won);
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::Results)
-        ));
+        assert_eq!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::Results)
+        );
     }
 
     #[test]
@@ -299,7 +411,8 @@ mod tests {
         world.insert_resource(connected_live_graph());
         world.insert_resource(fixture_level((0, 1)));
         world.insert_resource(LevelOutcome { won: false });
-        world.init_resource::<NextState<GameState>>();
+        world.init_resource::<TransitionRequest>();
+        world.insert_resource(crate::audio::Sfx::for_tests());
 
         world.run_system_once(check_outage_resolution);
 
@@ -312,10 +425,10 @@ mod tests {
                 .unwrap()
                 .resolved
         );
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::Results)
-        ));
+        assert_eq!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::Results)
+        );
     }
 
     #[test]
@@ -325,14 +438,12 @@ mod tests {
         world.insert_resource(connected_live_graph());
         world.insert_resource(fixture_level((0, 1)));
         world.insert_resource(LevelOutcome { won: true });
-        world.init_resource::<NextState<GameState>>();
+        world.init_resource::<TransitionRequest>();
+        world.insert_resource(crate::audio::Sfx::for_tests());
 
         world.run_system_once(check_outage_resolution);
 
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Unchanged
-        ));
+        assert_eq!(world.resource::<TransitionRequest>().0, None);
     }
 
     #[test]
@@ -350,5 +461,7 @@ mod tests {
         let sprite = world.query::<&CompanionSprite>().single(&world);
         assert_eq!(sprite.mood, Mood::Alarmed);
         assert_eq!(sprite.frame, 0);
+        // The mood change also triggers the scale pop (Finding 1).
+        assert_eq!(world.query::<&crate::waifu::MoodPop>().iter(&world).len(), 1);
     }
 }

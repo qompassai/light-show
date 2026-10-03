@@ -6,6 +6,7 @@
 //! chooses *what* you learn, not just who comments on it.
 
 use super::GameState;
+use crate::anim::TransitionRequest;
 use crate::level::CurrentLevelIndex;
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
 use crate::waifu::{Companion, SelectedCompanion};
@@ -286,6 +287,16 @@ fn animate_select_cards(
     }
     for (interaction, mut anim, children) in &mut cards {
         if *interaction != Interaction::Hovered && *interaction != Interaction::Pressed {
+            // Snap back to frame 0 on unhover instead of freezing mid-cycle
+            // (Finding 5).
+            if anim.index != 0 {
+                anim.index = 0;
+                for child in children {
+                    if let Ok(mut image) = silhouettes.get_mut(*child) {
+                        image.texture = anim.frames[0].clone();
+                    }
+                }
+            }
             continue;
         }
         anim.index = (anim.index + 1) % SELECT_ANIM_FRAMES;
@@ -297,17 +308,36 @@ fn animate_select_cards(
     }
 }
 
-/// Raises the card's glow outline in the companion's accent color while it
-/// is hovered or pressed, and drops it back to zero width otherwise.
+/// Outline width target when a card is hovered/pressed (px).
+const CARD_OUTLINE_PX: f32 = 3.0;
+/// Exponential approach rate for the outline lerp: reaches ~95% of the
+/// target in ~0.25s, matching the audit's ~12px/s guideline (Finding 5).
+const OUTLINE_LERP_RATE: f32 = 12.0;
+
+/// Eases each card's outline width toward its hover target every frame
+/// instead of snapping 0<->3px on `Changed<Interaction>`, and fades the
+/// accent color alpha in with the width (Finding 5).
 fn highlight_select_cards(
-    mut cards: Query<(&Interaction, &SelectButton, &mut Outline), Changed<Interaction>>,
+    time: Res<Time>,
+    mut cards: Query<(&Interaction, &SelectButton, &mut Outline)>,
 ) {
+    // Frame-rate-independent exponential approach.
+    let blend = 1.0 - (-OUTLINE_LERP_RATE * time.delta_seconds()).exp();
     for (interaction, button, mut outline) in &mut cards {
-        outline.width = match interaction {
-            Interaction::Hovered | Interaction::Pressed => Val::Px(3.0),
-            Interaction::None => Val::Px(0.0),
+        let target_px = match interaction {
+            Interaction::Hovered | Interaction::Pressed => CARD_OUTLINE_PX,
+            Interaction::None => 0.0,
         };
-        outline.color = button.0.accent();
+        let current_px = match outline.width {
+            Val::Px(px) => px,
+            _ => 0.0,
+        };
+        let new_px = current_px + (target_px - current_px) * blend;
+        outline.width = Val::Px(new_px);
+        outline.color = button
+            .0
+            .accent()
+            .with_alpha((new_px / CARD_OUTLINE_PX).clamp(0.0, 1.0));
     }
 }
 
@@ -315,27 +345,33 @@ fn highlight_select_cards(
 /// sprite/dialogue swap still happens in
 /// `waifu::respawn_on_companion_change`, which reacts to the resource.
 fn handle_select_buttons(
+    mut commands: Commands,
     interactions: Query<(&Interaction, &SelectButton), Changed<Interaction>>,
     mut selected: ResMut<SelectedCompanion>,
     mut index: ResMut<CurrentLevelIndex>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut request: ResMut<TransitionRequest>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     for (interaction, button) in &interactions {
         if *interaction == Interaction::Pressed {
+            sfx.play(&mut commands, crate::audio::SfxKind::Pick);
             selected.0 = button.0;
             index.0 = button.0.track_start_index();
-            next_state.set(GameState::Playing);
+            request.0 = Some(GameState::Playing);
         }
     }
 }
 
 fn handle_back_button(
+    mut commands: Commands,
     interactions: Query<&Interaction, (Changed<Interaction>, With<BackButton>)>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut request: ResMut<TransitionRequest>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     for interaction in &interactions {
         if *interaction == Interaction::Pressed {
-            next_state.set(GameState::MainMenu);
+            sfx.play(&mut commands, crate::audio::SfxKind::Click);
+            request.0 = Some(GameState::MainMenu);
         }
     }
 }
@@ -355,7 +391,8 @@ mod tests {
         let mut world = World::new();
         world.insert_resource(SelectedCompanion(Companion::Fiber));
         world.insert_resource(CurrentLevelIndex(0));
-        world.insert_resource(NextState::<GameState>::default());
+        world.init_resource::<TransitionRequest>();
+        world.insert_resource(crate::audio::Sfx::for_tests());
         world
     }
 
@@ -372,8 +409,8 @@ mod tests {
             Companion::Ethernet.track_start_index()
         );
         assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::Playing)
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::Playing)
         ));
     }
 
@@ -385,14 +422,19 @@ mod tests {
         world.run_system_once(handle_back_button);
 
         assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::MainMenu)
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::MainMenu)
         ));
     }
 
     #[test]
     fn hovering_a_card_raises_its_accent_outline() {
+        use std::time::Duration;
+
         let mut world = World::new();
+        let mut time = Time::<()>::default();
+        time.advance_by(Duration::from_secs_f32(1.0));
+        world.insert_resource(time);
         let card = world
             .spawn((
                 SelectButton(Companion::Coax),
@@ -407,14 +449,25 @@ mod tests {
 
         world.run_system_once(highlight_select_cards);
 
+        // The outline lerps toward 3px (not a snap): after a 1s delta it
+        // has effectively converged, and the accent color faded in.
         let outline = world.get::<Outline>(card).expect("card keeps its outline");
-        assert_eq!(outline.width, Val::Px(3.0));
-        assert_eq!(outline.color, Companion::Coax.accent());
+        let width_px = match outline.width {
+            Val::Px(px) => px,
+            _ => panic!("expected px width"),
+        };
+        assert!((width_px - 3.0).abs() < 0.01, "width: {width_px}");
+        assert!(outline.color.alpha() > 0.99);
     }
 
     #[test]
     fn unhovering_a_card_drops_its_outline() {
+        use std::time::Duration;
+
         let mut world = World::new();
+        let mut time = Time::<()>::default();
+        time.advance_by(Duration::from_secs_f32(1.0));
+        world.insert_resource(time);
         let card = world
             .spawn((
                 SelectButton(Companion::Mobile),
@@ -430,7 +483,12 @@ mod tests {
         world.run_system_once(highlight_select_cards);
 
         let outline = world.get::<Outline>(card).expect("card keeps its outline");
-        assert_eq!(outline.width, Val::Px(0.0));
+        let width_px = match outline.width {
+            Val::Px(px) => px,
+            _ => panic!("expected px width"),
+        };
+        assert!(width_px < 0.01, "width: {width_px}");
+        assert!(outline.color.alpha() < 0.01);
     }
 
     #[test]

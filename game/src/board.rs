@@ -19,6 +19,7 @@
 //! `assets/sprites/ui/` (same visual radii as the old gizmo circles, so
 //! the hit-test contract is unchanged).
 
+use crate::anim::Ease;
 use crate::level::{LevelDef, MediumDef};
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
@@ -913,6 +914,7 @@ pub fn track_pointer(
 // artificial bag type for no clarity gain.
 #[allow(clippy::too_many_arguments)]
 pub fn handle_pointer_input(
+    mut commands: Commands,
     level: Res<LevelDef>,
     pointer: Res<PointerWorld>,
     mouse: Res<ButtonInput<MouseButton>>,
@@ -922,6 +924,7 @@ pub fn handle_pointer_input(
     mut live: ResMut<LiveGraph>,
     active_outage: Res<ActiveOutage>,
     mut splice_reactions: EventWriter<crate::waifu::SpliceReaction>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     let just_pressed = mouse.just_pressed(MouseButton::Left) || touches.any_just_pressed();
     let just_released = mouse.just_released(MouseButton::Left) || touches.any_just_released();
@@ -931,6 +934,7 @@ pub fn handle_pointer_input(
             match resolve_press(&level, pos) {
                 PressAction::StartDrag(node_id) => drag.from = Some(node_id),
                 PressAction::SelectPill { from, to, slot } => {
+                    sfx.play(&mut commands, crate::audio::SfxKind::Pick);
                     placed.0.insert((from, to), slot);
                     rebuild_live_graph(
                         &level,
@@ -952,6 +956,7 @@ pub fn handle_pointer_input(
 
     if just_released {
         if let ReleaseAction::Connect { from, to } = resolve_release(&level, drag.from, pointer.0) {
+            sfx.play(&mut commands, crate::audio::SfxKind::Place);
             let slot = *placed.0.entry((from, to)).or_insert(0);
             rebuild_live_graph(
                 &level,
@@ -1043,21 +1048,68 @@ pub fn draw_board_gizmos(
     }
 }
 
+/// Seconds for the pill-ring pick pop (Finding 7).
+const PILL_POP_SECS: f32 = 0.2;
+/// Peak scale of the pill pop: 1.0 -> 1.25 -> 1.0.
+const PILL_POP_PEAK: f32 = 1.25;
+
+/// Scale-pop marker on a pill ring, inserted when its slot becomes the
+/// picked one (Finding 7). The highest-frequency player interaction in
+/// the game gets a visible pop per occurrence.
+#[derive(Component)]
+pub struct PillPop {
+    pub(crate) elapsed_secs: f32,
+}
+
 /// Swaps pill-ring sprite textures when the player's picks change: the
 /// chosen slot glows hot pink, the rest stay cyan. Runs only on the
 /// frames `PlacedChoices` actually changed, and only touches the texture
 /// handle — the sprites themselves are spawned once per level.
+///
+/// The freshly-picked ring also gets a 0.2s scale pop (Finding 7).
 pub fn update_pill_rings(
+    mut commands: Commands,
     placed: Res<PlacedChoices>,
     asset_server: Res<AssetServer>,
-    mut rings: Query<(&PillRing, &mut Handle<Image>)>,
+    mut rings: Query<(Entity, &PillRing, &mut Handle<Image>)>,
 ) {
     if !placed.is_changed() {
         return;
     }
-    for (ring, mut texture) in &mut rings {
+    for (entity, ring, mut texture) in &mut rings {
         let selected = placed.0.get(&(ring.from, ring.to)).copied() == Some(ring.slot);
-        *texture = asset_server.load(pill_ring_path(selected));
+        let new_texture: Handle<Image> = asset_server.load(pill_ring_path(selected));
+        // `AssetServer::load` is idempotent per path, so a changed handle
+        // means this ring's pick state actually flipped.
+        if *texture != new_texture {
+            *texture = new_texture;
+            if selected {
+                commands.entity(entity).insert(PillPop { elapsed_secs: 0.0 });
+            }
+        }
+    }
+}
+
+/// Plays the 0.2s pill-ring pop: scale 1.0 -> 1.25 -> 1.0, both halves
+/// eased with [`Ease::BackOut`] (Finding 7).
+pub fn animate_pill_pops(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Transform, &mut PillPop)>,
+) {
+    for (entity, mut transform, mut pop) in &mut query {
+        pop.elapsed_secs += time.delta_seconds();
+        let t = (pop.elapsed_secs / PILL_POP_SECS).clamp(0.0, 1.0);
+        let scale = if t < 0.5 {
+            1.0 + (PILL_POP_PEAK - 1.0) * Ease::BackOut.sample(t * 2.0)
+        } else {
+            PILL_POP_PEAK - (PILL_POP_PEAK - 1.0) * Ease::BackOut.sample((t - 0.5) * 2.0)
+        };
+        transform.scale = Vec3::splat(scale.max(0.01));
+        if t >= 1.0 {
+            transform.scale = Vec3::splat(1.0);
+            commands.entity(entity).remove::<PillPop>();
+        }
     }
 }
 
@@ -1208,7 +1260,11 @@ pub fn move_signal_pulses(
             commands.entity(entity).despawn();
             continue;
         }
-        transform.translation = pulse.from.lerp(pulse.to, pulse.progress).extend(7.0);
+        // Ease the progress so pulses accelerate out of the source and
+        // decelerate into the target (Finding 8). PULSE_SPEED is unchanged;
+        // only the curve changes.
+        let eased = Ease::SineInOut.sample(pulse.progress.clamp(0.0, 1.0));
+        transform.translation = pulse.from.lerp(pulse.to, eased).extend(7.0);
     }
 }
 
@@ -1770,6 +1826,7 @@ mod tests {
         });
         world.insert_resource(ActiveOutage::default());
         world.init_resource::<Events<crate::waifu::SpliceReaction>>();
+        world.insert_resource(crate::audio::Sfx::for_tests());
         world.insert_resource(level);
         world
     }

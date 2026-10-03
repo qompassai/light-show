@@ -189,6 +189,164 @@ fn stop_music(mut commands: Commands, tracks: Query<Entity, With<MusicTrack>>) {
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// SFX: one-shot chiptune sound effects for game events. The eight WAVs
+// under `game/assets/sfx/` are synthesized from scratch (square waves,
+// see `tools/gen_sfx.py` provenance in the file header there) — no
+// licensed samples, so no attribution burden unlike the music tracks.
+//
+// Contract: `SfxPlugin` preloads every handle once via `FromWorld` (the
+// same pattern as `waifu::CompanionAtlasLayout`), so playback sites pay
+// no load cost and a missing file fails fast at startup instead of
+// surfacing as silence mid-game. `Sfx::play` spawns a `Despawn`-mode
+// `AudioBundle`: the entity cleans itself up when the sample ends, no
+// bookkeeping, safe to call from any event system.
+// ---------------------------------------------------------------------------
+
+/// SFX bus level relative to full scale. Music tracks play at 1.0; the
+/// chiptune blips sit underneath at less than half so rapid-fire UI
+/// clicks never drown the track.
+pub const SFX_VOLUME: f32 = 0.45;
+
+/// One-shot sound-effect kinds. Each maps to a file under
+/// `game/assets/sfx/` via `sfx_path` (pure, unit-tested like the music
+/// manager above).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SfxKind {
+    /// Generic UI button press.
+    Click,
+    /// Component pill picked up from the tray.
+    Pick,
+    /// Splice snapped into place on the board.
+    Place,
+    /// Outage klaxon when a hazard fires.
+    Alarm,
+    /// Repair countdown tick (final 5 seconds, one per whole second).
+    Tick,
+    /// Level-clear sting.
+    Win,
+    /// Level-fail sting.
+    Lose,
+    /// Companion mood/dialogue reaction blip.
+    Dialogue,
+}
+
+/// Maps a kind to its asset path, relative to `game/assets/`. Pure so
+/// the on-disk existence test below covers every kind without an `App`.
+pub fn sfx_path(kind: SfxKind) -> &'static str {
+    match kind {
+        SfxKind::Click => "sfx/click.wav",
+        SfxKind::Pick => "sfx/pick.wav",
+        SfxKind::Place => "sfx/place.wav",
+        SfxKind::Alarm => "sfx/alarm.wav",
+        SfxKind::Tick => "sfx/tick.wav",
+        SfxKind::Win => "sfx/win.wav",
+        SfxKind::Lose => "sfx/lose.wav",
+        SfxKind::Dialogue => "sfx/dialogue.wav",
+    }
+}
+
+/// All eight SFX kinds in one place so the on-disk test can't drift
+/// out of sync with the enum when a kind is added. Test-only: the
+/// loader above names each handle explicitly.
+#[cfg(test)]
+const ALL_SFX_KINDS: [SfxKind; 8] = [
+    SfxKind::Click,
+    SfxKind::Pick,
+    SfxKind::Place,
+    SfxKind::Alarm,
+    SfxKind::Tick,
+    SfxKind::Win,
+    SfxKind::Lose,
+    SfxKind::Dialogue,
+];
+
+/// Preloaded one-shot SFX handles. See the section header for the
+/// lifecycle contract.
+#[derive(Resource)]
+pub struct Sfx {
+    click: Handle<AudioSource>,
+    pick: Handle<AudioSource>,
+    place: Handle<AudioSource>,
+    alarm: Handle<AudioSource>,
+    tick: Handle<AudioSource>,
+    win: Handle<AudioSource>,
+    lose: Handle<AudioSource>,
+    dialogue: Handle<AudioSource>,
+}
+
+impl FromWorld for Sfx {
+    fn from_world(world: &mut World) -> Self {
+        let server = world.resource::<AssetServer>();
+        Self {
+            click: server.load(sfx_path(SfxKind::Click)),
+            pick: server.load(sfx_path(SfxKind::Pick)),
+            place: server.load(sfx_path(SfxKind::Place)),
+            alarm: server.load(sfx_path(SfxKind::Alarm)),
+            tick: server.load(sfx_path(SfxKind::Tick)),
+            win: server.load(sfx_path(SfxKind::Win)),
+            lose: server.load(sfx_path(SfxKind::Lose)),
+            dialogue: server.load(sfx_path(SfxKind::Dialogue)),
+        }
+    }
+}
+
+impl Sfx {
+    fn handle(&self, kind: SfxKind) -> &Handle<AudioSource> {
+        match kind {
+            SfxKind::Click => &self.click,
+            SfxKind::Pick => &self.pick,
+            SfxKind::Place => &self.place,
+            SfxKind::Alarm => &self.alarm,
+            SfxKind::Tick => &self.tick,
+            SfxKind::Win => &self.win,
+            SfxKind::Lose => &self.lose,
+            SfxKind::Dialogue => &self.dialogue,
+        }
+    }
+
+    /// Spawn a one-shot playback of `kind` at [`SFX_VOLUME`].
+    /// `PlaybackMode::Despawn` removes the entity when the sample ends.
+    pub fn play(&self, commands: &mut Commands, kind: SfxKind) {
+        commands.spawn(AudioBundle {
+            source: self.handle(kind).clone(),
+            settings: PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Despawn,
+                volume: bevy::audio::Volume::new(SFX_VOLUME),
+                ..default()
+            },
+        });
+    }
+
+    /// Test-world constructor with invalid handles. `play` still spawns
+    /// the `AudioBundle`, but no audio system runs under
+    /// `run_system_once`, so the handles are never resolved.
+    #[cfg(test)]
+    pub fn for_tests() -> Self {
+        Self {
+            click: Handle::default(),
+            pick: Handle::default(),
+            place: Handle::default(),
+            alarm: Handle::default(),
+            tick: Handle::default(),
+            win: Handle::default(),
+            lose: Handle::default(),
+            dialogue: Handle::default(),
+        }
+    }
+}
+
+/// Installs the preloaded [`Sfx`] resource. Add alongside `MusicPlugin`;
+/// every event system below assumes the resource exists.
+pub struct SfxPlugin;
+
+impl Plugin for SfxPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Sfx>();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,4 +437,54 @@ mod tests {
             "music/mystery/kevin-macleod-in-a-heartbeat.mp3"
         );
     }
+
+    /// Every SFX path `sfx_path` can return must exist under
+    /// `game/assets/` — same rationale as the music track test: a typo
+    /// would otherwise surface as silence at playtest, never a build
+    /// error. Covers all eight kinds via `ALL_SFX_KINDS` so adding a
+    /// kind without a file fails here.
+    #[test]
+    fn every_referenced_sfx_exists_on_disk() {
+        assert_eq!(
+            ALL_SFX_KINDS.len(),
+            8,
+            "SfxKind gained a variant; extend ALL_SFX_KINDS"
+        );
+        let mut seen = std::collections::HashSet::new();
+        for kind in ALL_SFX_KINDS {
+            let path = sfx_path(kind);
+            assert!(seen.insert(path), "duplicate sfx path {path}");
+            let on_disk = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string() + path;
+            assert!(
+                std::path::Path::new(&on_disk).is_file(),
+                "{on_disk} referenced by audio::Sfx but missing on disk"
+            );
+        }
+    }
+
+    /// SFX must sit under the music, never over it: a blip at full scale
+    /// layered over rapid UI clicks would drown the licensed tracks.
+    #[test]
+    fn sfx_volume_is_below_music_level() {
+        assert!(SFX_VOLUME > 0.0, "SFX_VOLUME must be audible");
+        assert!(SFX_VOLUME < 1.0, "SFX_VOLUME must sit below the music bus");
+    }
+
+    /// `Sfx::play` spawns exactly one audio entity per call (no leaks,
+    /// no bookkeeping for callers to get wrong). The source handle is the
+    /// queryable component — `AudioBundle` itself is a bundle, not a
+    /// component, so it can't appear in a `Query`.
+    #[test]
+    fn play_spawns_one_audio_entity() {
+        use bevy_ecs::system::RunSystemOnce;
+        let mut world = World::new();
+        world.insert_resource(Sfx::for_tests());
+        world.run_system_once(|mut commands: Commands, sfx: Res<Sfx>| {
+            sfx.play(&mut commands, SfxKind::Click);
+        });
+        world.run_system_once(|query: Query<Entity, With<Handle<AudioSource>>>| {
+            assert_eq!(query.iter().count(), 1);
+        });
+    }
 }
+

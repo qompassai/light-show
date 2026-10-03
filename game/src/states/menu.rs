@@ -3,6 +3,7 @@
 //! now (`states::companion_select`); this screen is just the title card.
 
 use super::GameState;
+use crate::anim::TransitionRequest;
 use crate::board;
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_GOLD, NEON_INK};
 use bevy::prelude::*;
@@ -188,12 +189,15 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
 /// Start goes to the companion-select screen, not straight into play:
 /// the companion pick chooses which themed two-level track comes next.
 fn handle_start_button(
+    mut commands: Commands,
     interactions: Query<&Interaction, (Changed<Interaction>, With<StartButton>)>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut request: ResMut<TransitionRequest>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     for interaction in &interactions {
         if *interaction == Interaction::Pressed {
-            next_state.set(GameState::CompanionSelect);
+            sfx.play(&mut commands, crate::audio::SfxKind::Click);
+            request.0 = Some(GameState::CompanionSelect);
         }
     }
 }
@@ -201,12 +205,15 @@ fn handle_start_button(
 /// Opens the credits screen. The CC-BY music attribution must be
 /// user-visible, so credits are one tap from the main menu.
 fn handle_credits_button(
+    mut commands: Commands,
     interactions: Query<&Interaction, (Changed<Interaction>, With<CreditsButton>)>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut request: ResMut<TransitionRequest>,
+    sfx: Res<crate::audio::Sfx>,
 ) {
     for interaction in &interactions {
         if *interaction == Interaction::Pressed {
-            next_state.set(GameState::Credits);
+            sfx.play(&mut commands, crate::audio::SfxKind::Click);
+            request.0 = Some(GameState::Credits);
         }
     }
 }
@@ -224,7 +231,8 @@ mod tests {
 
     fn world_with_next_state() -> World {
         let mut world = World::new();
-        world.insert_resource(NextState::<GameState>::default());
+        world.init_resource::<TransitionRequest>();
+        world.insert_resource(crate::audio::Sfx::for_tests());
         world
     }
 
@@ -235,10 +243,10 @@ mod tests {
 
         world.run_system_once(handle_start_button);
 
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::CompanionSelect)
-        ));
+        assert_eq!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::CompanionSelect)
+        );
     }
 
     #[test]
@@ -248,10 +256,7 @@ mod tests {
 
         world.run_system_once(handle_start_button);
 
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Unchanged
-        ));
+        assert_eq!(world.resource::<TransitionRequest>().0, None);
     }
 
     #[test]
@@ -261,10 +266,10 @@ mod tests {
 
         world.run_system_once(handle_credits_button);
 
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::Credits)
-        ));
+        assert_eq!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::Credits)
+        );
     }
 
     #[test]
@@ -274,9 +279,6 @@ mod tests {
 
         world.run_system_once(handle_credits_button);
 
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Unchanged
-        ));
+        assert_eq!(world.resource::<TransitionRequest>().0, None);
     }
 }

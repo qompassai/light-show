@@ -4,6 +4,7 @@
 //! loaded via Bevy's `game-activity` glue. Both paths converge on
 //! `build_app()` so there is exactly one place that configures the App.
 
+mod anim;
 mod audio;
 #[cfg(debug_assertions)]
 mod bench;
@@ -122,7 +123,9 @@ fn build_app() -> App {
             states::results::ResultsPlugin,
             waifu::SeraphinePlugin,
             ui::LedgerUiPlugin,
+            anim::AnimPlugin,
             audio::MusicPlugin,
+            audio::SfxPlugin,
         ));
     // Bench driver (synthetic input + frame timing + auto-exit). Not
     // installed for normal runs: zero overhead when the flag is absent.

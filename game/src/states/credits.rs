@@ -8,6 +8,7 @@
 //! both update together.
 
 use super::GameState;
+use crate::anim::TransitionRequest;
 use bevy::prelude::*;
 
 pub struct CreditsPlugin;
@@ -115,11 +116,11 @@ fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn handle_back_button(
     interactions: Query<&Interaction, (Changed<Interaction>, With<BackButton>)>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut request: ResMut<TransitionRequest>,
 ) {
     for interaction in &interactions {
         if *interaction == Interaction::Pressed {
-            next_state.set(GameState::MainMenu);
+            request.0 = Some(GameState::MainMenu);
         }
     }
 }
@@ -138,29 +139,26 @@ mod tests {
     #[test]
     fn pressing_the_back_button_returns_to_the_main_menu() {
         let mut world = World::new();
-        world.insert_resource(NextState::<GameState>::default());
+        world.init_resource::<TransitionRequest>();
         world.spawn((BackButton, Interaction::Pressed));
 
         world.run_system_once(handle_back_button);
 
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Pending(GameState::MainMenu)
-        ));
+        assert_eq!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::MainMenu)
+        );
     }
 
     #[test]
     fn hovering_the_back_button_requests_no_state_change() {
         let mut world = World::new();
-        world.insert_resource(NextState::<GameState>::default());
+        world.init_resource::<TransitionRequest>();
         world.spawn((BackButton, Interaction::Hovered));
 
         world.run_system_once(handle_back_button);
 
-        assert!(matches!(
-            world.resource::<NextState<GameState>>(),
-            NextState::Unchanged
-        ));
+        assert_eq!(world.resource::<TransitionRequest>().0, None);
     }
 
     #[test]
