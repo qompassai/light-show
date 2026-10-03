@@ -30,7 +30,8 @@ splices, outages, and level results in her own voice.
 
 | | | | |
 |---|---|---|---|
-| ![Séraphine](assets/art/companions/seraphine_animated.gif)<br>**Séraphine** — Fiber | ![Ondine](assets/art/companions/ondine_animated.gif)<br>**Ondine** — Coax | ![Linka](assets/art/companions/linka_animated.gif)<br>**Linka** — Mobile | ![Lattice](assets/art/companions/lattice_animated.gif)<br>**Lattice** — Ethernet |
+| ![Séraphine (mature)](assets/art/companions/seraphine_animated_mature.gif)<br>**Séraphine** — Fiber<br>*mature* | ![Ondine (mature)](assets/art/companions/ondine_animated_mature.gif)<br>**Ondine** — Coax<br>*mature* | ![Linka (mature)](assets/art/companions/linka_animated_mature.gif)<br>**Linka** — Wireless<br>WiFi · mobile · WAN<br>*mature* | ![Lattice (mature)](assets/art/companions/lattice_animated_mature.gif)<br>**Lattice** — Wired<br>Ethernet · switching · servers<br>*mature* |
+| ![Séraphine (base)](assets/art/companions/seraphine_animated_base.gif)<br>**Séraphine** — Fiber<br>*base* | ![Ondine (base)](assets/art/companions/ondine_animated_base.gif)<br>**Ondine** — Coax<br>*base* | ![Linka (base)](assets/art/companions/linka_animated_base.gif)<br>**Linka** — Wireless<br>WiFi · mobile · WAN<br>*base* | ![Lattice (base)](assets/art/companions/lattice_animated_base.gif)<br>**Lattice** — Wired<br>Ethernet · switching · servers<br>*base* |
 
 Full character briefs, palettes, and mood-sheet specs live in
 [`docs/ART_STYLE.md`](docs/ART_STYLE.md).
