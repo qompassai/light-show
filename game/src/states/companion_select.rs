@@ -10,6 +10,7 @@ use crate::anim::TransitionRequest;
 use crate::level::CurrentLevelIndex;
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
 use crate::waifu::{Companion, SelectedCompanion};
+use crate::cheat_codes::{UnlockedSpecialists, KonamiState, CodeWordBuffer, code_word_to_companion};
 use bevy::prelude::*;
 
 pub struct CompanionSelectPlugin;
@@ -17,6 +18,9 @@ pub struct CompanionSelectPlugin;
 impl Plugin for CompanionSelectPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SelectAnimTimer::default())
+            .insert_resource(UnlockedSpecialists::default())
+            .insert_resource(KonamiState::default())
+            .insert_resource(CodeWordBuffer::default())
             .add_systems(OnEnter(GameState::CompanionSelect), setup_select)
             .add_systems(
                 Update,
@@ -25,10 +29,73 @@ impl Plugin for CompanionSelectPlugin {
                     handle_back_button,
                     animate_select_cards,
                     highlight_select_cards,
+                    detect_konami_code,
+                    detect_code_words,
                 )
                     .run_if(in_state(GameState::CompanionSelect)),
             )
             .add_systems(OnExit(GameState::CompanionSelect), teardown_select);
+    }
+}
+
+/// Watches for the Konami Code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A START.
+/// Unlocks all four specialist companions at once.
+fn detect_konami_code(
+    mut konami: ResMut<KonamiState>,
+    mut unlocked: ResMut<UnlockedSpecialists>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    for key in keyboard.get_just_pressed() {
+        if konami.feed(*key) {
+            unlocked.unlock_all();
+            info!("KONAMI: all specialists unlocked!");
+        }
+    }
+}
+
+/// Watches for typed code words: JUSTINBAILEY, ABACABB, BLASTPROCESSING, TRIFORCE.
+/// Each unlocks its companion. Backspace clears the buffer.
+fn detect_code_words(
+    mut buffer: ResMut<CodeWordBuffer>,
+    mut unlocked: ResMut<UnlockedSpecialists>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    // Letter keys A-Z
+    for key in keyboard.get_just_pressed() {
+        let c = match key {
+            KeyCode::KeyA => 'A', KeyCode::KeyB => 'B', KeyCode::KeyC => 'C',
+            KeyCode::KeyD => 'D', KeyCode::KeyE => 'E', KeyCode::KeyF => 'F',
+            KeyCode::KeyG => 'G', KeyCode::KeyH => 'H', KeyCode::KeyI => 'I',
+            KeyCode::KeyJ => 'J', KeyCode::KeyK => 'K', KeyCode::KeyL => 'L',
+            KeyCode::KeyM => 'M', KeyCode::KeyN => 'N', KeyCode::KeyO => 'O',
+            KeyCode::KeyP => 'P', KeyCode::KeyQ => 'Q', KeyCode::KeyR => 'R',
+            KeyCode::KeyS => 'S', KeyCode::KeyT => 'T', KeyCode::KeyU => 'U',
+            KeyCode::KeyV => 'V', KeyCode::KeyW => 'W', KeyCode::KeyX => 'X',
+            KeyCode::KeyY => 'Y', KeyCode::KeyZ => 'Z',
+            KeyCode::Backspace => {
+                buffer.clear();
+                continue;
+            }
+            KeyCode::Enter => {
+                // Check the buffer on Enter
+                if let Some(companion) = code_word_to_companion(&buffer.buffer) {
+                    if unlocked.unlock(companion) {
+                        info!("CODE: {:?} unlocked!", companion);
+                    }
+                }
+                buffer.clear();
+                continue;
+            }
+            _ => continue,
+        };
+        buffer.push(c);
+        // Check after each keypress too (for codes without Enter)
+        if let Some(companion) = code_word_to_companion(&buffer.buffer) {
+            if unlocked.unlock(companion) {
+                info!("CODE: {:?} unlocked!", companion);
+            }
+            buffer.clear();
+        }
     }
 }
 
