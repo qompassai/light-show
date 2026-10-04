@@ -161,6 +161,14 @@ pub enum Companion {
     Mobile,
     /// Lattice — Ethernet / copper LAN.
     Ethernet,
+    /// Clara — Calix CMS provisioning (USA). Unlock: JUSTINBAILEY or Konami.
+    Clara,
+    /// Aino — AMS network operations (Finland). Unlock: ABACABB or Konami.
+    Aino,
+    /// Hikari — OSP field buildout (Japan). Unlock: BLASTPROCESSING or Konami.
+    Hikari,
+    /// Léa — Telco admin test prep (Switzerland). Unlock: TRIFORCE or Konami.
+    Lea,
 }
 
 impl Companion {
