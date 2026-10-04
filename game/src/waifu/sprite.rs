@@ -12,8 +12,8 @@ pub const MOOD_ROWS: u32 = 6; // idle, blush, wink, pout, celebrate, alarmed
 /// Builds the shared grid layout every companion's sprite sheet uses.
 /// One layout asset is reused across all four companions since they all
 /// follow the identical 288x576, 4-column, 6-row convention.
-pub fn atlas_layout() -> bevy::sprite::TextureAtlasLayout {
-    bevy::sprite::TextureAtlasLayout::from_grid(
+pub fn atlas_layout() -> bevy::image::TextureAtlasLayout {
+    bevy::image::TextureAtlasLayout::from_grid(
         bevy::math::UVec2::new(FRAME_W, FRAME_H),
         FRAMES_PER_ROW,
         MOOD_ROWS,

@@ -29,6 +29,10 @@ impl DialogueBank {
             Companion::Coax => Self::ondine(),
             Companion::Mobile => Self::linka(),
             Companion::Ethernet => Self::lattice(),
+            Companion::Clara => Self::clara(),
+            Companion::Aino => Self::aino(),
+            Companion::Hikari => Self::hikari(),
+            Companion::Lea => Self::lea(),
         }
     }
 
@@ -329,6 +333,82 @@ impl DialogueBank {
             .and_then(|options| options.first())
             .map(|s| s.as_str())
     }
+    fn clara() -> Self {
+        Self::from_pairs(&[
+            (
+                "greeting",
+                &[
+                    "Clara here. Let's get these ONTs provisioned right the first time.",
+                    "Calix CMS is warmed up. What's our turn-up target today?",
+                ],
+            ),
+            (
+                "level_win",
+                &[
+                    "Clean provisioning run. Every subscriber lit, first try.",
+                    "That's how you do a bulk turn-up. Nice work.",
+                ],
+            ),
+        ])
+    }
+
+    fn aino() -> Self {
+        Self::from_pairs(&[
+            (
+                "greeting",
+                &[
+                    "Aino, NOC shift lead. The alarms never lie — let's learn to read them.",
+                    "AMS console is live. Show me your triage discipline.",
+                ],
+            ),
+            (
+                "level_win",
+                &[
+                    "Alarms acknowledged, severity correct, dispatch clean. Solid shift.",
+                    "Cascading fault contained before it spread. That's the job.",
+                ],
+            ),
+        ])
+    }
+
+    fn hikari() -> Self {
+        Self::from_pairs(&[
+            (
+                "greeting",
+                &[
+                    "Hikari here. Measure twice, splice once — that's the field rule.",
+                    "OSP kit's packed. Let's build this plant right.",
+                ],
+            ),
+            (
+                "level_win",
+                &[
+                    "Plant built to spec. The light budget balances.",
+                    "Clean handoff, documented splits. A proper build.",
+                ],
+            ),
+        ])
+    }
+
+    fn lea() -> Self {
+        Self::from_pairs(&[
+            (
+                "greeting",
+                &[
+                    "Bonjour! I'm Léa. Know the code, pass the test, own the network.",
+                    "Study session starts now. NEC first, then Washington law.",
+                ],
+            ),
+            (
+                "level_win",
+                &[
+                    "Article mastered. You're thinking like a telecom administrator.",
+                    "Timed retrieval, clean answer. The exam won't know what hit it.",
+                ],
+            ),
+        ])
+    }
+
 }
 
 #[cfg(test)]

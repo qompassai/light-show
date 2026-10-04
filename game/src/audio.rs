@@ -1,6 +1,6 @@
 //! Licensed background music: one track per game context, chosen by a small
 //! pure music manager (`menu_track`, `playing_track`, `outage_track`,
-//! `results_track`) and played through Bevy's `AudioBundle`. Track files
+//! `results_track`) and played through Bevy's `AudioPlayer` component. Track files
 //! live under `game/assets/music/<tier>/`; the CC-BY attribution in
 //! `game/assets/music/CREDITS.md` ships with the game and is REQUIRED for
 //! the CC-BY tracks — do not ship a build without it. The same attribution
@@ -14,6 +14,8 @@
 //! runs the old state's `OnExit` systems before the new state's
 //! `OnEnter` systems for any transition, there is never a frame where
 //! two tracks are both alive.
+
+use std::io::Cursor;
 
 use crate::level::{load_level, CurrentLevelIndex};
 use crate::states::{GameState, LevelOutcome};
@@ -113,22 +115,63 @@ pub fn results_track(won: bool) -> &'static str {
 }
 
 // ---------------------------------------------------------------------------
+// Validates that an audio file can be decoded by rodio (the same decoder
+// bevy_audio uses). This is a curative guard against bevy_audio 0.19.1's
+// `Decodable::decoder()` which calls `.unwrap()` on the decode result —
+// a corrupt or undecodable file would panic a Compute Task Pool thread.
+// By validating here on the main thread, we log a clear error and skip
+// the track instead of crashing audio.
+//
+// The path is relative to `game/assets/` (same as the AssetServer root).
+// Uses `CARGO_MANIFEST_DIR` so it resolves correctly regardless of the
+// process working directory.
+fn audio_file_decodable(path: &str) -> bool {
+    let full_path = format!("{}/assets/{}", env!("CARGO_MANIFEST_DIR"), path);
+    let bytes = match std::fs::read(&full_path) {
+        Ok(b) => b,
+        Err(e) => {
+            bevy::log::error!("Music track not found: {} ({})", full_path, e);
+            return false;
+        }
+    };
+    if bytes.is_empty() {
+        bevy::log::error!("Music track is empty: {}", full_path);
+        return false;
+    }
+    // Mirror bevy_audio 0.19.1's Decodable::decoder() exactly.
+    match rodio::Decoder::builder()
+        .with_byte_len(bytes.len() as u64)
+        .with_data(Cursor::new(bytes))
+        .build()
+    {
+        Ok(_) => true,
+        Err(e) => {
+            bevy::log::error!("Music track failed to decode: {} ({:?})", full_path, e);
+            false
+        }
+    }
+}
+
 // Bevy systems: spawn the selected track on state enter, despawn on exit.
 // ---------------------------------------------------------------------------
 
 fn spawn_track(commands: &mut Commands, asset_server: &AssetServer, path: &str, looping: bool) {
+    // Curative guard: validate decodability on the main thread before
+    // handing the asset to bevy_audio. If the file is corrupt, we log
+    // and skip instead of panicking a worker thread in `decoder().unwrap()`.
+    if !audio_file_decodable(path) {
+        return;
+    }
     commands.spawn((
         MusicTrack,
-        AudioBundle {
-            source: asset_server.load(path.to_string()),
-            settings: PlaybackSettings {
-                mode: if looping {
-                    bevy::audio::PlaybackMode::Loop
-                } else {
-                    bevy::audio::PlaybackMode::Despawn
-                },
-                ..default()
+        AudioPlayer::<AudioSource>(asset_server.load(path.to_string())),
+        PlaybackSettings {
+            mode: if looping {
+                bevy::audio::PlaybackMode::Loop
+            } else {
+                bevy::audio::PlaybackMode::Despawn
             },
+            ..default()
         },
     ));
 }
@@ -200,7 +243,7 @@ fn stop_music(mut commands: Commands, tracks: Query<Entity, With<MusicTrack>>) {
 // same pattern as `waifu::CompanionAtlasLayout`), so playback sites pay
 // no load cost and a missing file fails fast at startup instead of
 // surfacing as silence mid-game. `Sfx::play` spawns a `Despawn`-mode
-// `AudioBundle`: the entity cleans itself up when the sample ends, no
+// `AudioPlayer` + `PlaybackMode::Despawn`: the entity cleans itself up when the sample ends, no
 // bookkeeping, safe to call from any event system.
 // ---------------------------------------------------------------------------
 
@@ -309,18 +352,18 @@ impl Sfx {
     /// Spawn a one-shot playback of `kind` at [`SFX_VOLUME`].
     /// `PlaybackMode::Despawn` removes the entity when the sample ends.
     pub fn play(&self, commands: &mut Commands, kind: SfxKind) {
-        commands.spawn(AudioBundle {
-            source: self.handle(kind).clone(),
-            settings: PlaybackSettings {
+        commands.spawn((
+            AudioPlayer(self.handle(kind).clone()),
+            PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: bevy::audio::Volume::new(SFX_VOLUME),
+                volume: bevy::audio::Volume::Linear(SFX_VOLUME),
                 ..default()
             },
-        });
+        ));
     }
 
     /// Test-world constructor with invalid handles. `play` still spawns
-    /// the `AudioBundle`, but no audio system runs under
+    /// the `AudioPlayer`, but no audio system runs under
     /// `run_system_once`, so the handles are never resolved.
     #[cfg(test)]
     pub fn for_tests() -> Self {
@@ -471,9 +514,8 @@ mod tests {
     }
 
     /// `Sfx::play` spawns exactly one audio entity per call (no leaks,
-    /// no bookkeeping for callers to get wrong). The source handle is the
-    /// queryable component — `AudioBundle` itself is a bundle, not a
-    /// component, so it can't appear in a `Query`.
+    /// no bookkeeping for callers to get wrong). `AudioPlayer` is the
+    /// queryable component marking a spawned playback entity.
     #[test]
     fn play_spawns_one_audio_entity() {
         use bevy_ecs::system::RunSystemOnce;
@@ -482,7 +524,7 @@ mod tests {
         world.run_system_once(|mut commands: Commands, sfx: Res<Sfx>| {
             sfx.play(&mut commands, SfxKind::Click);
         });
-        world.run_system_once(|query: Query<Entity, With<Handle<AudioSource>>>| {
+        world.run_system_once(|query: Query<Entity, With<AudioPlayer<AudioSource>>>| {
             assert_eq!(query.iter().count(), 1);
         });
     }

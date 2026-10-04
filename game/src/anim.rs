@@ -1,9 +1,7 @@
-//! Shared animation easing helpers and the fullscreen state-transition fade.
+//! Shared animation helpers and the fullscreen state-transition fade.
 //!
-//! Bevy 0.14 does not ship `bevy::math::curve::EaseFunction` (it arrived
-//! in 0.15), so [`Ease`] provides the small subset of easing curves the
-//! game needs, using the exact formulas from Bevy 0.18's
-//! `easing_functions` module for future upgrade compatibility.
+//! Easing comes from Bevy's native [`bevy::math::curve::EaseFunction`]
+//! (the hand-ported `Ease` enum was deleted in the 0.19 migration).
 //!
 //! [`AnimPlugin`] owns the fullscreen fade overlay ([`TransitionFade`]):
 //! gameplay systems request state changes through [`TransitionRequest`]
@@ -11,6 +9,7 @@
 //! fades out (0.3s), applies the state swap at full black, then fades
 //! back in (0.3s). See Finding 2 of `docs/ANIMATION_AUDIT.md`.
 
+use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
 
 use crate::states::GameState;
@@ -19,46 +18,6 @@ use crate::states::GameState;
 pub const FADE_OUT_SECS: f32 = 0.3;
 /// Seconds to fade from black into the new state.
 pub const FADE_IN_SECS: f32 = 0.3;
-
-/// Easing curves used across the game's animation systems. `sample(t)`
-/// takes a normalized time `t` in `[0, 1]` and returns the eased progress.
-/// Formulas match Bevy 0.18's `easing_functions` exactly.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Ease {
-    /// Accelerate then decelerate: smooth start and stop.
-    CubicInOut,
-    /// Fast start, gentle landing.
-    CubicOut,
-    /// Sinusoidal accelerate/decelerate: organic drift.
-    SineInOut,
-    /// Overshoot past 1.0 then settle: springy "pop".
-    BackOut,
-}
-
-impl Ease {
-    /// Samples the easing curve at normalized time `t`.
-    ///
-    /// Contract: `t` is clamped to `[0, 1]` by the caller; the return is
-    /// `0.0` at `t = 0.0` and `1.0` at `t = 1.0`, except [`Ease::BackOut`]
-    /// which overshoots above `1.0` mid-flight by design.
-    pub fn sample(self, t: f32) -> f32 {
-        match self {
-            Ease::CubicInOut => {
-                if t < 0.5 {
-                    4.0 * t * t * t
-                } else {
-                    1.0 - (-2.0 * t + 2.0).powi(3) / 2.0
-                }
-            }
-            Ease::CubicOut => 1.0 - (1.0 - t).powi(3),
-            Ease::SineInOut => -((std::f32::consts::PI * t).cos() - 1.0) / 2.0,
-            Ease::BackOut => {
-                let c = 1.70158;
-                1.0 + (c + 1.0) * (t - 1.0).powi(3) + c * (t - 1.0).powi(2)
-            }
-        }
-    }
-}
 
 /// Phase of the fullscreen transition fade.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -111,28 +70,26 @@ pub struct TransitionRequest(pub Option<GameState>);
 struct FadeOverlay;
 
 /// Spawns the fullscreen black overlay at startup. It sits above all UI
-/// (`ZIndex::Global(i32::MAX)`) and starts fully transparent.
+/// (`GlobalZIndex(i32::MAX)`) and starts fully transparent.
 fn spawn_fade_overlay(mut commands: Commands) {
     commands.spawn((
         FadeOverlay,
-        NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                position_type: PositionType::Absolute,
-                ..default()
-            },
-            background_color: Color::srgba(0.0, 0.0, 0.0, 0.0).into(),
-            z_index: ZIndex::Global(i32::MAX),
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            position_type: PositionType::Absolute,
             ..default()
         },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
+        // Above all UI: the fade must cover every menu, banner, and dialog.
+        GlobalZIndex(i32::MAX),
     ));
 }
 
 /// Drives the transition fade state machine every frame:
 ///
 /// 1. When idle and a [`TransitionRequest`] is pending, begin fading out.
-/// 2. While fading out, tick the 0.3s timer with [`Ease::CubicInOut`];
+/// 2. While fading out, tick the 0.3s timer with [`EaseFunction::CubicInOut`];
 ///    at full black, write the target into `NextState` (the state swap
 ///    runs at the end of this frame) and begin fading in.
 /// 3. While fading in, tick the 0.3s timer in reverse; back to idle at
@@ -147,7 +104,7 @@ fn drive_transition_fade(
     mut next_state: ResMut<NextState<GameState>>,
     mut overlay: Query<&mut BackgroundColor, With<FadeOverlay>>,
 ) {
-    let delta_secs = time.delta_seconds();
+    let delta_secs = time.delta_secs();
     if matches!(fade.phase, FadePhase::Idle) {
         if let Some(target) = request.0.take() {
             fade.phase = FadePhase::FadingOut {
@@ -175,7 +132,7 @@ fn drive_transition_fade(
             }
             let elapsed_secs = elapsed_secs + delta_secs;
             let t = (elapsed_secs / FADE_OUT_SECS).clamp(0.0, 1.0);
-            let alpha = Ease::CubicInOut.sample(t);
+            let alpha = EaseFunction::CubicInOut.sample_clamped(t);
             if t >= 1.0 {
                 swap_to = Some(target);
                 (FadePhase::FadingIn { elapsed_secs: 0.0 }, alpha)
@@ -186,7 +143,7 @@ fn drive_transition_fade(
         FadePhase::FadingIn { elapsed_secs } => {
             let elapsed_secs = elapsed_secs + delta_secs;
             let t = (elapsed_secs / FADE_IN_SECS).clamp(0.0, 1.0);
-            let alpha = 1.0 - Ease::CubicInOut.sample(t);
+            let alpha = 1.0 - EaseFunction::CubicInOut.sample_clamped(t);
             if t >= 1.0 {
                 (FadePhase::Idle, 0.0)
             } else {
@@ -239,34 +196,40 @@ mod tests {
     #[test]
     fn ease_endpoints_hold() {
         for ease in [
-            Ease::CubicInOut,
-            Ease::CubicOut,
-            Ease::SineInOut,
-            Ease::BackOut,
+            EaseFunction::CubicInOut,
+            EaseFunction::CubicOut,
+            EaseFunction::SineInOut,
+            EaseFunction::BackOut,
         ] {
-            assert!((ease.sample(0.0) - 0.0).abs() < 1e-6, "{ease:?} at 0");
-            assert!((ease.sample(1.0) - 1.0).abs() < 1e-6, "{ease:?} at 1");
+            assert!(
+                (ease.sample_clamped(0.0) - 0.0).abs() < 1e-6,
+                "{ease:?} at 0"
+            );
+            assert!(
+                (ease.sample_clamped(1.0) - 1.0).abs() < 1e-6,
+                "{ease:?} at 1"
+            );
         }
     }
 
     #[test]
     fn cubic_in_out_is_symmetric() {
-        let eased = Ease::CubicInOut.sample(0.25);
-        assert!((eased + Ease::CubicInOut.sample(0.75) - 1.0).abs() < 1e-6);
+        let eased = EaseFunction::CubicInOut.sample_clamped(0.25);
+        assert!((eased + EaseFunction::CubicInOut.sample_clamped(0.75) - 1.0).abs() < 1e-6);
         assert!(eased < 0.25, "slow start: {eased}");
     }
 
     #[test]
     fn back_out_overshoots() {
         let peak = (0..=100)
-            .map(|i| Ease::BackOut.sample(i as f32 / 100.0))
+            .map(|i| EaseFunction::BackOut.sample_clamped(i as f32 / 100.0))
             .fold(0.0_f32, f32::max);
         assert!(peak > 1.0, "expected overshoot, got {peak}");
     }
 
     #[test]
     fn sine_in_out_midpoint_is_half() {
-        assert!((Ease::SineInOut.sample(0.5) - 0.5).abs() < 1e-6);
+        assert!((EaseFunction::SineInOut.sample_clamped(0.5) - 0.5).abs() < 1e-6);
     }
 
     /// Drives `drive_transition_fade` through a full request cycle and
@@ -281,10 +244,9 @@ mod tests {
         // Spawn the overlay so the system has something to tint.
         world.spawn((
             FadeOverlay,
-            NodeBundle {
-                background_color: Color::srgba(0.0, 0.0, 0.0, 0.0).into(),
-                ..default()
-            },
+            Node::default(),
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
+            GlobalZIndex(i32::MAX),
         ));
         let mut schedule = Schedule::new(Update);
         schedule.add_systems(drive_transition_fade);

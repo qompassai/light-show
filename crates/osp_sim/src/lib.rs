@@ -13,6 +13,7 @@ pub mod component;
 pub mod graph;
 pub mod medium;
 pub mod outage;
+pub mod alarm;
 pub mod wavelength;
 
 pub use component::{
@@ -22,6 +23,7 @@ pub use component::{
 pub use graph::{EthernetEval, EthernetViolation, LinkBudgetResult, PathGraph, PathNode};
 pub use medium::Medium;
 pub use outage::{Outage, OutageKind};
+pub use alarm::{Alarm, AlarmAck, AlarmSeverity};
 pub use wavelength::Wavelength;
 
 /// Standard GPON downstream transmit power range (dBm), per ITU-T G.984.2

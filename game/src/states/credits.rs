@@ -9,6 +9,7 @@
 
 use super::GameState;
 use crate::anim::TransitionRequest;
+use crate::fonts::FONT_SIZE_ADJUST;
 use bevy::prelude::*;
 
 pub struct CreditsPlugin;
@@ -46,33 +47,34 @@ fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             CreditsRoot,
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::FlexStart,
-                    row_gap: Val::Px(16.0),
-                    padding: UiRect::axes(Val::Px(24.0), Val::Px(48.0)),
-                    ..default()
-                },
-                background_color: Color::srgb(0.05, 0.05, 0.12).into(),
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::FlexStart,
+                row_gap: Val::Px(16.0),
+                padding: UiRect::axes(Val::Px(24.0), Val::Px(48.0)),
                 ..default()
             },
+            BackgroundColor(Color::srgb(0.05, 0.05, 0.12)),
         ))
         .with_children(|parent| {
             let display_bold: Handle<Font> = asset_server.load(crate::fonts::DISPLAY_BOLD);
             let body: Handle<Font> = asset_server.load(crate::fonts::BODY);
             let body_medium: Handle<Font> = asset_server.load(crate::fonts::BODY_MEDIUM);
+            // Parley (0.19) renders the same point size larger than the
+            // 0.14 stack; FONT_SIZE_ADJUST keeps the visual size identical
+            // (flagged for Matt's visual review).
             let text = |font: &Handle<Font>, content: &str, size: f32, color: Color| {
-                TextBundle::from_section(
-                    content,
-                    TextStyle {
-                        font: font.clone(),
-                        font_size: size,
-                        color,
+                (
+                    Text::new(content),
+                    TextFont {
+                        font: font.clone().into(),
+                        font_size: FontSize::Px(size * FONT_SIZE_ADJUST),
+                        ..default()
                     },
+                    TextColor(color),
                 )
             };
             parent.spawn(text(
@@ -93,14 +95,12 @@ fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn((
                     BackButton,
-                    ButtonBundle {
-                        style: Style {
-                            padding: UiRect::axes(Val::Px(28.0), Val::Px(12.0)),
-                            ..default()
-                        },
-                        background_color: Color::srgb(0.2, 0.2, 0.28).into(),
+                    Button,
+                    Node {
+                        padding: UiRect::axes(Val::Px(28.0), Val::Px(12.0)),
                         ..default()
                     },
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.28)),
                 ))
                 .with_children(|btn| {
                     btn.spawn(text(&body_medium, "Back", 20.0, Color::WHITE));
@@ -127,7 +127,7 @@ fn handle_back_button(
 
 fn teardown_credits(mut commands: Commands, query: Query<Entity, With<CreditsRoot>>) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

@@ -11,28 +11,45 @@
 
 use super::playing::LiveGraph;
 use super::{GameState, LevelOutcome};
-use crate::anim::{Ease, TransitionRequest};
+use crate::anim::TransitionRequest;
+use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::LevelDef;
 use crate::waifu::{trigger_mood_pop, CompanionSprite, Mood};
+use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
-use osp_sim::Outage;
+use osp_sim::{Alarm, AlarmAck, Outage};
 
 pub struct OutagePlugin;
 
 impl Plugin for OutagePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ActiveOutage::default())
+            .init_resource::<AlarmList>()
             .add_systems(
                 OnEnter(GameState::OutageActive),
-                (announce_outage, spawn_outage_banner, alarm_companion),
+                (
+                    announce_outage,
+                    spawn_outage_banner,
+                    alarm_companion,
+                    spawn_alarm_list_panel,
+                ),
             )
             .add_systems(
                 Update,
-                (tick_outage, update_outage_banner, check_outage_resolution)
+                (
+                    tick_outage,
+                    update_outage_banner,
+                    update_alarm_list_panel,
+                    handle_alarm_ack_input,
+                    check_outage_resolution,
+                )
                     .chain()
                     .run_if(in_state(GameState::OutageActive)),
             )
-            .add_systems(OnExit(GameState::OutageActive), teardown_outage_banner)
+            .add_systems(
+                OnExit(GameState::OutageActive),
+                (teardown_outage_banner, teardown_alarm_list_panel),
+            )
             .add_systems(Update, (animate_banner_entrance, animate_banner_exit));
     }
 }
@@ -44,6 +61,42 @@ impl Plugin for OutagePlugin {
 #[derive(Resource, Default)]
 pub struct ActiveOutage {
     pub outage: Option<Outage>,
+}
+
+/// All active NOC alarms. Each outage that fires creates an `Alarm` here;
+/// the list supports multiple concurrent alarms with ack/dispatch/clear.
+/// The `ActiveOutage` single-outage banner stays for backward compatibility
+/// with the existing outage-repair loop.
+#[derive(Resource, Default)]
+pub struct AlarmList {
+    pub alarms: Vec<Alarm>,
+}
+
+impl AlarmList {
+    /// Push a new alarm from an outage. Returns the alarm index.
+    pub fn raise(&mut self, outage: Outage, now_secs: f64) -> usize {
+        let id = self.alarms.len() as u64;
+        self.alarms.push(Alarm::new(id, outage, now_secs));
+        self.alarms.len() - 1
+    }
+
+    /// Acknowledge an alarm by index, dispatching a companion.
+    /// No-op if out of bounds.
+    pub fn acknowledge(&mut self, index: usize, companion_idx: u8) {
+        if let Some(alarm) = self.alarms.get_mut(index) {
+            alarm.ack = AlarmAck::Acknowledged { companion_idx };
+        }
+    }
+
+    /// Clear resolved alarms from the list.
+    pub fn clear_resolved(&mut self) {
+        self.alarms.retain(|a| a.ack != AlarmAck::Cleared);
+    }
+
+    /// Count of unacknowledged alarms.
+    pub fn unacked_count(&self) -> usize {
+        self.alarms.iter().filter(|a| matches!(a.ack, AlarmAck::New)).count()
+    }
 }
 
 /// Root node of the on-screen alarm banner, despawned `OnExit(OutageActive)`.
@@ -123,40 +176,37 @@ fn spawn_outage_banner(
             // The banner starts above the viewport and fully transparent;
             // `animate_banner_entrance` slides/fades it in (Finding 4).
             BannerSlide { elapsed_secs: 0.0 },
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    position_type: PositionType::Absolute,
-                    top: Val::Px(BANNER_HIDDEN_TOP_PX),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    padding: UiRect::vertical(Val::Px(10.0)),
-                    row_gap: Val::Px(4.0),
-                    ..default()
-                },
-                background_color: Color::srgba(0.65, 0.0, 0.05, 0.0).into(),
+            Node {
+                width: Val::Percent(100.0),
+                position_type: PositionType::Absolute,
+                top: Val::Px(BANNER_HIDDEN_TOP_PX),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                padding: UiRect::vertical(Val::Px(10.0)),
+                row_gap: Val::Px(4.0),
                 ..default()
             },
+            BackgroundColor(Color::srgba(0.65, 0.0, 0.05, 0.0)),
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                outage.kind.flavor_text(),
-                TextStyle {
-                    font: asset_server.load(crate::fonts::BODY),
-                    font_size: 16.0,
-                    color: Color::WHITE,
+            parent.spawn((
+                Text::new(outage.kind.flavor_text()),
+                TextFont {
+                    font: asset_server.load(crate::fonts::BODY).into(),
+                    font_size: FontSize::Px(16.0 * FONT_SIZE_ADJUST),
+                    ..default()
                 },
+                TextColor(Color::WHITE),
             ));
             parent.spawn((
                 OutageBannerText,
-                TextBundle::from_section(
-                    format!("REPAIR NOW — {:.0}s", outage.time_remaining()),
-                    TextStyle {
-                        font: asset_server.load(crate::fonts::DISPLAY_BOLD),
-                        font_size: 20.0,
-                        color: Color::srgb(1.0, 0.82, 0.4), // #ffd166
-                    },
-                ),
+                Text::new(format!("REPAIR NOW — {:.0}s", outage.time_remaining())),
+                TextFont {
+                    font: asset_server.load(crate::fonts::DISPLAY_BOLD).into(),
+                    font_size: FontSize::Px(20.0 * FONT_SIZE_ADJUST),
+                    ..default()
+                },
+                TextColor(Color::srgb(1.0, 0.82, 0.4)), // #ffd166
             ));
         });
 }
@@ -169,7 +219,7 @@ fn update_outage_banner(
         return;
     };
     for mut text in &mut query {
-        text.sections[0].value = format!("REPAIR NOW — {:.0}s", outage.time_remaining());
+        text.0 = format!("REPAIR NOW — {:.0}s", outage.time_remaining());
     }
 }
 
@@ -190,16 +240,16 @@ fn teardown_outage_banner(
 fn animate_banner_entrance(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Style, &mut BackgroundColor, &mut BannerSlide)>,
+    mut query: Query<(Entity, &mut Node, &mut BackgroundColor, &mut BannerSlide)>,
 ) {
-    for (entity, mut style, mut background, mut slide) in &mut query {
-        slide.elapsed_secs += time.delta_seconds();
+    for (entity, mut node, mut background, mut slide) in &mut query {
+        slide.elapsed_secs += time.delta_secs();
         let t = (slide.elapsed_secs / BANNER_SLIDE_IN_SECS).clamp(0.0, 1.0);
-        let eased = Ease::BackOut.sample(t);
-        style.top = Val::Px(BANNER_HIDDEN_TOP_PX + -BANNER_HIDDEN_TOP_PX * eased);
+        let eased = EaseFunction::BackOut.sample_clamped(t);
+        node.top = Val::Px(BANNER_HIDDEN_TOP_PX + -BANNER_HIDDEN_TOP_PX * eased);
         background.0 = Color::srgba(0.65, 0.0, 0.05, BANNER_ALPHA * eased.clamp(0.0, 1.0));
         if t >= 1.0 {
-            style.top = Val::Px(0.0);
+            node.top = Val::Px(0.0);
             background.0 = Color::srgba(0.65, 0.0, 0.05, BANNER_ALPHA);
             commands.entity(entity).remove::<BannerSlide>();
         }
@@ -210,16 +260,16 @@ fn animate_banner_entrance(
 fn animate_banner_exit(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Style, &mut BackgroundColor, &mut BannerSlideOut)>,
+    mut query: Query<(Entity, &mut Node, &mut BackgroundColor, &mut BannerSlideOut)>,
 ) {
-    for (entity, mut style, mut background, mut slide_out) in &mut query {
-        slide_out.elapsed_secs += time.delta_seconds();
+    for (entity, mut node, mut background, mut slide_out) in &mut query {
+        slide_out.elapsed_secs += time.delta_secs();
         let t = (slide_out.elapsed_secs / BANNER_SLIDE_OUT_SECS).clamp(0.0, 1.0);
-        let eased = Ease::CubicInOut.sample(t);
-        style.top = Val::Px(BANNER_HIDDEN_TOP_PX * eased);
+        let eased = EaseFunction::CubicInOut.sample_clamped(t);
+        node.top = Val::Px(BANNER_HIDDEN_TOP_PX * eased);
         background.0 = Color::srgba(0.65, 0.0, 0.05, BANNER_ALPHA * (1.0 - eased));
         if t >= 1.0 {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -238,7 +288,7 @@ fn tick_outage(
     let Some(outage) = &mut active.outage else {
         return;
     };
-    outage.tick(time.delta_seconds_f64());
+    outage.tick(time.delta_secs_f64());
     let remaining = outage.time_remaining();
     if remaining > TICK_WINDOW_SECONDS {
         // Outside the window: re-arm so re-entering it always ticks.
@@ -260,10 +310,12 @@ fn tick_outage(
 fn check_outage_resolution(
     mut commands: Commands,
     mut active: ResMut<ActiveOutage>,
+    mut alarm_list: ResMut<AlarmList>,
     live: Res<LiveGraph>,
     level: Res<LevelDef>,
     mut outcome: ResMut<LevelOutcome>,
     mut request: ResMut<TransitionRequest>,
+    next_state: Res<NextState<GameState>>,
     mut companions: Query<(Entity, &mut CompanionSprite)>,
     sfx: Res<crate::audio::Sfx>,
 ) {
@@ -271,16 +323,37 @@ fn check_outage_resolution(
         return;
     };
 
-    if outage.is_expired() {
+    // Request the Results transition exactly once (see
+    // `check_win_condition`): re-requesting queues a duplicate
+    // Results -> Results transition whose OnExit/OnEnter pair rebuilds
+    // the results screen mid-frame.
+    let transition_pending =
+        request.0.is_some() || matches!(*next_state, NextState::Pending(_));
+
+    if !transition_pending && outage.is_expired() {
         sfx.play(&mut commands, crate::audio::SfxKind::Lose);
         outcome.won = false;
         request.0 = Some(GameState::Results);
         return;
     }
 
-    if level.is_win_state_with_outage(&live.graph, live.tx_dbm, live.wavelength.0, Some(&outage)) {
+    if !transition_pending
+        && level.is_win_state_with_outage(
+            &live.graph,
+            live.tx_dbm,
+            live.wavelength.0,
+            Some(&outage),
+        )
+    {
         if let Some(active_outage) = active.outage.as_mut() {
             active_outage.resolved = true;
+        }
+        // Mark the corresponding NOC alarm resolved (most recent New/Acked).
+        for alarm in alarm_list.alarms.iter_mut().rev() {
+            if matches!(alarm.ack, AlarmAck::New | AlarmAck::Acknowledged { .. }) {
+                alarm.ack = AlarmAck::Resolved;
+                break;
+            }
         }
         sfx.play(&mut commands, crate::audio::SfxKind::Win);
         outcome.won = true;
@@ -390,7 +463,9 @@ mod tests {
         world.insert_resource(fixture_level((0, 1)));
         world.insert_resource(LevelOutcome { won: true });
         world.init_resource::<TransitionRequest>();
+        world.init_resource::<NextState<GameState>>();
         world.insert_resource(crate::audio::Sfx::for_tests());
+        world.init_resource::<AlarmList>();
 
         world.run_system_once(check_outage_resolution);
 
@@ -412,7 +487,9 @@ mod tests {
         world.insert_resource(fixture_level((0, 1)));
         world.insert_resource(LevelOutcome { won: false });
         world.init_resource::<TransitionRequest>();
+        world.init_resource::<NextState<GameState>>();
         world.insert_resource(crate::audio::Sfx::for_tests());
+        world.init_resource::<AlarmList>();
 
         world.run_system_once(check_outage_resolution);
 
@@ -439,6 +516,7 @@ mod tests {
         world.insert_resource(fixture_level((0, 1)));
         world.insert_resource(LevelOutcome { won: true });
         world.init_resource::<TransitionRequest>();
+        world.init_resource::<NextState<GameState>>();
         world.insert_resource(crate::audio::Sfx::for_tests());
 
         world.run_system_once(check_outage_resolution);
@@ -458,10 +536,158 @@ mod tests {
 
         world.run_system_once(alarm_companion);
 
-        let sprite = world.query::<&CompanionSprite>().single(&world);
+        let sprite = world.query::<&CompanionSprite>().single(&world).unwrap();
         assert_eq!(sprite.mood, Mood::Alarmed);
         assert_eq!(sprite.frame, 0);
         // The mood change also triggers the scale pop (Finding 1).
         assert_eq!(world.query::<&crate::waifu::MoodPop>().iter(&world).len(), 1);
     }
+}
+
+/// Marker for the NOC alarm list panel root.
+#[derive(Component)]
+struct AlarmListPanel;
+
+/// Marker for a single alarm row, holding its list index.
+#[derive(Component)]
+struct AlarmRow {
+    #[allow(dead_code)]
+    index: usize,
+}
+
+/// Spawn the NOC alarm list panel on the right side of the screen.
+/// Shows all alarms in `AlarmList` with severity color coding.
+fn spawn_alarm_list_panel(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    alarm_list: Res<AlarmList>,
+) {
+    commands
+        .spawn((
+            AlarmListPanel,
+            Node {
+                position_type: PositionType::Absolute,
+                right: Val::Px(12.0),
+                top: Val::Px(80.0),
+                width: Val::Px(280.0),
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(Val::Px(8.0)),
+                row_gap: Val::Px(4.0),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.05, 0.05, 0.1, 0.9)),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Text::new(format!("NOC ALARMS ({})", alarm_list.unacked_count())),
+                TextFont {
+                    font: asset_server.load(crate::fonts::DISPLAY_BOLD).into(),
+                    font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+            ));
+        });
+}
+
+/// Refresh the alarm list panel contents from `AlarmList`.
+fn update_alarm_list_panel(
+    mut commands: Commands,
+    alarm_list: Res<AlarmList>,
+    asset_server: Res<AssetServer>,
+    panel: Query<Entity, With<AlarmListPanel>>,
+    rows: Query<Entity, With<AlarmRow>>,
+) {
+    if !alarm_list.is_changed() {
+        return;
+    }
+    let Ok(panel_entity) = panel.single() else {
+        return;
+    };
+    // Clear old rows (keep the header which is not an AlarmRow).
+    for row in &rows {
+        commands.entity(row).despawn();
+    }
+    commands.entity(panel_entity).with_children(|parent| {
+        for (i, alarm) in alarm_list.alarms.iter().enumerate() {
+            let sev_color = match alarm.severity {
+                osp_sim::AlarmSeverity::Critical => Color::srgb(1.0, 0.2, 0.2),
+                osp_sim::AlarmSeverity::Major => Color::srgb(1.0, 0.6, 0.2),
+                osp_sim::AlarmSeverity::Minor => Color::srgb(1.0, 1.0, 0.3),
+                osp_sim::AlarmSeverity::Warning => Color::srgb(0.5, 0.8, 1.0),
+            };
+            let ack_text = match &alarm.ack {
+                AlarmAck::New => "NEW",
+                AlarmAck::Acknowledged { companion_idx } => {
+                    &format!("ACK(c{})", companion_idx)
+                }
+                AlarmAck::Resolved => "RESOLVED",
+                AlarmAck::Cleared => "CLEARED",
+            };
+            parent.spawn((
+                AlarmRow { index: i },
+                Text::new(format!(
+                    "#{} [{:?}] {} - {}",
+                    i + 1,
+                    alarm.severity,
+                    alarm.outage.kind.flavor_text(),
+                    ack_text
+                )),
+                TextFont {
+                    font: asset_server.load(crate::fonts::BODY).into(),
+                    font_size: FontSize::Px(12.0 * FONT_SIZE_ADJUST),
+                    ..default()
+                },
+                TextColor(sev_color),
+            ));
+        }
+        // Hint text at the bottom
+        parent.spawn((
+            Text::new("Press 1-9 to ack/dispatch"),
+            TextFont {
+                font: asset_server.load(crate::fonts::BODY).into(),
+                font_size: FontSize::Px(10.0 * FONT_SIZE_ADJUST),
+                ..default()
+            },
+            TextColor(Color::srgb(0.6, 0.6, 0.6)),
+        ));
+    });
+}
+
+/// Keyboard input: number keys 1-9 acknowledge the corresponding alarm,
+/// dispatching companion 0 (the active companion) to it.
+fn handle_alarm_ack_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut alarm_list: ResMut<AlarmList>,
+) {
+    let digit_keys = [
+        KeyCode::Digit1,
+        KeyCode::Digit2,
+        KeyCode::Digit3,
+        KeyCode::Digit4,
+        KeyCode::Digit5,
+        KeyCode::Digit6,
+        KeyCode::Digit7,
+        KeyCode::Digit8,
+        KeyCode::Digit9,
+    ];
+    for (i, key) in digit_keys.iter().enumerate() {
+        if keyboard.just_pressed(*key) {
+            // Dispatch the active companion (index 0) to the alarm.
+            alarm_list.acknowledge(i, 0);
+        }
+    }
+}
+
+/// Despawn the alarm list panel on state exit.
+fn teardown_alarm_list_panel(
+    mut commands: Commands,
+    query: Query<Entity, With<AlarmListPanel>>,
+    mut alarm_list: ResMut<AlarmList>,
+) {
+    for entity in &query {
+        commands.entity(entity).despawn();
+    }
+    // Archive resolved alarms out of the active list.
+    alarm_list.clear_resolved();
 }

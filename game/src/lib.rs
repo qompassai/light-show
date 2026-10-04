@@ -9,6 +9,7 @@ mod audio;
 #[cfg(debug_assertions)]
 mod bench;
 mod board;
+mod cheat_codes;
 mod fonts;
 mod level;
 #[cfg(test)]
@@ -103,7 +104,7 @@ fn build_app() -> App {
     let plugins = DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
             title: "Light Show".into(),
-            resolution: (720.0_f32, 1280.0_f32).into(),
+            resolution: (720, 1280).into(),
             ..default()
         }),
         ..default()

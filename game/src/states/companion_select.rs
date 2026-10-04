@@ -7,9 +7,11 @@
 
 use super::GameState;
 use crate::anim::TransitionRequest;
+use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::CurrentLevelIndex;
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
 use crate::waifu::{Companion, SelectedCompanion};
+use crate::cheat_codes::{UnlockedSpecialists, KonamiState, CodeWordBuffer, code_word_to_companion};
 use bevy::prelude::*;
 
 pub struct CompanionSelectPlugin;
@@ -17,6 +19,9 @@ pub struct CompanionSelectPlugin;
 impl Plugin for CompanionSelectPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SelectAnimTimer::default())
+            .init_resource::<UnlockedSpecialists>()
+            .init_resource::<KonamiState>()
+            .init_resource::<CodeWordBuffer>()
             .add_systems(OnEnter(GameState::CompanionSelect), setup_select)
             .add_systems(
                 Update,
@@ -25,6 +30,8 @@ impl Plugin for CompanionSelectPlugin {
                     handle_back_button,
                     animate_select_cards,
                     highlight_select_cards,
+                    detect_konami_code,
+                    detect_code_words,
                 )
                     .run_if(in_state(GameState::CompanionSelect)),
             )
@@ -87,48 +94,43 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             SelectRoot,
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    row_gap: Val::Px(16.0),
-                    ..default()
-                },
-                background_color: Color::srgb(0.05, 0.05, 0.12).into(),
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                row_gap: Val::Px(16.0),
                 ..default()
             },
+            BackgroundColor(Color::srgb(0.05, 0.05, 0.12)),
         ))
         .with_children(|parent| {
             // Keeper title artwork as a dimmed backdrop: same title card,
             // one step deeper. Absolutely positioned out of the flex flow
             // so it paints behind the cards.
-            parent.spawn(ImageBundle {
-                style: Style {
+            parent.spawn((
+                Node {
                     position_type: PositionType::Absolute,
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
                     ..default()
                 },
-                image: UiImage::new(asset_server.load("sprites/ui/title_artwork.png")),
-                ..default()
-            });
+                ImageNode::new(asset_server.load("sprites/ui/title_artwork.png")),
+            ));
             // Darkens the artwork so the cards pop; translucent so the
             // night city still reads through. Dark enough that the
             // artwork's baked-in "LIGHT SHOW" title recedes behind the
             // header and cards instead of colliding with them.
-            parent.spawn(NodeBundle {
-                style: Style {
+            parent.spawn((
+                Node {
                     position_type: PositionType::Absolute,
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
                     ..default()
                 },
-                background_color: Color::srgba(0.03, 0.03, 0.08, 0.85).into(),
-                ..default()
-            });
+                BackgroundColor(Color::srgba(0.03, 0.03, 0.08, 0.85)),
+            ));
             spawn_neon_text(
                 parent,
                 NeonText {
@@ -142,7 +144,7 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
                     glow_inner_alpha: 0.55,
                     glow_outer_alpha: 0.25,
                     width: Val::Auto,
-                    justify: JustifyText::Center,
+                    justify: Justify::Center,
                 },
             );
             for companion in Companion::ALL {
@@ -151,31 +153,30 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn((
                     BackButton,
-                    ButtonBundle {
-                        style: Style {
-                            padding: UiRect::axes(Val::Px(24.0), Val::Px(10.0)),
-                            margin: UiRect::top(Val::Px(8.0)),
-                            ..default()
-                        },
-                        background_color: Color::srgb(0.2, 0.2, 0.28).into(),
+                    Button,
+                    Node {
+                        padding: UiRect::axes(Val::Px(24.0), Val::Px(10.0)),
+                        margin: UiRect::top(Val::Px(8.0)),
                         ..default()
                     },
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.28)),
                 ))
                 .with_children(|btn| {
-                    btn.spawn(TextBundle::from_section(
-                        "Back",
-                        TextStyle {
-                            font: body_medium.clone(),
-                            font_size: 18.0,
-                            color: Color::WHITE,
+                    btn.spawn((
+                        Text::new("Back"),
+                        TextFont {
+                            font: body_medium.clone().into(),
+                            font_size: FontSize::Px(18.0 * FONT_SIZE_ADJUST),
+                            ..default()
                         },
+                        TextColor(Color::WHITE),
                     ));
                 });
         });
 }
 
 fn spawn_companion_card(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     asset_server: &AssetServer,
     display: &Handle<Font>,
     body: &Handle<Font>,
@@ -196,18 +197,16 @@ fn spawn_companion_card(
                 offset: Val::Px(3.0),
                 color: companion.accent(),
             },
-            ButtonBundle {
-                style: Style {
-                    width: Val::Px(620.0),
-                    padding: UiRect::axes(Val::Px(20.0), Val::Px(12.0)),
-                    flex_direction: FlexDirection::Row,
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(18.0),
-                    ..default()
-                },
-                background_color: Color::srgba(0.08, 0.1, 0.18, 0.92).into(),
+            Button,
+            Node {
+                width: Val::Px(620.0),
+                padding: UiRect::axes(Val::Px(20.0), Val::Px(12.0)),
+                flex_direction: FlexDirection::Row,
+                align_items: AlignItems::Center,
+                column_gap: Val::Px(18.0),
                 ..default()
             },
+            BackgroundColor(Color::srgba(0.08, 0.1, 0.18, 0.92)),
         ))
         .with_children(|card| {
             // Silhouette: dark shape + discipline-colored outline + FX
@@ -215,23 +214,17 @@ fn spawn_companion_card(
             // highlighted, resting on frame 0 otherwise.
             card.spawn((
                 SelectSilhouette,
-                ImageBundle {
-                    style: Style {
-                        width: Val::Px(SILHOUETTE_DISPLAY.x),
-                        height: Val::Px(SILHOUETTE_DISPLAY.y),
-                        ..default()
-                    },
-                    image: UiImage::new(first_frame),
+                Node {
+                    width: Val::Px(SILHOUETTE_DISPLAY.x),
+                    height: Val::Px(SILHOUETTE_DISPLAY.y),
                     ..default()
                 },
+                ImageNode::new(first_frame),
             ));
-            card.spawn(NodeBundle {
-                style: Style {
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::FlexStart,
-                    row_gap: Val::Px(4.0),
-                    ..default()
-                },
+            card.spawn(Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::FlexStart,
+                row_gap: Val::Px(4.0),
                 ..default()
             })
             .with_children(|text| {
@@ -249,24 +242,26 @@ fn spawn_companion_card(
                         glow_inner_alpha: 0.55,
                         glow_outer_alpha: 0.25,
                         width: Val::Auto,
-                        justify: JustifyText::Left,
+                        justify: Justify::Left,
                     },
                 );
-                text.spawn(TextBundle::from_section(
-                    companion.tagline(),
-                    TextStyle {
-                        font: body.clone(),
-                        font_size: 14.0,
-                        color: NEON_DIM,
+                text.spawn((
+                    Text::new(companion.tagline()),
+                    TextFont {
+                        font: body.clone().into(),
+                        font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                        ..default()
                     },
+                    TextColor(NEON_DIM),
                 ));
-                text.spawn(TextBundle::from_section(
-                    companion.select_hook(),
-                    TextStyle {
-                        font: body.clone(),
-                        font_size: 14.0,
-                        color: NEON_GOLD,
+                text.spawn((
+                    Text::new(companion.select_hook()),
+                    TextFont {
+                        font: body.clone().into(),
+                        font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                        ..default()
                     },
+                    TextColor(NEON_GOLD),
                 ));
             });
         });
@@ -279,7 +274,7 @@ fn animate_select_cards(
     time: Res<Time>,
     mut timer: ResMut<SelectAnimTimer>,
     mut cards: Query<(&Interaction, &mut SelectAnim, &Children)>,
-    mut silhouettes: Query<&mut UiImage, With<SelectSilhouette>>,
+    mut silhouettes: Query<&mut ImageNode, With<SelectSilhouette>>,
 ) {
     timer.0.tick(time.delta());
     if !timer.0.just_finished() {
@@ -293,7 +288,7 @@ fn animate_select_cards(
                 anim.index = 0;
                 for child in children {
                     if let Ok(mut image) = silhouettes.get_mut(*child) {
-                        image.texture = anim.frames[0].clone();
+                        image.image = anim.frames[0].clone();
                     }
                 }
             }
@@ -302,7 +297,7 @@ fn animate_select_cards(
         anim.index = (anim.index + 1) % SELECT_ANIM_FRAMES;
         for child in children {
             if let Ok(mut image) = silhouettes.get_mut(*child) {
-                image.texture = anim.frames[anim.index].clone();
+                image.image = anim.frames[anim.index].clone();
             }
         }
     }
@@ -322,7 +317,7 @@ fn highlight_select_cards(
     mut cards: Query<(&Interaction, &SelectButton, &mut Outline)>,
 ) {
     // Frame-rate-independent exponential approach.
-    let blend = 1.0 - (-OUTLINE_LERP_RATE * time.delta_seconds()).exp();
+    let blend = 1.0 - (-OUTLINE_LERP_RATE * time.delta_secs()).exp();
     for (interaction, button, mut outline) in &mut cards {
         let target_px = match interaction {
             Interaction::Hovered | Interaction::Pressed => CARD_OUTLINE_PX,
@@ -376,9 +371,74 @@ fn handle_back_button(
     }
 }
 
+/// Watches for the Konami Code at the select screen: UP UP DOWN DOWN
+/// LEFT RIGHT LEFT RIGHT B A ENTER. Unlocks all four specialists at once.
+fn detect_konami_code(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut konami: ResMut<KonamiState>,
+    mut unlocked: ResMut<UnlockedSpecialists>,
+) {
+    for key in keyboard.get_just_pressed() {
+        if konami.feed(*key) {
+            unlocked.unlock_all();
+            info!("Konami Code accepted - all specialists unlocked");
+        }
+    }
+}
+
+/// Watches for typed code words at the select screen: JUSTINBAILEY,
+/// ABACABB, BLASTPROCESSING, TRIFORCE. Each unlocks one specialist.
+/// Enter submits the buffer; Escape clears it.
+fn detect_code_words(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut buffer: ResMut<CodeWordBuffer>,
+    mut unlocked: ResMut<UnlockedSpecialists>,
+) {
+    for key in keyboard.get_just_pressed() {
+        match key {
+            KeyCode::Enter => {
+                if let Some(companion) = code_word_to_companion(&buffer.buffer) {
+                    if unlocked.unlock(companion) {
+                        info!("Code word accepted - {:?} unlocked", companion);
+                    }
+                }
+                buffer.clear();
+            }
+            KeyCode::Escape => buffer.clear(),
+            KeyCode::KeyA => buffer.push('A'),
+            KeyCode::KeyB => buffer.push('B'),
+            KeyCode::KeyC => buffer.push('C'),
+            KeyCode::KeyD => buffer.push('D'),
+            KeyCode::KeyE => buffer.push('E'),
+            KeyCode::KeyF => buffer.push('F'),
+            KeyCode::KeyG => buffer.push('G'),
+            KeyCode::KeyH => buffer.push('H'),
+            KeyCode::KeyI => buffer.push('I'),
+            KeyCode::KeyJ => buffer.push('J'),
+            KeyCode::KeyK => buffer.push('K'),
+            KeyCode::KeyL => buffer.push('L'),
+            KeyCode::KeyM => buffer.push('M'),
+            KeyCode::KeyN => buffer.push('N'),
+            KeyCode::KeyO => buffer.push('O'),
+            KeyCode::KeyP => buffer.push('P'),
+            KeyCode::KeyQ => buffer.push('Q'),
+            KeyCode::KeyR => buffer.push('R'),
+            KeyCode::KeyS => buffer.push('S'),
+            KeyCode::KeyT => buffer.push('T'),
+            KeyCode::KeyU => buffer.push('U'),
+            KeyCode::KeyV => buffer.push('V'),
+            KeyCode::KeyW => buffer.push('W'),
+            KeyCode::KeyX => buffer.push('X'),
+            KeyCode::KeyY => buffer.push('Y'),
+            KeyCode::KeyZ => buffer.push('Z'),
+            _ => {}
+        }
+    }
+}
+
 fn teardown_select(mut commands: Commands, query: Query<Entity, With<SelectRoot>>) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 
@@ -501,7 +561,7 @@ mod tests {
         world.insert_resource(time);
         world.insert_resource(SelectAnimTimer::default());
         let silhouette = world
-            .spawn((SelectSilhouette, UiImage::new(Handle::default())))
+            .spawn((SelectSilhouette, ImageNode::new(Handle::default())))
             .id();
         let card = world
             .spawn((

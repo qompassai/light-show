@@ -19,24 +19,31 @@ path = "src/main.rs"
 osp_sim = { path = "../crates/osp_sim", version = "0.1.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-bevy_ecs = "0.14"
-bevy_state = "0.14"
+bevy_ecs = "0.19"
+# For audio decode validation (see audio.rs): same version bevy_audio uses.
+rodio = { version = "0.22", default-features = false, features = ["symphonia-mp3", "symphonia-vorbis"] }
+bevy_state = "0.19"
 # Only pulled in by the `instrumented-test-logging` feature (see below) —
 # retail Play Store / F-Droid builds never depend on this.
 log = { version = "0.4", optional = true }
 
 [target.'cfg(not(target_os = "android"))'.dependencies]
-bevy = { version = "0.14", default-features = false, features = [
+bevy = { version = "0.19", default-features = false, features = [
     "bevy_asset",
     "bevy_winit",
     "bevy_render",
     "bevy_core_pipeline",
     "bevy_sprite",
+    "bevy_sprite_render",
     "bevy_text",
     "bevy_ui",
+    "bevy_ui_render",
     "bevy_state",
     "bevy_gizmos",
+    "bevy_gizmos_render",
     "bevy_audio",
+    "bevy_log",
+    "ui_picking",
     "vorbis",
     "mp3",
     "png",
@@ -45,21 +52,26 @@ bevy = { version = "0.14", default-features = false, features = [
 ] }
 
 [target.'cfg(target_os = "android")'.dependencies]
-bevy = { version = "0.14", default-features = false, features = [
+bevy = { version = "0.19", default-features = false, features = [
     "bevy_asset",
     "bevy_winit",
     "bevy_render",
     "bevy_core_pipeline",
     "bevy_sprite",
+    "bevy_sprite_render",
     "bevy_text",
     "bevy_ui",
+    "bevy_ui_render",
     "bevy_state",
     "bevy_gizmos",
+    "bevy_gizmos_render",
     "bevy_audio",
+    "bevy_log",
+    "ui_picking",
     "vorbis",
     "mp3",
     "png",
-    "android_shared_stdcxx",
+    "android-native-activity",
     "multi_threaded",
 ] }
 

@@ -56,14 +56,13 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
     // `MenuRoot`), so only spawn one when none exists — otherwise every
     // return from Credits would stack another camera.
     if cameras.is_empty() {
-        commands.spawn(Camera2dBundle::default());
+        commands.spawn(Camera2d);
     }
 
     commands
         .spawn((
             MenuRoot,
-            NodeBundle {
-                style: Style {
+            Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
                     flex_direction: FlexDirection::Column,
@@ -76,11 +75,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                     row_gap: Val::Px(24.0),
                     ..default()
                 },
-                // Shown while the artwork texture streams in; the artwork
-                // covers the full 720x1280 window once loaded.
-                background_color: Color::srgb(0.05, 0.05, 0.12).into(),
-                ..default()
-            },
+            BackgroundColor(Color::srgb(0.05, 0.05, 0.12)),
         ))
         .with_children(|parent| {
             // Keeper title artwork as the full-screen menu backdrop. It is
@@ -89,16 +84,15 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
             // "LIGHT SHOW" title baked into its center, which is why the
             // old Aseprite title logo is gone — showing both would double
             // the title.
-            parent.spawn(ImageBundle {
-                style: Style {
+            parent.spawn((
+                Node {
                     position_type: PositionType::Absolute,
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
                     ..default()
                 },
-                image: UiImage::new(asset_server.load("sprites/ui/title_artwork.png")),
-                ..default()
-            });
+                ImageNode::new(asset_server.load("sprites/ui/title_artwork.png")),
+            ));
             // Width-constrained and centered: without a width the
             // 48-character tagline overflows the 720px window, wraps, and
             // clips at the left edge. Gold core with a cyan halo, echoing
@@ -116,20 +110,18 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                     glow_inner_alpha: 0.55,
                     glow_outer_alpha: 0.25,
                     width: Val::Px(TAGLINE_MAX_W),
-                    justify: JustifyText::Center,
+                    justify: Justify::Center,
                 },
             );
             parent
                 .spawn((
                     StartButton,
-                    ButtonBundle {
-                        style: Style {
-                            padding: UiRect::axes(Val::Px(28.0), Val::Px(14.0)),
-                            ..default()
-                        },
-                        background_color: NEON_GOLD.into(),
+                    Button,
+                    Node {
+                        padding: UiRect::axes(Val::Px(28.0), Val::Px(14.0)),
                         ..default()
                     },
+                    BackgroundColor(NEON_GOLD),
                 ))
                 .with_children(|btn| {
                     // Ink core with a deep-gold offset halo for depth on
@@ -147,21 +139,19 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                             glow_inner_alpha: 0.5,
                             glow_outer_alpha: 0.22,
                             width: Val::Auto,
-                            justify: JustifyText::Center,
+                            justify: Justify::Center,
                         },
                     );
                 });
             parent
                 .spawn((
                     CreditsButton,
-                    ButtonBundle {
-                        style: Style {
-                            padding: UiRect::axes(Val::Px(28.0), Val::Px(10.0)),
-                            ..default()
-                        },
-                        background_color: Color::srgb(0.13, 0.15, 0.22).into(),
+                    Button,
+                    Node {
+                        padding: UiRect::axes(Val::Px(28.0), Val::Px(10.0)),
                         ..default()
                     },
+                    BackgroundColor(Color::srgb(0.13, 0.15, 0.22)),
                 ))
                 .with_children(|btn| {
                     // Cyan core with a gold halo on the dark slate face:
@@ -179,7 +169,7 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
                             glow_inner_alpha: 0.55,
                             glow_outer_alpha: 0.25,
                             width: Val::Auto,
-                            justify: JustifyText::Center,
+                            justify: Justify::Center,
                         },
                     );
                 });
@@ -220,7 +210,7 @@ fn handle_credits_button(
 
 fn teardown_menu(mut commands: Commands, query: Query<Entity, With<MenuRoot>>) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

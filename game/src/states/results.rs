@@ -6,11 +6,13 @@
 use super::outage::ActiveOutage;
 use super::playing::LiveGraph;
 use super::{GameState, LevelOutcome};
-use crate::anim::{Ease, TransitionRequest};
+use crate::anim::TransitionRequest;
+use crate::fonts::FONT_SIZE_ADJUST;
 use crate::board;
 use crate::level::{self, CurrentLevelIndex, LevelDef};
 use crate::waifu::dialogue::DialogueBank;
 use crate::waifu::{Companion, FavorPoints, SelectedCompanion};
+use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
 
 pub struct ResultsPlugin;
@@ -104,9 +106,9 @@ struct ResultEntrance {
 enum EntranceKind {
     /// Banner text: scale 0.8 -> 1.0 with BackOut.
     BannerPop,
-    /// Body text: alpha 0 -> 1. Holds the original section colors so the
-    /// fade can restore them exactly.
-    FadeIn { original: Vec<Color> },
+    /// Body text: alpha 0 -> 1. Holds the original color so the fade
+    /// can restore it exactly.
+    FadeIn { original: Color },
     /// Button row: slide up 20px + fade. Holds the button entities and
     /// their original background colors.
     SlideUp { buttons: Vec<(Entity, Color)> },
@@ -132,15 +134,15 @@ fn animate_result_entrances(
     time: Res<Time>,
     mut query: Query<(
         Entity,
-        Option<&mut Transform>,
-        Option<&mut Style>,
-        Option<&mut Text>,
+        Option<&mut UiTransform>,
+        Option<&mut Node>,
+        Option<&mut TextColor>,
         &mut ResultEntrance,
     )>,
     mut button_bg: Query<&mut BackgroundColor>,
 ) {
-    for (entity, mut transform, mut style, mut text, mut entrance) in &mut query {
-        entrance.elapsed_secs += time.delta_seconds();
+    for (entity, mut transform, mut style, mut text_color, mut entrance) in &mut query {
+        entrance.elapsed_secs += time.delta_secs();
         if entrance.elapsed_secs < entrance.delay_secs {
             continue;
         }
@@ -148,23 +150,21 @@ fn animate_result_entrances(
         let t = (local_t / entrance.kind.duration_secs()).clamp(0.0, 1.0);
         match &entrance.kind {
             EntranceKind::BannerPop => {
-                let eased = Ease::BackOut.sample(t);
+                let eased = EaseFunction::BackOut.sample_clamped(t);
                 if let Some(tr) = transform.as_mut() {
                     let scale = BANNER_POP_START_SCALE
                         + (1.0 - BANNER_POP_START_SCALE) * eased;
-                    tr.scale = Vec3::splat(scale.max(0.01));
+                    tr.scale = Vec2::splat(scale.max(0.01));
                 }
             }
             EntranceKind::FadeIn { original } => {
-                let eased = Ease::CubicOut.sample(t);
-                if let Some(txt) = text.as_mut() {
-                    for (section, color) in txt.sections.iter_mut().zip(original.iter()) {
-                        section.style.color = color.with_alpha(eased * color.alpha());
-                    }
+                let eased = EaseFunction::CubicOut.sample_clamped(t);
+                if let Some(tc) = text_color.as_mut() {
+                    tc.0 = original.with_alpha(eased * original.alpha());
                 }
             }
             EntranceKind::SlideUp { buttons } => {
-                let eased = Ease::CubicOut.sample(t);
+                let eased = EaseFunction::CubicOut.sample_clamped(t);
                 if let Some(st) = style.as_mut() {
                     st.margin.top = Val::Px(
                         BUTTONS_REST_MARGIN_TOP_PX + BUTTONS_SLIDE_PX * (1.0 - eased),
@@ -182,14 +182,12 @@ fn animate_result_entrances(
             match &entrance.kind {
                 EntranceKind::BannerPop => {
                     if let Some(tr) = transform.as_mut() {
-                        tr.scale = Vec3::splat(1.0);
+                        tr.scale = Vec2::splat(1.0);
                     }
                 }
                 EntranceKind::FadeIn { original } => {
-                    if let Some(txt) = text.as_mut() {
-                        for (section, color) in txt.sections.iter_mut().zip(original.iter()) {
-                            section.style.color = *color;
-                        }
+                    if let Some(tc) = text_color.as_mut() {
+                        tc.0 = *original;
                     }
                 }
                 EntranceKind::SlideUp { buttons } => {
@@ -214,7 +212,7 @@ fn animate_win_ring(
     mut commands: Commands,
     time: Res<Time>,
     mut timer: ResMut<WinRingTimer>,
-    mut rings: Query<(Entity, Option<&Parent>, &mut WinRing, &mut UiImage, &mut Transform)>,
+    mut rings: Query<(Entity, &mut WinRing, &mut ImageNode, &mut UiTransform)>,
 ) {
     if rings.is_empty() {
         return;
@@ -223,25 +221,23 @@ fn animate_win_ring(
     if !timer.0.just_finished() {
         return;
     }
-    for (entity, parent, mut ring, mut image, mut transform) in &mut rings {
+    for (entity, mut ring, mut image, mut transform) in &mut rings {
         ring.index += 1;
         if ring.index >= WIN_RING_FRAMES {
-            // Detach from the results root first: a plain despawn leaves a
-            // stale entry in the parent Children list, which teardown_results
-            // would then trip over (B0003).
-            if let Some(parent) = parent {
-                commands.entity(parent.get()).remove_children(&[entity]);
-            }
+            // 0.16+ auto-detaches children on despawn; the manual
+            // detach-before-despawn workaround is gone.
             commands.entity(entity).despawn();
         } else {
-            image.texture = ring.frames[ring.index].clone();
-            // Ease scale 0.5 -> 1.2 across the 0.72s lifetime (Finding 6):
-            // the ring blooms outward as it plays. UiImage has no alpha in
-            // Bevy 0.14, so scale carries the whole effect.
+            image.image = ring.frames[ring.index].clone();
+            // Ease scale 0.5 -> 1.2 and fade alpha 1 -> 0 across the 0.72s
+            // lifetime (Finding 6): the ring blooms outward as it plays.
+            // (0.19 migration: ImageNode has color, so the intended alpha
+            // fade the 0.14 UiImage couldn't do is now live.)
             let progress = ring.index as f32 / WIN_RING_FRAMES as f32;
-            let scale = 0.5 + 0.7 * Ease::CubicOut.sample(progress);
+            let scale = 0.5 + 0.7 * EaseFunction::CubicOut.sample_clamped(progress);
             // UI layout preserves scale (it only overwrites translation).
-            transform.scale = Vec3::splat(scale);
+            transform.scale = Vec2::splat(scale);
+            image.color = image.color.with_alpha(1.0 - progress);
         }
     }
 }
@@ -303,19 +299,16 @@ fn show_results(
     commands
         .spawn((
             ResultsRoot,
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    row_gap: Val::Px(18.0),
-                    ..default()
-                },
-                background_color: Color::srgb(0.05, 0.05, 0.12).into(),
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                row_gap: Val::Px(18.0),
                 ..default()
             },
+            BackgroundColor(Color::srgb(0.05, 0.05, 0.12)),
         ))
         .with_children(|parent| {
             if outcome.won {
@@ -326,36 +319,35 @@ fn show_results(
                 let first_frame = frames[0].clone();
                 parent.spawn((
                     WinRing { frames, index: 0 },
-                    ImageBundle {
-                        style: Style {
-                            width: Val::Px(256.0),
-                            height: Val::Px(256.0),
-                            ..default()
-                        },
-                        image: UiImage::new(first_frame),
+                    Node {
+                        width: Val::Px(256.0),
+                        height: Val::Px(256.0),
                         ..default()
                     },
+                    ImageNode::new(first_frame),
                 ));
             }
             {
-                let mut bundle = TextBundle::from_section(
-                    banner_text,
-                    TextStyle {
-                        font: asset_server.load(crate::fonts::DISPLAY_BOLD),
-                        font_size: 48.0,
-                        color: banner_color,
-                    },
-                );
-                // UI layout overwrites translation but preserves scale, so
-                // the pop scale survives layout (Finding 6).
-                bundle.transform = Transform::from_scale(Vec3::splat(BANNER_POP_START_SCALE));
                 parent.spawn((
                     ResultEntrance {
                         delay_secs: ENTRANCE_BANNER_DELAY,
                         elapsed_secs: 0.0,
                         kind: EntranceKind::BannerPop,
                     },
-                    bundle,
+                    Text::new(banner_text),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::DISPLAY_BOLD).into(),
+                        font_size: FontSize::Px(48.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(banner_color),
+                    TextLayout::justify(Justify::Center),
+                    // UI layout overwrites translation but preserves scale,
+                    // so the pop scale survives layout (Finding 6).
+                    UiTransform {
+                        scale: Vec2::splat(BANNER_POP_START_SCALE),
+                        ..default()
+                    },
                 ));
             }
             {
@@ -364,18 +356,17 @@ fn show_results(
                     ResultEntrance {
                         delay_secs: ENTRANCE_TITLE_DELAY,
                         elapsed_secs: 0.0,
-                        kind: EntranceKind::FadeIn {
-                            original: vec![color],
-                        },
+                        kind: EntranceKind::FadeIn { original: color },
                     },
-                    TextBundle::from_section(
-                        format!("World {} — {}", level.world, level.title),
-                        TextStyle {
-                            font: asset_server.load(crate::fonts::DISPLAY),
-                            font_size: 20.0,
-                            color: color.with_alpha(0.0),
-                        },
-                    ),
+                    Text::new(format!("World {} — {}", level.world, level.title)),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::DISPLAY).into(),
+                        font_size: FontSize::Px(20.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    // Starts transparent; the entrance system fades it in.
+                    TextColor(color.with_alpha(0.0)),
+                    TextLayout::justify(Justify::Center),
                 ));
             }
             {
@@ -384,18 +375,16 @@ fn show_results(
                     ResultEntrance {
                         delay_secs: ENTRANCE_LEDGER_DELAY,
                         elapsed_secs: 0.0,
-                        kind: EntranceKind::FadeIn {
-                            original: vec![color],
-                        },
+                        kind: EntranceKind::FadeIn { original: color },
                     },
-                    TextBundle::from_section(
-                        ledger_text,
-                        TextStyle {
-                            font: asset_server.load(crate::fonts::DISPLAY),
-                            font_size: 16.0,
-                            color: color.with_alpha(0.0),
-                        },
-                    ),
+                    Text::new(ledger_text),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::DISPLAY).into(),
+                        font_size: FontSize::Px(16.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(color.with_alpha(0.0)),
+                    TextLayout::justify(Justify::Center),
                 ));
             }
             {
@@ -404,33 +393,28 @@ fn show_results(
                     ResultEntrance {
                         delay_secs: ENTRANCE_DIALOGUE_DELAY,
                         elapsed_secs: 0.0,
-                        kind: EntranceKind::FadeIn {
-                            original: vec![color],
-                        },
+                        kind: EntranceKind::FadeIn { original: color },
                     },
-                    TextBundle::from_section(
-                        format!("\u{201c}{dialogue_line}\u{201d}"),
-                        TextStyle {
-                            font: asset_server.load(crate::fonts::BODY),
-                            font_size: 16.0,
-                            color: color.with_alpha(0.0),
-                        },
-                    ),
+                    Text::new(format!("\u{201c}{dialogue_line}\u{201d}")),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::BODY).into(),
+                        font_size: FontSize::Px(16.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(color.with_alpha(0.0)),
+                    TextLayout::justify(Justify::Center),
                 ));
             }
 
             {
                 // The row starts 20px lower (via top margin) with transparent
                 // buttons; `animate_result_entrances` slides/fades it in.
-                let mut row_cmds = parent.spawn(NodeBundle {
-                    style: Style {
-                        flex_direction: FlexDirection::Row,
-                        column_gap: Val::Px(12.0),
-                        margin: UiRect::top(Val::Px(
-                            BUTTONS_REST_MARGIN_TOP_PX + BUTTONS_SLIDE_PX,
-                        )),
-                        ..default()
-                    },
+                let mut row_cmds = parent.spawn(Node {
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(12.0),
+                    margin: UiRect::top(Val::Px(
+                        BUTTONS_REST_MARGIN_TOP_PX + BUTTONS_SLIDE_PX,
+                    )),
                     ..default()
                 });
                 let mut button_fades: Vec<(Entity, Color)> = Vec::new();
@@ -489,7 +473,7 @@ fn show_results(
 }
 
 fn spawn_result_button(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     asset_server: &AssetServer,
     action: ResultAction,
     label: &str,
@@ -497,23 +481,22 @@ fn spawn_result_button(
 ) -> Entity {
     let mut button = parent.spawn((
         action,
-        ButtonBundle {
-            style: Style {
-                padding: UiRect::axes(Val::Px(24.0), Val::Px(12.0)),
-                ..default()
-            },
-            background_color: color.into(),
+        Button,
+        Node {
+            padding: UiRect::axes(Val::Px(24.0), Val::Px(12.0)),
             ..default()
         },
+        BackgroundColor(color),
     ));
     button.with_children(|btn| {
-        btn.spawn(TextBundle::from_section(
-            label,
-            TextStyle {
-                font: asset_server.load(crate::fonts::BODY_MEDIUM),
-                font_size: 20.0,
-                color: Color::WHITE,
+        btn.spawn((
+            Text::new(label),
+            TextFont {
+                font: asset_server.load(crate::fonts::BODY_MEDIUM).into(),
+                font_size: FontSize::Px(20.0 * FONT_SIZE_ADJUST),
+                ..default()
             },
+            TextColor(Color::WHITE),
         ));
     });
     button.id()
@@ -555,6 +538,6 @@ fn handle_result_buttons(
 
 fn teardown_results(mut commands: Commands, query: Query<Entity, With<ResultsRoot>>) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }

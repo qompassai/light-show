@@ -14,3 +14,13 @@ pub const DISPLAY_BOLD: &str = "fonts/MonaspaceNeon-Bold.otf";
 pub const BODY: &str = "fonts/Inter-Regular.ttf";
 /// Body face, medium: buttons and other small UI text.
 pub const BODY_MEDIUM: &str = "fonts/Inter-Medium.ttf";
+
+/// Font-size adjustment for the 0.19 text engine (parley).
+///
+/// The 0.15 migration guide prescribes dividing pre-0.15 point sizes by
+/// 1.2 because cosmic-text rendered the same size larger than the 0.14
+/// ab_glyph stack; parley (0.19) carries the same guidance forward.
+/// Every `TextFont` construction multiplies its size by this factor.
+/// FLAG FOR MATT'S VISUAL REVIEW: if headings or buttons read too
+/// small/large after the migration, this single constant is the knob.
+pub const FONT_SIZE_ADJUST: f32 = 1.0 / 1.2;

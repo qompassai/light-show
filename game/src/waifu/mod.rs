@@ -19,7 +19,7 @@ pub mod dialogue;
 pub mod sprite;
 
 use bevy::prelude::*;
-use bevy::sprite::TextureAtlas;
+use bevy::image::{TextureAtlas, TextureAtlasLayout};
 use dialogue::DialogueBank;
 
 pub struct SeraphinePlugin;
@@ -30,7 +30,7 @@ impl Plugin for SeraphinePlugin {
             .insert_resource(SelectedCompanion::default())
             .insert_resource(DialogueBank::load_default(Companion::default()))
             .init_resource::<CompanionAtlasLayout>()
-            .add_event::<SpliceReaction>()
+            .add_message::<SpliceReaction>()
             .add_systems(Startup, spawn_companion)
             .add_systems(
                 Update,
@@ -49,7 +49,7 @@ impl Plugin for SeraphinePlugin {
 /// to a `Component::Splice` (fusion → a pleased reaction, mechanical → a
 /// mildly disapproving one) so the companion sprite visibly reacts to
 /// placement quality, not just outages and win/fail.
-#[derive(Event, Clone, Copy)]
+#[derive(Message, Clone, Copy)]
 pub struct SpliceReaction(pub Mood);
 
 /// Seconds for the mood-change scale pop (Finding 1).
@@ -73,20 +73,20 @@ pub(crate) fn trigger_mood_pop(commands: &mut Commands, entity: Entity) {
 }
 
 /// Plays the 0.15s mood pop: scale 1.0 -> 1.08 -> 1.0, both halves eased
-/// with [`crate::anim::Ease::BackOut`] for a springy reaction feel.
+/// with [`bevy::math::curve::EaseFunction::BackOut`] for a springy reaction feel.
 fn animate_mood_pop(
     mut commands: Commands,
     time: Res<Time>,
     mut query: Query<(Entity, &mut Transform, &mut MoodPop)>,
 ) {
-    use crate::anim::Ease;
+    use bevy::math::curve::{Curve, EaseFunction};
     for (entity, mut transform, mut pop) in &mut query {
-        pop.elapsed_secs += time.delta_seconds();
+        pop.elapsed_secs += time.delta_secs();
         let t = (pop.elapsed_secs / MOOD_POP_SECS).clamp(0.0, 1.0);
         let scale = if t < 0.5 {
-            1.0 + (MOOD_POP_PEAK - 1.0) * Ease::BackOut.sample(t * 2.0)
+            1.0 + (MOOD_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped(t * 2.0)
         } else {
-            MOOD_POP_PEAK - (MOOD_POP_PEAK - 1.0) * Ease::BackOut.sample((t - 0.5) * 2.0)
+            MOOD_POP_PEAK - (MOOD_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped((t - 0.5) * 2.0)
         };
         transform.scale = Vec3::splat(scale.max(0.01));
         if t >= 1.0 {
@@ -101,7 +101,7 @@ fn animate_mood_pop(
 /// starts its animation loop from the top.
 pub(crate) fn react_to_splice_events(
     mut commands: Commands,
-    mut events: EventReader<SpliceReaction>,
+    mut events: MessageReader<SpliceReaction>,
     mut query: Query<(Entity, &mut CompanionSprite)>,
     sfx: Res<crate::audio::Sfx>,
 ) {
@@ -121,13 +121,13 @@ pub(crate) fn react_to_splice_events(
 /// The one shared grid layout every companion sheet uses. Built once via
 /// `FromWorld` (which needs mutable access to `Assets<TextureAtlasLayout>`,
 /// unavailable at plain `insert_resource` call sites) and cloned into each
-/// companion's `TextureAtlas` component.
+/// companion's `Sprite::texture_atlas`.
 #[derive(Resource)]
-struct CompanionAtlasLayout(Handle<bevy::sprite::TextureAtlasLayout>);
+struct CompanionAtlasLayout(Handle<TextureAtlasLayout>);
 
 impl FromWorld for CompanionAtlasLayout {
     fn from_world(world: &mut World) -> Self {
-        let mut layouts = world.resource_mut::<Assets<bevy::sprite::TextureAtlasLayout>>();
+        let mut layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
         Self(layouts.add(sprite::atlas_layout()))
     }
 }
@@ -147,10 +147,10 @@ pub struct FavorPoints(pub u32);
 #[derive(Resource, Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct SelectedCompanion(pub Companion);
 
-/// The four transmission-medium companions. See each one's character
+/// The transmission-medium companions (base four) plus unlockable specialists. See each one's character
 /// brief in `docs/ART_STYLE.md` for silhouette/palette direction, and
 /// `dialogue.rs` for their flavor-specific dialogue banks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Companion {
     /// Séraphine — fiber-optic splicing. The original companion.
     #[default]
@@ -161,6 +161,14 @@ pub enum Companion {
     Mobile,
     /// Lattice — Ethernet / copper LAN.
     Ethernet,
+    /// Clara — Calix CMS provisioning (USA). Unlock: JUSTINBAILEY or Konami.
+    Clara,
+    /// Aino — Nokia AMS network operations (Finland). Unlock: ABACABB or Konami.
+    Aino,
+    /// Hikari — FTTH/OSP field buildout (Japan). Unlock: BLASTPROCESSING or Konami.
+    Hikari,
+    /// Léa — ITU-inspired WA 09 Telecom Admin prep (Switzerland). Unlock: TRIFORCE or Konami.
+    Lea,
 }
 
 impl Companion {
@@ -179,6 +187,10 @@ impl Companion {
             Companion::Coax => "Ondine",
             Companion::Mobile => "Linka",
             Companion::Ethernet => "Lattice",
+            Companion::Clara => "Clara",
+            Companion::Aino => "Aino",
+            Companion::Hikari => "Hikari",
+            Companion::Lea => "Léa",
         }
     }
 
@@ -189,6 +201,10 @@ impl Companion {
             Companion::Coax => "Coax / broadband RF",
             Companion::Mobile => "Mobile / cellular RF",
             Companion::Ethernet => "Ethernet / copper LAN",
+            Companion::Clara => "Calix CMS provisioning",
+            Companion::Aino => "Nokia AMS network ops",
+            Companion::Hikari => "FTTH/OSP field buildout",
+            Companion::Lea => "WA 09 Telecom Admin prep",
         }
     }
 
@@ -200,6 +216,10 @@ impl Companion {
             Companion::Coax => "Gain is easy. Balance is the job.",
             Companion::Mobile => "Distance always wins — unless you regenerate.",
             Companion::Ethernet => "No decibels here. Just physics and paperwork.",
+            Companion::Clara => "Provision right the first time. Every ONT counts.",
+            Companion::Aino => "The alarms never lie. Learn to read them.",
+            Companion::Hikari => "Measure twice, splice once.",
+            Companion::Lea => "Know the code. Pass the test. Own the network.",
         }
     }
 
@@ -214,6 +234,11 @@ impl Companion {
             Companion::Coax => 2,
             Companion::Mobile => 4,
             Companion::Ethernet => 6,
+            // Specialist tracks not yet built; reserved indices.
+            Companion::Clara => 8,
+            Companion::Aino => 10,
+            Companion::Hikari => 12,
+            Companion::Lea => 14,
         }
     }
 
@@ -226,6 +251,10 @@ impl Companion {
             Companion::Coax => Color::srgb(0.180, 0.769, 0.710), // #2ec4b6
             Companion::Mobile => Color::srgb(0.220, 0.741, 0.973), // #38bdf8
             Companion::Ethernet => Color::srgb(0.918, 0.702, 0.031), // #eab308
+            Companion::Clara => Color::srgb(0.0, 0.85, 0.85),
+            Companion::Aino => Color::srgb(1.0, 0.65, 0.0),
+            Companion::Hikari => Color::srgb(0.6, 1.0, 0.2),
+            Companion::Lea => Color::srgb(0.65, 0.2, 0.25),
         }
     }
 
@@ -237,6 +266,10 @@ impl Companion {
             Companion::Coax => "ondine",
             Companion::Mobile => "linka",
             Companion::Ethernet => "lattice",
+            Companion::Clara => "clara",
+            Companion::Aino => "aino",
+            Companion::Hikari => "hikari",
+            Companion::Lea => "lea",
         }
     }
 
@@ -250,6 +283,10 @@ impl Companion {
             Companion::Coax => "sprites/ondine/ondine_sheet_fullbody_mature.png",
             Companion::Mobile => "sprites/linka/linka_sheet_fullbody_mature.png",
             Companion::Ethernet => "sprites/lattice/lattice_sheet_fullbody_mature.png",
+            Companion::Clara => "sprites/clara/clara_sheet_fullbody.png",
+            Companion::Aino => "sprites/aino/aino_sheet_fullbody.png",
+            Companion::Hikari => "sprites/hikari/hikari_sheet_fullbody.png",
+            Companion::Lea => "sprites/lea/lea_sheet_fullbody.png",
         }
     }
 }
@@ -291,7 +328,7 @@ fn companion_bundle(
     asset_server: &AssetServer,
     atlas_layout: &CompanionAtlasLayout,
     companion: Companion,
-) -> (CompanionSprite, SpriteBundle, TextureAtlas) {
+) -> (CompanionSprite, Sprite, Transform) {
     let texture: Handle<Image> = asset_server.load(companion.sprite_path());
     let mood = Mood::Idle;
     let frame = 0;
@@ -302,15 +339,15 @@ fn companion_bundle(
             anim_timer: Timer::from_seconds(0.18, TimerMode::Repeating),
             frame,
         },
-        SpriteBundle {
-            texture,
-            transform: Transform::from_xyz(0.0, -240.0, 10.0).with_scale(Vec3::splat(1.0)),
+        Sprite {
+            image: texture,
+            texture_atlas: Some(TextureAtlas {
+                layout: atlas_layout.0.clone(),
+                index: sprite::atlas_index(mood.sheet_row(), frame),
+            }),
             ..default()
         },
-        TextureAtlas {
-            layout: atlas_layout.0.clone(),
-            index: sprite::atlas_index(mood.sheet_row(), frame),
-        },
+        Transform::from_xyz(0.0, -240.0, 10.0).with_scale(Vec3::splat(1.0)),
     )
 }
 
@@ -336,7 +373,7 @@ fn respawn_on_companion_change(
     mut dialogue: ResMut<DialogueBank>,
     query: Query<(Entity, &CompanionSprite)>,
 ) {
-    let Ok((entity, sprite)) = query.get_single() else {
+    let Ok((entity, sprite)) = query.single() else {
         return;
     };
     if sprite.companion == selected.0 {
@@ -362,10 +399,16 @@ fn animate_companion(time: Res<Time>, mut query: Query<&mut CompanionSprite>) {
 /// on `OnEnter(OutageActive)`) are reflected the instant they happen rather
 /// than waiting on the animation timer.
 fn sync_companion_atlas_index(
-    mut query: Query<(&CompanionSprite, &mut TextureAtlas), Changed<CompanionSprite>>,
+    mut query: Query<(&CompanionSprite, &mut Sprite), Changed<CompanionSprite>>,
 ) {
-    for (sprite, mut atlas) in &mut query {
-        atlas.index = sprite::atlas_index(sprite.mood.sheet_row(), sprite.frame);
+    for (companion, mut sprite) in &mut query {
+        // `texture_atlas` is always `Some`: `companion_bundle` sets it and
+        // nothing ever removes it, so `expect` upholds the invariant.
+        let atlas = sprite
+            .texture_atlas
+            .as_mut()
+            .expect("companion sprite must keep its texture atlas");
+        atlas.index = sprite::atlas_index(companion.mood.sheet_row(), companion.frame);
     }
 }
 
@@ -396,7 +439,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()));
         app.init_asset::<Image>();
-        app.init_asset::<bevy::sprite::TextureAtlasLayout>();
+        app.init_asset::<bevy::image::TextureAtlasLayout>();
         app.insert_resource(SelectedCompanion(selected));
         app.insert_resource(DialogueBank::load_default(selected));
         app.init_resource::<CompanionAtlasLayout>();
@@ -410,12 +453,20 @@ mod tests {
 
         world.run_system_once(spawn_companion);
 
-        let mut query = world.query::<(&CompanionSprite, &TextureAtlas)>();
+        let mut query = world.query::<(&CompanionSprite, &Sprite)>();
         let spawned: Vec<_> = query.iter(world).collect();
         assert_eq!(spawned.len(), 1);
         assert_eq!(spawned[0].0.companion, Companion::Coax);
         assert_eq!(spawned[0].0.mood, Mood::Idle);
-        assert_eq!(spawned[0].1.index, sprite::atlas_index(0, 0));
+        assert_eq!(
+            spawned[0]
+                .1
+                .texture_atlas
+                .as_ref()
+                .expect("companion sprite must keep its texture atlas")
+                .index,
+            sprite::atlas_index(0, 0)
+        );
     }
 
     #[test]
@@ -446,9 +497,13 @@ mod tests {
     fn respawn_on_companion_change_is_a_no_op_when_selection_is_unchanged() {
         let mut app = test_app(Companion::Mobile);
         let world = app.world_mut();
-        world.run_system_once(spawn_companion);
+        world
+            .run_system_once(spawn_companion)
+            .expect("spawn_companion system should run in test");
 
-        world.run_system_once(respawn_on_companion_change);
+        world
+            .run_system_once(respawn_on_companion_change)
+            .expect("respawn_on_companion_change system should run in test");
 
         let mut query = world.query::<&CompanionSprite>();
         assert_eq!(query.iter(world).count(), 1, "should not spawn a duplicate");

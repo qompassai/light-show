@@ -19,14 +19,16 @@
 //! `assets/sprites/ui/` (same visual radii as the old gizmo circles, so
 //! the hit-test contract is unchanged).
 
-use crate::anim::Ease;
 use crate::level::{LevelDef, MediumDef};
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
 use crate::test_log;
+use crate::fonts::FONT_SIZE_ADJUST;
 use crate::ui::LedgerText;
 use bevy::input::touch::Touches;
+use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
 use bevy::window::PrimaryWindow;
 use osp_sim::{Component, Outage, PathGraph};
 use std::collections::HashMap;
@@ -645,48 +647,43 @@ pub fn spawn_board_from_level(
             // entity inspector / scene dumps during development — the
             // player never sees this, only the rendered briefing text.
             Name::new(level.id.clone()),
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    position_type: PositionType::Absolute,
-                    top: Val::Px(0.0),
-                    left: Val::Px(0.0),
-                    padding: UiRect::all(Val::Px(10.0)),
-                    justify_content: JustifyContent::Center,
-                    ..default()
-                },
-                background_color: Color::srgba(0.051, 0.051, 0.118, 0.7).into(),
+            Node {
+                width: Val::Percent(100.0),
+                position_type: PositionType::Absolute,
+                top: Val::Px(0.0),
+                left: Val::Px(0.0),
+                padding: UiRect::all(Val::Px(10.0)),
+                justify_content: JustifyContent::Center,
                 ..default()
             },
+            BackgroundColor(Color::srgba(0.051, 0.051, 0.118, 0.7)),
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                briefing_text,
-                TextStyle {
-                    font: body_font.clone(),
-                    font_size: 14.0,
-                    color: BOARD_ACCENT,
+            parent.spawn((
+                Text::new(briefing_text),
+                TextFont {
+                    font: body_font.clone().into(),
+                    font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                    ..default()
                 },
+                TextColor(BOARD_ACCENT),
             ));
         });
 
     commands
-        .spawn((BoardRoot, SpatialBundle::default()))
+        .spawn((BoardRoot, Transform::default()))
         .with_children(|parent| {
             // Circuit-texture backdrop fitted to the level's node extents,
             // far behind everything else (z = -10).
             let (backdrop_center, backdrop_size) = board_backdrop_frame(level);
             parent.spawn((
                 BoardBackdrop,
-                SpriteBundle {
-                    texture: asset_server.load("sprites/ui/board_bg.png"),
-                    transform: Transform::from_translation(backdrop_center.extend(-10.0)),
-                    sprite: Sprite {
-                        custom_size: Some(backdrop_size),
-                        ..default()
-                    },
+                Sprite {
+                    image: asset_server.load("sprites/ui/board_bg.png"),
+                    custom_size: Some(backdrop_size),
                     ..default()
                 },
+                Transform::from_translation(backdrop_center.extend(-10.0)),
             ));
             // Pill rings are the main thing labels collide with on crowded
             // rows (w1l1's splice pair sits between two pill rings), so
@@ -728,28 +725,25 @@ pub fn spawn_board_from_level(
                 // Dark nameplate behind the label, sized by
                 // `label_plate_size`; the plate keeps every label readable
                 // where text crosses a ring or pill.
-                parent.spawn(SpriteBundle {
-                    sprite: Sprite {
+                parent.spawn((
+                    Sprite {
                         color: Color::srgba(0.015, 0.02, 0.05, 0.88),
                         custom_size: Some(layout.plate),
                         ..default()
                     },
-                    transform: Transform::from_translation(layout.center.extend(4.9)),
-                    ..default()
-                });
-                parent.spawn(Text2dBundle {
-                    text: Text::from_section(
-                        node.label.clone(),
-                        TextStyle {
-                            font: label_font.clone(),
-                            font_size: LABEL_FONT_SIZE,
-                            color: BOARD_ACCENT,
-                        },
-                    ),
-                    transform: Transform::from_translation(layout.center.extend(5.0)),
-                    text_anchor: bevy::sprite::Anchor::Center,
-                    ..default()
-                });
+                    Transform::from_translation(layout.center.extend(4.9)),
+                ));
+                parent.spawn((
+                    Text2d::new(node.label.clone()),
+                    TextFont {
+                        font: label_font.clone().into(),
+                        font_size: FontSize::Px(LABEL_FONT_SIZE * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(BOARD_ACCENT),
+                    Anchor::CENTER,
+                    Transform::from_translation(layout.center.extend(5.0)),
+                ));
                 // Aseprite-crafted neon ring under the label; the band
                 // sits exactly on NODE_RADIUS so the hit-test contract
                 // (NODE_HIT_RADIUS) is unchanged. The flavor follows the
@@ -758,15 +752,12 @@ pub fn spawn_board_from_level(
                 let flavor = node_ring_flavor(level, node.id, &node.label);
                 parent.spawn((
                     NodeRing,
-                    SpriteBundle {
-                        texture: asset_server.load(node_ring_path(flavor)),
-                        transform: Transform::from_translation(pos.extend(4.0)),
-                        sprite: Sprite {
-                            custom_size: Some(Vec2::splat(NODE_RING_SIZE)),
-                            ..default()
-                        },
+                    Sprite {
+                        image: asset_server.load(node_ring_path(flavor)),
+                        custom_size: Some(Vec2::splat(NODE_RING_SIZE)),
                         ..default()
                     },
+                    Transform::from_translation(pos.extend(4.0)),
                 ));
             }
 
@@ -793,28 +784,22 @@ pub fn spawn_board_from_level(
                     // `update_pill_rings` once the player picks this slot.
                     parent.spawn((
                         PillRing { from, to, slot },
-                        SpriteBundle {
-                            texture: asset_server.load(pill_ring_path(false)),
-                            transform: Transform::from_translation(pos.extend(4.0)),
-                            sprite: Sprite {
-                                custom_size: Some(Vec2::splat(PILL_RING_SIZE)),
-                                ..default()
-                            },
+                        Sprite {
+                            image: asset_server.load(pill_ring_path(false)),
+                            custom_size: Some(Vec2::splat(PILL_RING_SIZE)),
                             ..default()
                         },
+                        Transform::from_translation(pos.extend(4.0)),
                     ));
                     if let Some(icon_path) = component_icon_path(component) {
                         parent.spawn((
                             ComponentIcon,
-                            SpriteBundle {
-                                texture: asset_server.load(icon_path),
-                                transform: Transform::from_translation(pos.extend(6.0)),
-                                sprite: Sprite {
-                                    custom_size: Some(Vec2::splat(48.0)),
-                                    ..default()
-                                },
+                            Sprite {
+                                image: asset_server.load(icon_path),
+                                custom_size: Some(Vec2::splat(48.0)),
                                 ..default()
                             },
+                            Transform::from_translation(pos.extend(6.0)),
                         ));
                     } else {
                         // Icon-less components (only `Span`, never offered
@@ -823,18 +808,14 @@ pub fn spawn_board_from_level(
                         // missing-texture magenta.
                         parent.spawn((
                             ComponentIcon,
-                            Text2dBundle {
-                                text: Text::from_section(
-                                    component_short_label(component),
-                                    TextStyle {
-                                        font: asset_server.load(crate::fonts::DISPLAY_BOLD),
-                                        font_size: 28.0,
-                                        color: Color::WHITE,
-                                    },
-                                ),
-                                transform: Transform::from_translation(pos.extend(6.0)),
+                            Text2d::new(component_short_label(component)),
+                            TextFont {
+                                font: asset_server.load(crate::fonts::DISPLAY_BOLD).into(),
+                                font_size: FontSize::Px(28.0 * FONT_SIZE_ADJUST),
                                 ..default()
                             },
+                            TextColor(Color::WHITE),
+                            Transform::from_translation(pos.extend(6.0)),
                         ));
                     }
                 }
@@ -844,31 +825,27 @@ pub fn spawn_board_from_level(
     commands
         .spawn((
             LedgerRoot,
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    position_type: PositionType::Absolute,
-                    bottom: Val::Px(0.0),
-                    left: Val::Px(0.0),
-                    padding: UiRect::all(Val::Px(10.0)),
-                    justify_content: JustifyContent::Center,
-                    ..default()
-                },
-                background_color: Color::NONE.into(),
+            Node {
+                width: Val::Percent(100.0),
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(0.0),
+                left: Val::Px(0.0),
+                padding: UiRect::all(Val::Px(10.0)),
+                justify_content: JustifyContent::Center,
                 ..default()
             },
+            BackgroundColor(Color::NONE),
         ))
         .with_children(|parent| {
             parent.spawn((
                 LedgerText,
-                TextBundle::from_section(
-                    "Loss: -- dB",
-                    TextStyle {
-                        font: label_font,
-                        font_size: 16.0,
-                        color: LIGHT_WARM,
-                    },
-                ),
+                Text::new("Loss: -- dB"),
+                TextFont {
+                    font: label_font.into(),
+                    font_size: FontSize::Px(16.0 * FONT_SIZE_ADJUST),
+                    ..default()
+                },
+                TextColor(LIGHT_WARM),
             ));
         });
 }
@@ -877,7 +854,7 @@ type BoardOrLedgerRoot = Or<(With<BoardRoot>, With<LedgerRoot>, With<BriefingRoo
 
 pub fn teardown_board(mut commands: Commands, query: Query<Entity, BoardOrLedgerRoot>) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 
@@ -890,18 +867,19 @@ pub fn track_pointer(
     touches: Res<Touches>,
     mut pointer: ResMut<PointerWorld>,
 ) {
-    let Ok((camera, camera_transform)) = camera_q.get_single() else {
+    let Ok((camera, camera_transform)) = camera_q.single() else {
         pointer.0 = None;
         return;
     };
 
     let viewport_pos = windows
-        .get_single()
+        .single()
         .ok()
         .and_then(|w| w.cursor_position())
         .or_else(|| touches.iter().next().map(|t| t.position()));
 
-    pointer.0 = viewport_pos.and_then(|p| camera.viewport_to_world_2d(camera_transform, p));
+    pointer.0 =
+        viewport_pos.and_then(|p| camera.viewport_to_world_2d(camera_transform, p).ok());
 }
 
 /// Turns pointer gestures into placements: drag node → node connects the
@@ -923,7 +901,7 @@ pub fn handle_pointer_input(
     mut placed: ResMut<PlacedChoices>,
     mut live: ResMut<LiveGraph>,
     active_outage: Res<ActiveOutage>,
-    mut splice_reactions: EventWriter<crate::waifu::SpliceReaction>,
+    mut splice_reactions: MessageWriter<crate::waifu::SpliceReaction>,
     sfx: Res<crate::audio::Sfx>,
 ) {
     let just_pressed = mouse.just_pressed(MouseButton::Left) || touches.any_just_pressed();
@@ -944,7 +922,7 @@ pub fn handle_pointer_input(
                     );
                     if let Some(component) = resolve_placed_component(&level, from, to, slot) {
                         if let Some(reaction) = splice_reaction_for(&component) {
-                            splice_reactions.send(reaction);
+                            splice_reactions.write(reaction);
                         }
                     }
                     test_log!("select from={} to={} slot={}", from, to, slot);
@@ -966,7 +944,7 @@ pub fn handle_pointer_input(
             );
             if let Some(component) = resolve_placed_component(&level, from, to, slot) {
                 if let Some(reaction) = splice_reaction_for(&component) {
-                    splice_reactions.send(reaction);
+                    splice_reactions.write(reaction);
                 }
             }
             test_log!("connect from={} to={}", from, to);
@@ -1071,18 +1049,18 @@ pub fn update_pill_rings(
     mut commands: Commands,
     placed: Res<PlacedChoices>,
     asset_server: Res<AssetServer>,
-    mut rings: Query<(Entity, &PillRing, &mut Handle<Image>)>,
+    mut rings: Query<(Entity, &PillRing, &mut Sprite)>,
 ) {
     if !placed.is_changed() {
         return;
     }
-    for (entity, ring, mut texture) in &mut rings {
+    for (entity, ring, mut sprite) in &mut rings {
         let selected = placed.0.get(&(ring.from, ring.to)).copied() == Some(ring.slot);
         let new_texture: Handle<Image> = asset_server.load(pill_ring_path(selected));
         // `AssetServer::load` is idempotent per path, so a changed handle
         // means this ring's pick state actually flipped.
-        if *texture != new_texture {
-            *texture = new_texture;
+        if sprite.image != new_texture {
+            sprite.image = new_texture;
             if selected {
                 commands.entity(entity).insert(PillPop { elapsed_secs: 0.0 });
             }
@@ -1091,19 +1069,19 @@ pub fn update_pill_rings(
 }
 
 /// Plays the 0.2s pill-ring pop: scale 1.0 -> 1.25 -> 1.0, both halves
-/// eased with [`Ease::BackOut`] (Finding 7).
+/// eased with [`bevy::math::curve::EaseFunction::BackOut`] (Finding 7).
 pub fn animate_pill_pops(
     mut commands: Commands,
     time: Res<Time>,
     mut query: Query<(Entity, &mut Transform, &mut PillPop)>,
 ) {
     for (entity, mut transform, mut pop) in &mut query {
-        pop.elapsed_secs += time.delta_seconds();
+        pop.elapsed_secs += time.delta_secs();
         let t = (pop.elapsed_secs / PILL_POP_SECS).clamp(0.0, 1.0);
         let scale = if t < 0.5 {
-            1.0 + (PILL_POP_PEAK - 1.0) * Ease::BackOut.sample(t * 2.0)
+            1.0 + (PILL_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped(t * 2.0)
         } else {
-            PILL_POP_PEAK - (PILL_POP_PEAK - 1.0) * Ease::BackOut.sample((t - 0.5) * 2.0)
+            PILL_POP_PEAK - (PILL_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped((t - 0.5) * 2.0)
         };
         transform.scale = Vec3::splat(scale.max(0.01));
         if t >= 1.0 {
@@ -1197,7 +1175,7 @@ pub fn spawn_signal_pulses(
     if !timer.0.just_finished() {
         return;
     }
-    let Ok(board_root) = board_roots.get_single() else {
+    let Ok(board_root) = board_roots.single() else {
         return;
     };
     let mut live_count = pulses.iter().count();
@@ -1226,15 +1204,12 @@ pub fn spawn_signal_pulses(
                     to,
                     progress: 0.0,
                 },
-                SpriteBundle {
-                    texture: asset_server.load("sprites/fx/pulse_dot.png"),
-                    transform: Transform::from_translation(from.extend(7.0)),
-                    sprite: Sprite {
-                        custom_size: Some(Vec2::splat(24.0)),
-                        ..default()
-                    },
+                Sprite {
+                    image: asset_server.load("sprites/fx/pulse_dot.png"),
+                    custom_size: Some(Vec2::splat(24.0)),
                     ..default()
                 },
+                Transform::from_translation(from.extend(7.0)),
             ));
         });
         live_count += 1;
@@ -1245,25 +1220,21 @@ pub fn spawn_signal_pulses(
 pub fn move_signal_pulses(
     mut commands: Commands,
     time: Res<Time>,
-    mut pulses: Query<(Entity, Option<&Parent>, &mut SignalPulse, &mut Transform)>,
+    mut pulses: Query<(Entity, &mut SignalPulse, &mut Transform)>,
 ) {
-    for (entity, parent, mut pulse, mut transform) in &mut pulses {
+    for (entity, mut pulse, mut transform) in &mut pulses {
         let edge_len = pulse.from.distance(pulse.to).max(1.0);
-        pulse.progress += PULSE_SPEED * time.delta_seconds() / edge_len;
+        pulse.progress += PULSE_SPEED * time.delta_secs() / edge_len;
         if pulse.progress >= 1.0 {
-            // Detach from the board root first: a plain despawn leaves a
-            // stale entry in the parent Children list, which teardown_board
-            // would then trip over (B0003).
-            if let Some(parent) = parent {
-                commands.entity(parent.get()).remove_children(&[entity]);
-            }
+            // 0.16+ auto-detaches children on despawn; the manual
+            // detach-before-despawn workaround is gone.
             commands.entity(entity).despawn();
             continue;
         }
         // Ease the progress so pulses accelerate out of the source and
         // decelerate into the target (Finding 8). PULSE_SPEED is unchanged;
         // only the curve changes.
-        let eased = Ease::SineInOut.sample(pulse.progress.clamp(0.0, 1.0));
+        let eased = EaseFunction::SineInOut.sample_clamped(pulse.progress.clamp(0.0, 1.0));
         transform.translation = pulse.from.lerp(pulse.to, eased).extend(7.0);
     }
 }
@@ -1296,19 +1267,16 @@ pub fn update_storm_rain(
     active_outage: Res<ActiveOutage>,
     asset_server: Res<AssetServer>,
     board_roots: Query<Entity, With<BoardRoot>>,
-    mut streaks: Query<(Entity, Option<&Parent>, &mut Transform), With<StormStreak>>,
+    mut streaks: Query<(Entity, &mut Transform), With<StormStreak>>,
 ) {
     if active_outage.outage.is_none() {
-        for (entity, parent, _) in &streaks {
-            // Detach from the board root first (see move_signal_pulses).
-            if let Some(parent) = parent {
-                commands.entity(parent.get()).remove_children(&[entity]);
-            }
+        for (entity, _) in &streaks {
+            // 0.16+ auto-detaches children on despawn.
             commands.entity(entity).despawn();
         }
         return;
     }
-    let Ok(board_root) = board_roots.get_single() else {
+    let Ok(board_root) = board_roots.single() else {
         return;
     };
     let mut live_count = streaks.iter().count();
@@ -1321,18 +1289,18 @@ pub fn update_storm_rain(
                 let y = RAIN_TOP_Y + (live_count as f32 * 37.0) % 160.0;
                 parent.spawn((
                     StormStreak,
-                    SpriteBundle {
-                        texture: asset_server.load("sprites/fx/storm_streak.png"),
-                        transform: Transform::from_translation(Vec3::new(x, y, 3.0)),
+                    Sprite {
+                        image: asset_server.load("sprites/fx/storm_streak.png"),
                         ..default()
                     },
+                    Transform::from_translation(Vec3::new(x, y, 3.0)),
                 ));
                 live_count += 1;
             }
         });
     }
-    for (_, _, mut transform) in &mut streaks {
-        transform.translation.y -= STREAK_FALL_SPEED * time.delta_seconds();
+    for (_, mut transform) in &mut streaks {
+        transform.translation.y -= STREAK_FALL_SPEED * time.delta_secs();
         if transform.translation.y < RAIN_BOTTOM_Y {
             transform.translation.y = RAIN_TOP_Y;
         }
@@ -1825,7 +1793,7 @@ mod tests {
             tx_dbm: level.tx_dbm,
         });
         world.insert_resource(ActiveOutage::default());
-        world.init_resource::<Events<crate::waifu::SpliceReaction>>();
+        world.init_resource::<Messages<crate::waifu::SpliceReaction>>();
         world.insert_resource(crate::audio::Sfx::for_tests());
         world.insert_resource(level);
         world
@@ -2287,7 +2255,7 @@ mod tests {
         // under this test's control via `advance_by`.
         let mut app = App::new();
         app.add_plugins((
-            bevy::core::TaskPoolPlugin::default(),
+            bevy::app::TaskPoolPlugin::default(),
             AssetPlugin::default(),
         ));
         app.init_asset::<Image>();
@@ -2334,13 +2302,13 @@ mod tests {
             .id();
         world.run_system_once(move_signal_pulses);
         // 260 u/s over a 200 u edge crosses the last 1% in one 1 s step.
-        assert!(world.get_entity(entity).is_none());
+        assert!(world.get_entity(entity).is_err());
     }
 
     #[test]
     fn update_storm_rain_spawns_streaks_during_an_outage_and_clears_them_after() {
         use bevy::asset::AssetPlugin;
-        use bevy::core::TaskPoolPlugin;
+        use bevy::app::TaskPoolPlugin;
         use bevy_ecs::system::RunSystemOnce;
         use std::time::Duration;
 

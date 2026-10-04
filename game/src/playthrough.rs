@@ -69,8 +69,8 @@ fn playthrough_app() -> App {
     // needs the render shader store, so init just the atlas asset here.
     // Menu/board setup `asset_server.load()`s images and fonts, which
     // likewise need their asset stores even though nothing is rendered.
-    app.init_asset::<bevy::sprite::TextureAtlasLayout>();
-    app.init_asset::<bevy::render::texture::Image>();
+    app.init_asset::<bevy::image::TextureAtlasLayout>();
+    app.init_asset::<bevy::image::Image>();
     app.init_asset::<bevy::text::Font>();
     // `draw_board_gizmos` buffers into the `Gizmos` system param, which
     // needs a registered config and its `()`-clear storage. The full
@@ -124,7 +124,7 @@ fn press_button<B: Component>(app: &mut App) {
     let target = {
         let world = app.world_mut();
         let mut buttons = world.query_filtered::<Entity, With<B>>();
-        buttons.single(world)
+        buttons.single(world).unwrap()
     };
     press_entity(app, target);
 }

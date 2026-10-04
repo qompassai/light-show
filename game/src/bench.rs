@@ -82,10 +82,10 @@ impl BenchArgs {
 pub fn maybe_force_backend(plugins: PluginGroupBuilder, args: &BenchArgs) -> PluginGroupBuilder {
     match args.backend {
         Some(backends) => plugins.set(RenderPlugin {
-            render_creation: RenderCreation::Automatic(WgpuSettings {
+            render_creation: RenderCreation::Automatic(Box::new(WgpuSettings {
                 backends: Some(backends),
                 ..default()
-            }),
+            })),
             ..default()
         }),
         None => plugins,
@@ -150,7 +150,7 @@ fn bench_driver(
     mut pointer: ResMut<board::PointerWorld>,
     mut mouse: ResMut<ButtonInput<MouseButton>>,
     time: Res<Time<Real>>,
-    mut exit: EventWriter<AppExit>,
+    mut exit: MessageWriter<AppExit>,
     adapter_info: Option<Res<RenderAdapterInfo>>,
 ) {
     if *state.get() != GameState::Playing {
@@ -186,7 +186,7 @@ fn bench_driver(
 
     if bench.frame_ms.len() >= bench.target_frames as usize {
         print_bench_stats(&bench, adapter_info.as_deref());
-        exit.send(AppExit::Success);
+        exit.write(AppExit::Success);
     }
 }
 

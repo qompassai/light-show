@@ -3,14 +3,15 @@
 //! a live `osp_sim::PathGraph` in sync, and watches the scripted outage
 //! clock.
 
-use super::outage::ActiveOutage;
+use super::outage::{ActiveOutage, AlarmList};
 use super::{GameState, LevelOutcome};
-use crate::anim::{Ease, TransitionRequest};
+use crate::anim::TransitionRequest;
 use crate::board;
 use crate::waifu::trigger_mood_pop;
 use crate::level::{self, CurrentLevelIndex, LevelDef};
 use crate::test_log;
 use crate::waifu::dialogue::DialogueBank;
+use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use osp_sim::{Outage, PathGraph, Wavelength};
@@ -130,9 +131,9 @@ fn lerp_camera(
     mut query: Query<(Entity, &mut Transform, &mut CameraLerp)>,
 ) {
     for (entity, mut transform, mut lerp) in &mut query {
-        lerp.elapsed_secs += time.delta_seconds();
+        lerp.elapsed_secs += time.delta_secs();
         let t = (lerp.elapsed_secs / CAMERA_LERP_SECS).clamp(0.0, 1.0);
-        transform.translation = lerp.from.lerp(lerp.to, Ease::CubicInOut.sample(t));
+        transform.translation = lerp.from.lerp(lerp.to, EaseFunction::CubicInOut.sample_clamped(t));
         if t >= 1.0 {
             transform.translation = lerp.to;
             commands.entity(entity).remove::<CameraLerp>();
@@ -159,7 +160,7 @@ fn setup_level(
     // Android framing fix (verified 2026-09-30) is preserved — only the
     // despawn/respawn cut is gone, replaced by a 0.5s ease to the board
     // framing.
-    match cameras.get_single() {
+    match cameras.single() {
         Ok((entity, transform)) => {
             let from = transform.translation;
             commands.entity(entity).insert(CameraLerp {
@@ -171,10 +172,10 @@ fn setup_level(
         Err(_) => {
             // Defensive: no camera exists (the menu always spawns one, so
             // this shouldn't happen). Spawn directly at the board framing.
-            commands.spawn(Camera2dBundle {
-                transform: Transform::from_translation(BOARD_CAM_POS),
-                ..default()
-            });
+            commands.spawn((
+                Camera2d,
+                Transform::from_translation(BOARD_CAM_POS),
+            ));
         }
     }
     let level_def = level::load_level(index.0);
@@ -207,7 +208,7 @@ fn setup_level(
     // node-label plates on screen. Falls back to the 720-wide design
     // resolution when no window exists (unit tests).
     let half_w = windows
-        .get_single()
+        .single()
         .map(|w| w.width() * 0.5)
         .unwrap_or(360.0);
     board::spawn_board_from_level(
@@ -227,7 +228,7 @@ fn setup_level(
 }
 
 fn tick_clock(time: Res<Time>, mut clock: ResMut<LevelClock>) {
-    clock.elapsed_seconds += time.delta_seconds_f64();
+    clock.elapsed_seconds += time.delta_secs_f64();
 }
 
 /// Fires the level's scripted outage (if any) once its clock threshold is
@@ -241,6 +242,7 @@ fn check_scripted_outage(
     placed: Res<board::PlacedChoices>,
     mut live: ResMut<LiveGraph>,
     mut active_outage: ResMut<ActiveOutage>,
+    mut alarm_list: ResMut<AlarmList>,
     mut request: ResMut<TransitionRequest>,
 ) {
     let Some(scripted) = &level.scripted_outage else {
@@ -251,7 +253,9 @@ fn check_scripted_outage(
     }
     if clock.elapsed_seconds >= scripted.fires_after_seconds {
         let outage = Outage::new(scripted.kind.into(), scripted.edge_from, scripted.edge_to);
-        active_outage.outage = Some(outage);
+        active_outage.outage = Some(outage.clone());
+        // Mirror into the NOC alarm list for the multi-alarm console.
+        alarm_list.raise(outage, clock.elapsed_seconds);
         board::rebuild_live_graph(
             &level,
             &placed,
@@ -276,13 +280,22 @@ fn check_win_condition(
     level: Res<LevelDef>,
     mut outcome: ResMut<LevelOutcome>,
     mut request: ResMut<TransitionRequest>,
+    next_state: Res<NextState<GameState>>,
     mut companions: Query<(Entity, &mut crate::waifu::CompanionSprite)>,
     sfx: Res<crate::audio::Sfx>,
 ) {
     if level.scripted_outage.is_some() {
         return;
     }
-    if level.is_win_state(&live.graph, live.tx_dbm, live.wavelength.0) {
+    // Request the Results transition exactly once. This system keeps
+    // running until the pending transition actually applies, and
+    // re-requesting would queue a duplicate Results -> Results transition:
+    // its OnExit/OnEnter pair tears down and rebuilds the results screen,
+    // despawning the buttons out from under input (and replaying the win
+    // SFX every frame).
+    let transition_pending =
+        request.0.is_some() || matches!(*next_state, NextState::Pending(_));
+    if !transition_pending && level.is_win_state(&live.graph, live.tx_dbm, live.wavelength.0) {
         sfx.play(&mut commands, crate::audio::SfxKind::Win);
         outcome.won = true;
         // Guarded: this system keeps running during the 0.3s fade-out,

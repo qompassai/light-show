@@ -49,6 +49,6 @@ fn update_ledger_text(
         active_outage.outage.as_ref(),
     );
     for mut text in &mut query {
-        text.sections[0].value = format!("{signal}{outage_suffix}  |  Favor: {}", favor.0);
+        text.0 = format!("{signal}{outage_suffix}  |  Favor: {}", favor.0);
     }
 }

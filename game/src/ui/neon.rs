@@ -12,6 +12,8 @@
 use bevy::color::Srgba;
 use bevy::prelude::*;
 
+use crate::fonts::FONT_SIZE_ADJUST;
+
 /// Neon-circuit palette, sampled from the keeper title artwork (angular
 /// cyan-to-gold letterforms, circuit-bracket frame, night-city dark).
 pub const NEON_CYAN: Color = Color::srgb(0.435, 0.949, 1.0); // #6ff2ff
@@ -54,7 +56,7 @@ pub struct NeonText<'a, M: Bundle + Clone> {
     /// "glow" instead of "outline".
     pub glow_outer_alpha: f32,
     pub width: Val,
-    pub justify: JustifyText,
+    pub justify: Justify,
 }
 
 /// Spawns a neon text run inside `parent`: a relatively-positioned
@@ -62,63 +64,64 @@ pub struct NeonText<'a, M: Bundle + Clone> {
 /// copies (eight per ring) absolutely positioned behind it. `spec.width`
 /// constrains the text node (`Val::Auto` for none); `spec.justify` must
 /// match across copies or wrapped text will not line up.
-pub fn spawn_neon_text<M: Bundle + Clone>(parent: &mut ChildBuilder, spec: NeonText<'_, M>) {
+pub fn spawn_neon_text<M: Bundle + Clone>(parent: &mut ChildSpawnerCommands, spec: NeonText<'_, M>) {
     debug_assert!(
         spec.glow_outer_alpha <= spec.glow_inner_alpha,
         "neon glow must fall off: outer alpha ({}), inner alpha ({})",
         spec.glow_outer_alpha,
         spec.glow_inner_alpha,
     );
-    let style_for = |color: Color| TextStyle {
-        font: spec.font.clone(),
-        font_size: spec.font_size,
-        color,
-    };
-    parent
-        .spawn(NodeBundle {
-            style: Style {
-                position_type: PositionType::Relative,
+    // Parley (Bevy 0.19's text engine) renders the same point size
+    // larger than the 0.14 ab_glyph stack did; the 0.15 migration guide
+    // prescribes dividing by 1.2 for identical rendering. Flagged for
+    // Matt's visual review (see FONT_SIZE_ADJUST).
+    let font_size = FontSize::Px(spec.font_size * FONT_SIZE_ADJUST);
+    let style_for = |color: Color| {
+        (
+            TextFont {
+                font: spec.font.clone().into(),
+                font_size,
                 ..default()
             },
+            TextColor(color),
+        )
+    };
+    parent
+        .spawn(Node {
+            position_type: PositionType::Relative,
             ..default()
         })
         .with_children(|run| {
             for (ring_scale, alpha) in [(1.0, spec.glow_inner_alpha), (2.0, spec.glow_outer_alpha)] {
                 let halo = with_scaled_alpha(spec.glow, alpha);
                 let offset = spec.glow_px * ring_scale;
+                let (halo_font, halo_color) = style_for(halo);
                 for (ux, uy) in NEON_GLOW_UNIT {
                     run.spawn((
                         spec.marker.clone(),
-                        TextBundle {
-                            text: Text {
-                                sections: vec![TextSection::new(spec.value, style_for(halo))],
-                                justify: spec.justify,
-                                ..default()
-                            },
-                            style: Style {
-                                position_type: PositionType::Absolute,
-                                left: Val::Px(ux * offset),
-                                top: Val::Px(uy * offset),
-                                width: spec.width,
-                                ..default()
-                            },
+                        Text::new(spec.value),
+                        halo_font.clone(),
+                        halo_color,
+                        TextLayout { justify: spec.justify, ..default() },
+                        Node {
+                            position_type: PositionType::Absolute,
+                            left: Val::Px(ux * offset),
+                            top: Val::Px(uy * offset),
+                            width: spec.width,
                             ..default()
                         },
                     ));
                 }
             }
+            let (core_font, core_color) = style_for(spec.core);
             run.spawn((
                 spec.marker,
-                TextBundle {
-                    text: Text {
-                        sections: vec![TextSection::new(spec.value, style_for(spec.core))],
-                        justify: spec.justify,
-                        ..default()
-                    },
-                    style: Style {
-                        width: spec.width,
-                        ..default()
-                    },
+                Text::new(spec.value),
+                core_font,
+                core_color,
+                TextLayout { justify: spec.justify, ..default() },
+                Node {
+                    width: spec.width,
                     ..default()
                 },
             ));
