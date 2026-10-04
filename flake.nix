@@ -21,9 +21,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     flake-utils.url = "github:numtide/flake-utils";
+    repomap.url = "github:qompassai/nix?dir=repomap";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, repomap }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -123,14 +124,18 @@
           # Android SDK/NDK are NOT in nixpkgs: APK builds stay a
           # primo-local step (ANDROID_HOME=/opt/android-sdk, cargo-apk
           # from crates.io). Documented in docs/FLAKE.md; not faked here.
-          ++ pkgs.lib.optionals (pkgs ? cargo-apk) [ pkgs.cargo-apk ];
+          ++ pkgs.lib.optionals (pkgs ? cargo-apk) [ pkgs.cargo-apk ]
+          # repomap: always-fresh codebase map for coding agents.
+          ++ [ repomap.packages.${system}.repomap ];
           shellHook = ''
             export PKG_CONFIG_PATH="${pkgs.lib.makeSearchPathOutput "dev" "lib/pkgconfig" nativeLibs}''${PKG_CONFIG_PATH:-}"
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath nativeLibs}''${LD_LIBRARY_PATH:-}"
             export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
             echo "light-show dev shell: $(rustc --version)"
             echo "APK builds need the Android SDK/NDK (not in nixpkgs); see docs/FLAKE.md."
-          '';
+          '' + repomap.lib.refreshHook {
+            pkg = repomap.packages.${system}.repomap;
+          };
         };
 
         apps = {

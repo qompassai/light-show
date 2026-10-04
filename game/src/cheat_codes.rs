@@ -44,10 +44,10 @@ impl UnlockedSpecialists {
 /// Code words → companion. Case-insensitive.
 pub fn code_word_to_companion(code: &str) -> Option<Companion> {
     match code.to_uppercase().as_str() {
-        "JUSTINBAILEY" => Some(Companion::Clara),    // Metroid (NES)
-        "ABACABB" => Some(Companion::Aino),           // Mortal Kombat (Genesis)
-        "BLASTPROCESSING" => Some(Companion::Hikari), // Sega Genesis marketing
-        "TRIFORCE" => Some(Companion::Lea),           // Zelda — for the study coach
+        "JUSTINBAILEY" => Some(Companion::Clara),   // Metroid (NES) - full power-up
+        "ABACABB" => Some(Companion::Aino),          // Mortal Kombat (Genesis) - blood code
+        "BLASTPROCESSING" => Some(Companion::Hikari), // Sega Genesis marketing - speed/power
+        "TRIFORCE" => Some(Companion::Lea),          // Zelda - wisdom, for the study coach
         _ => None,
     }
 }

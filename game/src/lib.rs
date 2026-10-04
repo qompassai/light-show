@@ -9,7 +9,7 @@ mod audio;
 #[cfg(debug_assertions)]
 mod bench;
 mod board;
-mod cheat_codes;
+pub(crate) mod cheat_codes;
 mod fonts;
 mod level;
 #[cfg(test)]

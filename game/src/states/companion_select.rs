@@ -39,6 +39,67 @@ impl Plugin for CompanionSelectPlugin {
     }
 }
 
+/// Watches for the Konami Code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A START.
+/// Unlocks all four specialist companions at once.
+fn detect_konami_code(
+    mut konami: ResMut<KonamiState>,
+    mut unlocked: ResMut<UnlockedSpecialists>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    for key in keyboard.get_just_pressed() {
+        if konami.feed(*key) {
+            unlocked.unlock_all();
+            info!("KONAMI: all specialists unlocked!");
+        }
+    }
+}
+
+/// Watches for typed code words: JUSTINBAILEY, ABACABB, BLASTPROCESSING, TRIFORCE.
+/// Each unlocks its companion. Backspace clears the buffer.
+fn detect_code_words(
+    mut buffer: ResMut<CodeWordBuffer>,
+    mut unlocked: ResMut<UnlockedSpecialists>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    // Letter keys A-Z
+    for key in keyboard.get_just_pressed() {
+        let c = match key {
+            KeyCode::KeyA => 'A', KeyCode::KeyB => 'B', KeyCode::KeyC => 'C',
+            KeyCode::KeyD => 'D', KeyCode::KeyE => 'E', KeyCode::KeyF => 'F',
+            KeyCode::KeyG => 'G', KeyCode::KeyH => 'H', KeyCode::KeyI => 'I',
+            KeyCode::KeyJ => 'J', KeyCode::KeyK => 'K', KeyCode::KeyL => 'L',
+            KeyCode::KeyM => 'M', KeyCode::KeyN => 'N', KeyCode::KeyO => 'O',
+            KeyCode::KeyP => 'P', KeyCode::KeyQ => 'Q', KeyCode::KeyR => 'R',
+            KeyCode::KeyS => 'S', KeyCode::KeyT => 'T', KeyCode::KeyU => 'U',
+            KeyCode::KeyV => 'V', KeyCode::KeyW => 'W', KeyCode::KeyX => 'X',
+            KeyCode::KeyY => 'Y', KeyCode::KeyZ => 'Z',
+            KeyCode::Backspace => {
+                buffer.clear();
+                continue;
+            }
+            KeyCode::Enter => {
+                // Check the buffer on Enter
+                if let Some(companion) = code_word_to_companion(&buffer.buffer) {
+                    if unlocked.unlock(companion) {
+                        info!("CODE: {:?} unlocked!", companion);
+                    }
+                }
+                buffer.clear();
+                continue;
+            }
+            _ => continue,
+        };
+        buffer.push(c);
+        // Check after each keypress too (for codes without Enter)
+        if let Some(companion) = code_word_to_companion(&buffer.buffer) {
+            if unlocked.unlock(companion) {
+                info!("CODE: {:?} unlocked!", companion);
+            }
+            buffer.clear();
+        }
+    }
+}
+
 #[derive(Component)]
 struct SelectRoot;
 
@@ -371,70 +432,7 @@ fn handle_back_button(
     }
 }
 
-/// Watches for the Konami Code at the select screen: UP UP DOWN DOWN
-/// LEFT RIGHT LEFT RIGHT B A ENTER. Unlocks all four specialists at once.
-fn detect_konami_code(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut konami: ResMut<KonamiState>,
-    mut unlocked: ResMut<UnlockedSpecialists>,
-) {
-    for key in keyboard.get_just_pressed() {
-        if konami.feed(*key) {
-            unlocked.unlock_all();
-            info!("Konami Code accepted - all specialists unlocked");
-        }
-    }
-}
 
-/// Watches for typed code words at the select screen: JUSTINBAILEY,
-/// ABACABB, BLASTPROCESSING, TRIFORCE. Each unlocks one specialist.
-/// Enter submits the buffer; Escape clears it.
-fn detect_code_words(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut buffer: ResMut<CodeWordBuffer>,
-    mut unlocked: ResMut<UnlockedSpecialists>,
-) {
-    for key in keyboard.get_just_pressed() {
-        match key {
-            KeyCode::Enter => {
-                if let Some(companion) = code_word_to_companion(&buffer.buffer) {
-                    if unlocked.unlock(companion) {
-                        info!("Code word accepted - {:?} unlocked", companion);
-                    }
-                }
-                buffer.clear();
-            }
-            KeyCode::Escape => buffer.clear(),
-            KeyCode::KeyA => buffer.push('A'),
-            KeyCode::KeyB => buffer.push('B'),
-            KeyCode::KeyC => buffer.push('C'),
-            KeyCode::KeyD => buffer.push('D'),
-            KeyCode::KeyE => buffer.push('E'),
-            KeyCode::KeyF => buffer.push('F'),
-            KeyCode::KeyG => buffer.push('G'),
-            KeyCode::KeyH => buffer.push('H'),
-            KeyCode::KeyI => buffer.push('I'),
-            KeyCode::KeyJ => buffer.push('J'),
-            KeyCode::KeyK => buffer.push('K'),
-            KeyCode::KeyL => buffer.push('L'),
-            KeyCode::KeyM => buffer.push('M'),
-            KeyCode::KeyN => buffer.push('N'),
-            KeyCode::KeyO => buffer.push('O'),
-            KeyCode::KeyP => buffer.push('P'),
-            KeyCode::KeyQ => buffer.push('Q'),
-            KeyCode::KeyR => buffer.push('R'),
-            KeyCode::KeyS => buffer.push('S'),
-            KeyCode::KeyT => buffer.push('T'),
-            KeyCode::KeyU => buffer.push('U'),
-            KeyCode::KeyV => buffer.push('V'),
-            KeyCode::KeyW => buffer.push('W'),
-            KeyCode::KeyX => buffer.push('X'),
-            KeyCode::KeyY => buffer.push('Y'),
-            KeyCode::KeyZ => buffer.push('Z'),
-            _ => {}
-        }
-    }
-}
 
 fn teardown_select(mut commands: Commands, query: Query<Entity, With<SelectRoot>>) {
     for entity in &query {
