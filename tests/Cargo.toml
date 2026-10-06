@@ -38,6 +38,10 @@ path = "assets_images.rs"
 name = "structural"
 path = "structural.rs"
 
+[[test]]
+name = "game_quiz"
+path = "game_quiz.rs"
+
 [dependencies]
 osp_sim = { path = "../crates/osp_sim" }
 light-show = { path = "../game" }

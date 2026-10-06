@@ -9,13 +9,14 @@
 //! be unit tested on its own and reused by any future frontend (Bevy today,
 //! something else tomorrow).
 
+pub mod alarm;
 pub mod component;
 pub mod graph;
 pub mod medium;
 pub mod outage;
-pub mod alarm;
 pub mod wavelength;
 
+pub use alarm::{Alarm, AlarmAck, AlarmSeverity};
 pub use component::{
     free_space_path_loss_db, CableCategory, Component, ConnectorType, SpliceType,
     COAX_LOSS_DB_PER_M,
@@ -23,7 +24,6 @@ pub use component::{
 pub use graph::{EthernetEval, EthernetViolation, LinkBudgetResult, PathGraph, PathNode};
 pub use medium::Medium;
 pub use outage::{Outage, OutageKind};
-pub use alarm::{Alarm, AlarmAck, AlarmSeverity};
 pub use wavelength::Wavelength;
 
 /// Standard GPON downstream transmit power range (dBm), per ITU-T G.984.2

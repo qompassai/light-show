@@ -63,18 +63,18 @@ fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Q
         .spawn((
             MenuRoot,
             Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    // The keeper title artwork (see `image` below) carries
-                    // the "LIGHT SHOW" title in its center, so the column
-                    // sits in the lower third, over the dark night city.
-                    justify_content: JustifyContent::FlexEnd,
-                    padding: UiRect::bottom(Val::Px(MENU_BOTTOM_PAD)),
-                    row_gap: Val::Px(24.0),
-                    ..default()
-                },
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                // The keeper title artwork (see `image` below) carries
+                // the "LIGHT SHOW" title in its center, so the column
+                // sits in the lower third, over the dark night city.
+                justify_content: JustifyContent::FlexEnd,
+                padding: UiRect::bottom(Val::Px(MENU_BOTTOM_PAD)),
+                row_gap: Val::Px(24.0),
+                ..default()
+            },
             BackgroundColor(Color::srgb(0.05, 0.05, 0.12)),
         ))
         .with_children(|parent| {

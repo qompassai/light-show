@@ -26,7 +26,10 @@ enum FadePhase {
     Idle,
     /// Fading to black; the state swap fires when `elapsed_secs`
     /// reaches [`FADE_OUT_SECS`].
-    FadingOut { target: GameState, elapsed_secs: f32 },
+    FadingOut {
+        target: GameState,
+        elapsed_secs: f32,
+    },
     /// Fading back in from black after the swap.
     FadingIn { elapsed_secs: f32 },
 }
@@ -137,7 +140,13 @@ fn drive_transition_fade(
                 swap_to = Some(target);
                 (FadePhase::FadingIn { elapsed_secs: 0.0 }, alpha)
             } else {
-                (FadePhase::FadingOut { target, elapsed_secs }, alpha)
+                (
+                    FadePhase::FadingOut {
+                        target,
+                        elapsed_secs,
+                    },
+                    alpha,
+                )
             }
         }
         FadePhase::FadingIn { elapsed_secs } => {
@@ -253,7 +262,9 @@ mod tests {
 
         // Request a transition; the first tick starts the fade-out.
         world.resource_mut::<TransitionRequest>().0 = Some(GameState::Results);
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(0.1));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(0.1));
         schedule.run(&mut world);
         let fade = world.resource::<TransitionFade>();
         assert!(matches!(fade.phase, FadePhase::FadingOut { .. }));
@@ -265,7 +276,9 @@ mod tests {
         ));
 
         // Finish the fade-out: the swap fires at full black.
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(1.0));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(1.0));
         schedule.run(&mut world);
         assert!(matches!(
             *world.resource::<NextState<GameState>>(),
@@ -292,12 +305,16 @@ mod tests {
         schedule.add_systems(drive_transition_fade);
 
         world.resource_mut::<TransitionRequest>().0 = Some(GameState::Playing);
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(0.1));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(0.1));
         schedule.run(&mut world);
         // A second request lands mid-fade-out: last write wins (mirrors
         // NextState), so the swap goes to the newer target, not the first.
         world.resource_mut::<TransitionRequest>().0 = Some(GameState::MainMenu);
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(1.0));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(1.0));
         schedule.run(&mut world);
         assert!(matches!(
             *world.resource::<NextState<GameState>>(),
@@ -317,7 +334,9 @@ mod tests {
 
         // Complete the fade-out so we're in FadingIn.
         world.resource_mut::<TransitionRequest>().0 = Some(GameState::Playing);
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(1.0));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(1.0));
         schedule.run(&mut world);
         assert!(matches!(
             world.resource::<TransitionFade>().phase,
@@ -325,7 +344,9 @@ mod tests {
         ));
         // A request during fade-in waits in the resource.
         world.resource_mut::<TransitionRequest>().0 = Some(GameState::MainMenu);
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(0.1));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(0.1));
         schedule.run(&mut world);
         // Still fading in to Playing; the MainMenu request is queued.
         assert!(matches!(
@@ -338,7 +359,9 @@ mod tests {
         );
         // Finish the fade-in: back to idle, then the queued request starts
         // a new fade-out.
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(1.0));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(1.0));
         schedule.run(&mut world);
         assert!(matches!(
             world.resource::<TransitionFade>().phase,
@@ -346,7 +369,9 @@ mod tests {
         ));
         // Fresh small delta (the previous advance_by's 1.0s delta is stale
         // and would instantly complete the new fade-out).
-        world.resource_mut::<Time>().advance_by(std::time::Duration::from_secs_f32(0.01));
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_secs_f32(0.01));
         schedule.run(&mut world);
         assert!(matches!(
             world.resource::<TransitionFade>().phase,

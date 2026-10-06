@@ -9,12 +9,12 @@ mod asset_root;
 pub mod audio;
 #[cfg(debug_assertions)]
 mod bench;
-#[cfg(debug_assertions)]
-mod footage;
-mod fx;
 mod board;
 pub mod cheat_codes;
 mod fonts;
+#[cfg(debug_assertions)]
+mod footage;
+mod fx;
 pub mod level;
 #[cfg(test)]
 mod playthrough;
@@ -150,22 +150,22 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     let plugins = bench::maybe_force_backend(plugins, &bench_args);
     app.add_plugins(plugins)
         .init_state::<GameState>()
-        .add_plugins((
-            states::menu::MenuPlugin,
-            states::companion_select::CompanionSelectPlugin,
-            states::credits::CreditsPlugin,
-            states::playing::PlayingPlugin,
-            states::api_console::ApiConsolePlugin,
-            states::outage::OutagePlugin,
-            states::results::ResultsPlugin,
-            waifu::SeraphinePlugin,
-            waifu::dialogue_ui::DialogueUiPlugin,
-            fx::FxPlugin,
-            ui::LedgerUiPlugin,
-            anim::AnimPlugin,
-            audio::MusicPlugin,
-            audio::SfxPlugin,
-        ));
+        .add_plugins(states::menu::MenuPlugin)
+        .add_plugins(states::companion_select::CompanionSelectPlugin)
+        .add_plugins(states::credits::CreditsPlugin)
+        .add_plugins(states::playing::PlayingPlugin)
+        .add_plugins(states::api_console::ApiConsolePlugin)
+        .add_plugins(states::quiz::QuizPlugin)
+        .add_plugins(states::triage_console::TriageConsolePlugin)
+        .add_plugins(states::outage::OutagePlugin)
+        .add_plugins(states::results::ResultsPlugin)
+        .add_plugins(waifu::SeraphinePlugin)
+        .add_plugins(waifu::dialogue_ui::DialogueUiPlugin)
+        .add_plugins(fx::FxPlugin)
+        .add_plugins(ui::LedgerUiPlugin)
+        .add_plugins(anim::AnimPlugin)
+        .add_plugins(audio::MusicPlugin)
+        .add_plugins(audio::SfxPlugin);
     // Bench driver (synthetic input + frame timing + auto-exit). Not
     // installed for normal runs: zero overhead when the flag is absent.
     #[cfg(debug_assertions)]

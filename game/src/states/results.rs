@@ -7,11 +7,11 @@ use super::outage::ActiveOutage;
 use super::playing::LiveGraph;
 use super::{GameState, LevelOutcome};
 use crate::anim::TransitionRequest;
-use crate::fonts::FONT_SIZE_ADJUST;
 use crate::board;
-use crate::level::{self, CurrentLevelIndex, LevelDef};
+use crate::fonts::FONT_SIZE_ADJUST;
+use crate::level::{CurrentLevelIndex, LevelDef};
 use crate::waifu::dialogue::DialogueBank;
-use crate::waifu::{Companion, FavorPoints, SelectedCompanion};
+use crate::waifu::{FavorPoints, SelectedCompanion};
 use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
 
@@ -26,7 +26,11 @@ impl Plugin for ResultsPlugin {
         )
         .add_systems(
             Update,
-            (handle_result_buttons, animate_win_ring, animate_result_entrances)
+            (
+                handle_result_buttons,
+                animate_win_ring,
+                animate_result_entrances,
+            )
                 .run_if(in_state(GameState::Results)),
         )
         .add_systems(OnExit(GameState::Results), teardown_results);
@@ -152,8 +156,7 @@ fn animate_result_entrances(
             EntranceKind::BannerPop => {
                 let eased = EaseFunction::BackOut.sample_clamped(t);
                 if let Some(tr) = transform.as_mut() {
-                    let scale = BANNER_POP_START_SCALE
-                        + (1.0 - BANNER_POP_START_SCALE) * eased;
+                    let scale = BANNER_POP_START_SCALE + (1.0 - BANNER_POP_START_SCALE) * eased;
                     tr.scale = Vec2::splat(scale.max(0.01));
                 }
             }
@@ -166,9 +169,8 @@ fn animate_result_entrances(
             EntranceKind::SlideUp { buttons } => {
                 let eased = EaseFunction::CubicOut.sample_clamped(t);
                 if let Some(st) = style.as_mut() {
-                    st.margin.top = Val::Px(
-                        BUTTONS_REST_MARGIN_TOP_PX + BUTTONS_SLIDE_PX * (1.0 - eased),
-                    );
+                    st.margin.top =
+                        Val::Px(BUTTONS_REST_MARGIN_TOP_PX + BUTTONS_SLIDE_PX * (1.0 - eased));
                 }
                 for (button_entity, color) in buttons.iter() {
                     if let Ok(mut bg) = button_bg.get_mut(*button_entity) {
@@ -440,26 +442,23 @@ fn show_results(
                 let mut row_cmds = parent.spawn(Node {
                     flex_direction: FlexDirection::Row,
                     column_gap: Val::Px(12.0),
-                    margin: UiRect::top(Val::Px(
-                        BUTTONS_REST_MARGIN_TOP_PX + BUTTONS_SLIDE_PX,
-                    )),
+                    margin: UiRect::top(Val::Px(BUTTONS_REST_MARGIN_TOP_PX + BUTTONS_SLIDE_PX)),
                     ..default()
                 });
                 let mut button_fades: Vec<(Entity, Color)> = Vec::new();
                 row_cmds.with_children(|row| {
                     // Buttons spawn transparent; the entrance system fades
                     // them to their real colors.
-                    let mut push_button =
-                        |action: ResultAction, label: &str, color: Color| {
-                            let entity = spawn_result_button(
-                                row,
-                                &asset_server,
-                                action,
-                                label,
-                                color.with_alpha(0.0),
-                            );
-                            button_fades.push((entity, color));
-                        };
+                    let mut push_button = |action: ResultAction, label: &str, color: Color| {
+                        let entity = spawn_result_button(
+                            row,
+                            &asset_server,
+                            action,
+                            label,
+                            color.with_alpha(0.0),
+                        );
+                        button_fades.push((entity, color));
+                    };
                     if outcome.won {
                         if has_next_level {
                             push_button(

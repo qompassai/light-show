@@ -44,7 +44,10 @@ impl AssetSearchEnv {
 /// only candidate when set: a wrong override must fail loudly, not fall
 /// through to a different, possibly stale, asset tree.
 pub fn candidates(env: &AssetSearchEnv) -> Vec<PathBuf> {
-    let override_root = env.bevy_asset_root.as_ref().or(env.cargo_manifest_dir.as_ref());
+    let override_root = env
+        .bevy_asset_root
+        .as_ref()
+        .or(env.cargo_manifest_dir.as_ref());
     if let Some(root) = override_root {
         return vec![PathBuf::from(root).join(ASSET_DIR_NAME)];
     }
@@ -62,11 +65,19 @@ pub fn candidates(env: &AssetSearchEnv) -> Vec<PathBuf> {
 /// else `$HOME/.local/share`. A relative value would resolve against the
 /// launch cwd, so it is ignored rather than trusted.
 fn xdg_data_home(env: &AssetSearchEnv) -> Option<PathBuf> {
-    let from_xdg = env.xdg_data_home.as_ref().map(PathBuf::from).filter(|p| p.is_absolute());
+    let from_xdg = env
+        .xdg_data_home
+        .as_ref()
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute());
     if from_xdg.is_some() {
         return from_xdg;
     }
-    let home = env.home.as_ref().map(PathBuf::from).filter(|p| p.is_absolute())?;
+    let home = env
+        .home
+        .as_ref()
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())?;
     Some(home.join(".local").join("share"))
 }
 
@@ -79,7 +90,9 @@ pub fn resolve(
 ) -> Result<PathBuf, Vec<PathBuf>> {
     let tried = candidates(env);
     for candidate in &tried {
-        let Some(dir) = probe(candidate) else { continue };
+        let Some(dir) = probe(candidate) else {
+            continue;
+        };
         assert!(dir.is_absolute(), "probe must return absolute paths");
         if dir.to_str().is_some() {
             return Ok(dir);
@@ -103,7 +116,12 @@ mod tests {
 
     /// Accepts exactly the listed paths, returning them unchanged.
     fn only(existing: &'static [&'static str]) -> impl Fn(&Path) -> Option<PathBuf> {
-        move |path| existing.iter().any(|e| Path::new(e) == path).then(|| path.to_path_buf())
+        move |path| {
+            existing
+                .iter()
+                .any(|e| Path::new(e) == path)
+                .then(|| path.to_path_buf())
+        }
     }
 
     fn installed_env() -> AssetSearchEnv {
@@ -116,27 +134,42 @@ mod tests {
 
     #[test]
     fn installed_binary_finds_xdg_data_assets() {
-        let found = resolve(&installed_env(), only(&["/home/u/.local/share/light-show/assets"]));
-        assert_eq!(found.unwrap(), PathBuf::from("/home/u/.local/share/light-show/assets"));
+        let found = resolve(
+            &installed_env(),
+            only(&["/home/u/.local/share/light-show/assets"]),
+        );
+        assert_eq!(
+            found.unwrap(),
+            PathBuf::from("/home/u/.local/share/light-show/assets")
+        );
     }
 
     #[test]
     fn assets_beside_the_exe_win_over_xdg() {
-        let probe = only(&["/home/u/.local/bin/assets", "/home/u/.local/share/light-show/assets"]);
+        let probe = only(&[
+            "/home/u/.local/bin/assets",
+            "/home/u/.local/share/light-show/assets",
+        ]);
         let found = resolve(&installed_env(), probe);
         assert_eq!(found.unwrap(), PathBuf::from("/home/u/.local/bin/assets"));
     }
 
     #[test]
     fn xdg_data_home_replaces_home_default() {
-        let env = AssetSearchEnv { xdg_data_home: os("/data"), ..installed_env() };
+        let env = AssetSearchEnv {
+            xdg_data_home: os("/data"),
+            ..installed_env()
+        };
         let found = resolve(&env, only(&["/data/light-show/assets"]));
         assert_eq!(found.unwrap(), PathBuf::from("/data/light-show/assets"));
     }
 
     #[test]
     fn cargo_run_uses_manifest_dir() {
-        let env = AssetSearchEnv { cargo_manifest_dir: os("/repo/game"), ..installed_env() };
+        let env = AssetSearchEnv {
+            cargo_manifest_dir: os("/repo/game"),
+            ..installed_env()
+        };
         let found = resolve(&env, only(&["/repo/game/assets"]));
         assert_eq!(found.unwrap(), PathBuf::from("/repo/game/assets"));
     }
@@ -144,13 +177,19 @@ mod tests {
     #[test]
     fn missing_everywhere_reports_every_path_tried() {
         let tried = resolve(&installed_env(), only(&[])).unwrap_err();
-        let expected = ["/home/u/.local/bin/assets", "/home/u/.local/share/light-show/assets"];
+        let expected = [
+            "/home/u/.local/bin/assets",
+            "/home/u/.local/share/light-show/assets",
+        ];
         assert_eq!(tried, expected.map(PathBuf::from).to_vec());
     }
 
     #[test]
     fn broken_override_fails_instead_of_falling_through() {
-        let env = AssetSearchEnv { bevy_asset_root: os("/nope"), ..installed_env() };
+        let env = AssetSearchEnv {
+            bevy_asset_root: os("/nope"),
+            ..installed_env()
+        };
         let tried = resolve(&env, only(&["/home/u/.local/share/light-show/assets"])).unwrap_err();
         assert_eq!(tried, vec![PathBuf::from("/nope/assets")]);
     }
@@ -178,7 +217,10 @@ mod tests {
 
     #[test]
     fn relative_xdg_falls_back_to_home() {
-        let env = AssetSearchEnv { xdg_data_home: os("rel"), ..installed_env() };
+        let env = AssetSearchEnv {
+            xdg_data_home: os("rel"),
+            ..installed_env()
+        };
         let found = resolve(&env, only(&["/home/u/.local/share/light-show/assets"]));
         assert!(found.is_ok());
     }
@@ -196,6 +238,9 @@ mod tests {
                 .then(|| path.to_path_buf())
         };
         let found = resolve(&installed_env(), probe);
-        assert_eq!(found.unwrap(), PathBuf::from("/home/u/.local/share/light-show/assets"));
+        assert_eq!(
+            found.unwrap(),
+            PathBuf::from("/home/u/.local/share/light-show/assets")
+        );
     }
 }

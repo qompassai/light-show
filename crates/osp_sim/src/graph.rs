@@ -2,9 +2,9 @@
 //! Supports both simple point-to-point levels and branching PON trees
 //! (one OLT feeding many ONTs through splitters).
 
-use crate::component::Component;
 #[cfg(test)]
 use crate::component::CableCategory;
+use crate::component::Component;
 use crate::outage::Outage;
 use crate::wavelength::Wavelength;
 use crate::ReceiveWindow;
@@ -81,9 +81,18 @@ impl EthernetEval {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EthernetViolation {
-    SegmentTooLong { longest_m: f64, limit_m: f64 },
-    PoeOverBudget { draw_w: f64, budget_w: f64 },
-    BandwidthTooLow { min_mbps: u64, required_mbps: u64 },
+    SegmentTooLong {
+        longest_m: f64,
+        limit_m: f64,
+    },
+    PoeOverBudget {
+        draw_w: f64,
+        budget_w: f64,
+    },
+    BandwidthTooLow {
+        min_mbps: u64,
+        required_mbps: u64,
+    },
     /// A NaN input reached the evaluator: comparisons against NaN are
     /// always false, so a NaN segment limit, PoE draw, run length, or
     /// switch budget would silently pass every check. `field` names the
@@ -698,9 +707,7 @@ mod tests {
             },
         );
         g.connect(1, 2, Component::Switch { poe_budget_w: 30.0 });
-        let eval = g
-            .evaluate_ethernet(0, 2, 100.0, 25.0, 1_000)
-            .unwrap();
+        let eval = g.evaluate_ethernet(0, 2, 100.0, 25.0, 1_000).unwrap();
         assert!(eval.passes());
         assert_relative_eq!(eval.longest_segment_m, 65.0, epsilon = 1e-9);
         assert_relative_eq!(eval.poe_budget_w, 30.0, epsilon = 1e-9);
@@ -815,9 +822,7 @@ mod tests {
         let mut g = PathGraph::default();
         g.add_node(0, "Closet");
         g.add_node(1, "Desk");
-        let err = g
-            .evaluate_ethernet(0, 1, 100.0, 0.0, 1_000)
-            .unwrap_err();
+        let err = g.evaluate_ethernet(0, 1, 100.0, 0.0, 1_000).unwrap_err();
         assert_eq!(err, PathError::Disconnected);
     }
 

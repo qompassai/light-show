@@ -19,11 +19,11 @@
 //! `assets/sprites/ui/` (same visual radii as the old gizmo circles, so
 //! the hit-test contract is unchanged).
 
+use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::{LevelDef, MediumDef};
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
 use crate::test_log;
-use crate::fonts::FONT_SIZE_ADJUST;
 use crate::ui::LedgerText;
 use bevy::input::touch::Touches;
 use bevy::math::curve::{Curve, EaseFunction};
@@ -878,8 +878,7 @@ pub fn track_pointer(
         .and_then(|w| w.cursor_position())
         .or_else(|| touches.iter().next().map(|t| t.position()));
 
-    pointer.0 =
-        viewport_pos.and_then(|p| camera.viewport_to_world_2d(camera_transform, p).ok());
+    pointer.0 = viewport_pos.and_then(|p| camera.viewport_to_world_2d(camera_transform, p).ok());
 }
 
 /// Turns pointer gestures into placements: drag node → node connects the
@@ -1071,7 +1070,9 @@ pub fn update_pill_rings(
         if sprite.image != new_texture {
             sprite.image = new_texture;
             if selected {
-                commands.entity(entity).insert(PillPop { elapsed_secs: 0.0 });
+                commands
+                    .entity(entity)
+                    .insert(PillPop { elapsed_secs: 0.0 });
             }
         }
     }
@@ -1090,7 +1091,8 @@ pub fn animate_pill_pops(
         let scale = if t < 0.5 {
             1.0 + (PILL_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped(t * 2.0)
         } else {
-            PILL_POP_PEAK - (PILL_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped((t - 0.5) * 2.0)
+            PILL_POP_PEAK
+                - (PILL_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped((t - 0.5) * 2.0)
         };
         transform.scale = Vec3::splat(scale.max(0.01));
         if t >= 1.0 {
@@ -1358,6 +1360,8 @@ mod tests {
             on_win_line: None,
             on_fail_line: None,
             api_sequence: None,
+            alarm_triage: None,
+            quiz: None,
         }
     }
 
@@ -2266,10 +2270,7 @@ mod tests {
         // a real `AssetServer` for `load()`, while `Time<()>` stays fully
         // under this test's control via `advance_by`.
         let mut app = App::new();
-        app.add_plugins((
-            bevy::app::TaskPoolPlugin::default(),
-            AssetPlugin::default(),
-        ));
+        app.add_plugins((bevy::app::TaskPoolPlugin::default(), AssetPlugin::default()));
         app.init_asset::<Image>();
         app.init_resource::<Time>();
         app.world_mut()
@@ -2319,8 +2320,8 @@ mod tests {
 
     #[test]
     fn update_storm_rain_spawns_streaks_during_an_outage_and_clears_them_after() {
-        use bevy::asset::AssetPlugin;
         use bevy::app::TaskPoolPlugin;
+        use bevy::asset::AssetPlugin;
         use bevy_ecs::system::RunSystemOnce;
         use std::time::Duration;
 

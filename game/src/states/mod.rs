@@ -1,12 +1,15 @@
 //! Top-level game state machine. Each variant owns its own plugin (see
 //! sibling modules) so systems are only scheduled while that state is active.
 
+pub mod api_console;
 pub mod companion_select;
 pub mod credits;
 pub mod menu;
 pub mod outage;
 pub mod playing;
+pub mod quiz;
 pub mod results;
+pub mod triage_console;
 
 use bevy::prelude::*;
 

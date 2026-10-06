@@ -8,8 +8,8 @@
 //!
 //! Codes are easter eggs from the SNES/Sega/Game Boy Color era.
 
-use bevy::prelude::*;
 use crate::waifu::Companion;
+use bevy::prelude::*;
 use std::collections::HashSet;
 
 /// Re-exported so integration tests can drive `KonamiState::feed` without
@@ -29,8 +29,10 @@ impl UnlockedSpecialists {
     #[allow(dead_code)]
     pub fn is_unlocked(&self, c: &Companion) -> bool {
         // Base four are always unlocked
-        matches!(c, Companion::Fiber | Companion::Coax | Companion::Mobile | Companion::Ethernet)
-            || self.unlocked.contains(c)
+        matches!(
+            c,
+            Companion::Fiber | Companion::Coax | Companion::Mobile | Companion::Ethernet
+        ) || self.unlocked.contains(c)
     }
 
     pub fn unlock(&mut self, c: Companion) -> bool {
@@ -39,7 +41,12 @@ impl UnlockedSpecialists {
     }
 
     pub fn unlock_all(&mut self) {
-        for c in [Companion::Clara, Companion::Aino, Companion::Hikari, Companion::Lea] {
+        for c in [
+            Companion::Clara,
+            Companion::Aino,
+            Companion::Hikari,
+            Companion::Lea,
+        ] {
             self.unlocked.insert(c);
         }
     }
@@ -48,10 +55,10 @@ impl UnlockedSpecialists {
 /// Code words → companion. Case-insensitive.
 pub fn code_word_to_companion(code: &str) -> Option<Companion> {
     match code.to_uppercase().as_str() {
-        "JUSTINBAILEY" => Some(Companion::Clara),   // Metroid (NES) - full power-up
-        "ABACABB" => Some(Companion::Aino),          // Mortal Kombat (Genesis) - blood code
+        "JUSTINBAILEY" => Some(Companion::Clara), // Metroid (NES) - full power-up
+        "ABACABB" => Some(Companion::Aino),       // Mortal Kombat (Genesis) - blood code
         "BLASTPROCESSING" => Some(Companion::Hikari), // Sega Genesis marketing - speed/power
-        "TRIFORCE" => Some(Companion::Lea),          // Zelda - wisdom, for the study coach
+        "TRIFORCE" => Some(Companion::Lea),       // Zelda - wisdom, for the study coach
         _ => None,
     }
 }
@@ -154,9 +161,15 @@ mod tests {
 
     #[test]
     fn code_words_map_correctly() {
-        assert_eq!(code_word_to_companion("justinbailey"), Some(Companion::Clara));
+        assert_eq!(
+            code_word_to_companion("justinbailey"),
+            Some(Companion::Clara)
+        );
         assert_eq!(code_word_to_companion("ABACABB"), Some(Companion::Aino));
-        assert_eq!(code_word_to_companion("blastprocessing"), Some(Companion::Hikari));
+        assert_eq!(
+            code_word_to_companion("blastprocessing"),
+            Some(Companion::Hikari)
+        );
         assert_eq!(code_word_to_companion("triforce"), Some(Companion::Lea));
         assert_eq!(code_word_to_companion("nonsense"), None);
     }
@@ -165,11 +178,16 @@ mod tests {
     fn konami_completes() {
         let mut k = KonamiState::default();
         let seq = [
-            KeyCode::ArrowUp, KeyCode::ArrowUp,
-            KeyCode::ArrowDown, KeyCode::ArrowDown,
-            KeyCode::ArrowLeft, KeyCode::ArrowRight,
-            KeyCode::ArrowLeft, KeyCode::ArrowRight,
-            KeyCode::KeyB, KeyCode::KeyA,
+            KeyCode::ArrowUp,
+            KeyCode::ArrowUp,
+            KeyCode::ArrowDown,
+            KeyCode::ArrowDown,
+            KeyCode::ArrowLeft,
+            KeyCode::ArrowRight,
+            KeyCode::ArrowLeft,
+            KeyCode::ArrowRight,
+            KeyCode::KeyB,
+            KeyCode::KeyA,
             KeyCode::Enter,
         ];
         for (i, key) in seq.iter().enumerate() {

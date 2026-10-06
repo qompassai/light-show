@@ -7,11 +7,13 @@
 
 use super::GameState;
 use crate::anim::TransitionRequest;
+use crate::cheat_codes::{
+    code_word_to_companion, CodeWordBuffer, KonamiState, UnlockedSpecialists,
+};
 use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::CurrentLevelIndex;
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
 use crate::waifu::{Companion, SelectedCompanion};
-use crate::cheat_codes::{UnlockedSpecialists, KonamiState, CodeWordBuffer, code_word_to_companion};
 use bevy::prelude::*;
 
 pub struct CompanionSelectPlugin;
@@ -76,15 +78,32 @@ fn detect_code_words(
             continue;
         }
         let c = match key {
-            KeyCode::KeyA => 'A', KeyCode::KeyB => 'B', KeyCode::KeyC => 'C',
-            KeyCode::KeyD => 'D', KeyCode::KeyE => 'E', KeyCode::KeyF => 'F',
-            KeyCode::KeyG => 'G', KeyCode::KeyH => 'H', KeyCode::KeyI => 'I',
-            KeyCode::KeyJ => 'J', KeyCode::KeyK => 'K', KeyCode::KeyL => 'L',
-            KeyCode::KeyM => 'M', KeyCode::KeyN => 'N', KeyCode::KeyO => 'O',
-            KeyCode::KeyP => 'P', KeyCode::KeyQ => 'Q', KeyCode::KeyR => 'R',
-            KeyCode::KeyS => 'S', KeyCode::KeyT => 'T', KeyCode::KeyU => 'U',
-            KeyCode::KeyV => 'V', KeyCode::KeyW => 'W', KeyCode::KeyX => 'X',
-            KeyCode::KeyY => 'Y', KeyCode::KeyZ => 'Z',
+            KeyCode::KeyA => 'A',
+            KeyCode::KeyB => 'B',
+            KeyCode::KeyC => 'C',
+            KeyCode::KeyD => 'D',
+            KeyCode::KeyE => 'E',
+            KeyCode::KeyF => 'F',
+            KeyCode::KeyG => 'G',
+            KeyCode::KeyH => 'H',
+            KeyCode::KeyI => 'I',
+            KeyCode::KeyJ => 'J',
+            KeyCode::KeyK => 'K',
+            KeyCode::KeyL => 'L',
+            KeyCode::KeyM => 'M',
+            KeyCode::KeyN => 'N',
+            KeyCode::KeyO => 'O',
+            KeyCode::KeyP => 'P',
+            KeyCode::KeyQ => 'Q',
+            KeyCode::KeyR => 'R',
+            KeyCode::KeyS => 'S',
+            KeyCode::KeyT => 'T',
+            KeyCode::KeyU => 'U',
+            KeyCode::KeyV => 'V',
+            KeyCode::KeyW => 'W',
+            KeyCode::KeyX => 'X',
+            KeyCode::KeyY => 'Y',
+            KeyCode::KeyZ => 'Z',
             KeyCode::Backspace => {
                 buffer.clear();
                 continue;
@@ -466,8 +485,6 @@ fn handle_back_button(
     }
 }
 
-
-
 fn teardown_select(mut commands: Commands, query: Query<Entity, With<SelectRoot>>) {
     for entity in &query {
         commands.entity(entity).despawn();
@@ -496,7 +513,7 @@ mod tests {
         world.run_system_once(handle_select_buttons);
 
         assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Ethernet);
-        assert_eq!(world.resource::<CurrentLevelIndex>().0, 6);
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 30); // Ethernet track starts at 30 in 50-level layout
         assert!(matches!(
             world.resource::<TransitionRequest>().0,
             Some(GameState::Playing)
@@ -504,7 +521,9 @@ mod tests {
     }
 
     #[test]
-    fn pressing_a_trackless_specialist_card_stays_on_the_select_screen() {
+    fn pressing_leas_card_starts_her_quiz_track() {
+        // Léa's study track is live (indices 70-79): pressing her card
+        // selects her and jumps to the first quiz level.
         let mut world = world_with_select_state();
         world.spawn((SelectButton(Companion::Lea), Interaction::Pressed));
 
@@ -512,9 +531,12 @@ mod tests {
             .run_system_once(handle_select_buttons)
             .expect("select system runs");
 
-        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Fiber);
-        assert_eq!(world.resource::<CurrentLevelIndex>().0, 0);
-        assert!(world.resource::<TransitionRequest>().0.is_none());
+        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Lea);
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 70);
+        assert!(matches!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::Playing)
+        ));
     }
 
     #[test]
@@ -640,20 +662,25 @@ mod tests {
     }
 
     #[test]
-    fn every_companion_starts_a_distinct_two_level_track() {
+    fn every_companion_starts_a_distinct_track() {
         let starts: Vec<Option<usize>> = Companion::ALL
             .iter()
             .map(|c| c.track_start_index())
             .collect();
-        assert_eq!(starts, vec![Some(0), Some(2), Some(4), Some(6)]);
-        assert_eq!(Companion::TRACK_LEN, 2);
-        for specialist in [
-            Companion::Aino,
-            Companion::Clara,
-            Companion::Hikari,
-            Companion::Lea,
-        ] {
-            assert_eq!(specialist.track_start_index(), None, "{specialist:?}");
+        assert_eq!(starts, vec![Some(0), Some(10), Some(20), Some(30)]);
+        // All eight playable companions run ten-level tracks in contiguous
+        // registry blocks: Fiber 0-9, Coax 10-19, Mobile 20-29,
+        // Ethernet 30-39, Clara 40-49, Aino 50-59, Hikari 60-69, Léa 70-79.
+        for companion in Companion::ALL {
+            assert_eq!(companion.track_len(), 10);
         }
+        assert_eq!(Companion::Clara.track_start_index(), Some(40));
+        assert_eq!(Companion::Clara.track_len(), 10);
+        assert_eq!(Companion::Aino.track_start_index(), Some(50));
+        assert_eq!(Companion::Aino.track_len(), 10);
+        assert_eq!(Companion::Hikari.track_start_index(), Some(60));
+        assert_eq!(Companion::Hikari.track_len(), 10);
+        assert_eq!(Companion::Lea.track_start_index(), Some(70));
+        assert_eq!(Companion::Lea.track_len(), 10);
     }
 }

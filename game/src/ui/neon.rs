@@ -64,7 +64,10 @@ pub struct NeonText<'a, M: Bundle + Clone> {
 /// copies (eight per ring) absolutely positioned behind it. `spec.width`
 /// constrains the text node (`Val::Auto` for none); `spec.justify` must
 /// match across copies or wrapped text will not line up.
-pub fn spawn_neon_text<M: Bundle + Clone>(parent: &mut ChildSpawnerCommands, spec: NeonText<'_, M>) {
+pub fn spawn_neon_text<M: Bundle + Clone>(
+    parent: &mut ChildSpawnerCommands,
+    spec: NeonText<'_, M>,
+) {
     debug_assert!(
         spec.glow_outer_alpha <= spec.glow_inner_alpha,
         "neon glow must fall off: outer alpha ({}), inner alpha ({})",
@@ -92,7 +95,8 @@ pub fn spawn_neon_text<M: Bundle + Clone>(parent: &mut ChildSpawnerCommands, spe
             ..default()
         })
         .with_children(|run| {
-            for (ring_scale, alpha) in [(1.0, spec.glow_inner_alpha), (2.0, spec.glow_outer_alpha)] {
+            for (ring_scale, alpha) in [(1.0, spec.glow_inner_alpha), (2.0, spec.glow_outer_alpha)]
+            {
                 let halo = with_scaled_alpha(spec.glow, alpha);
                 let offset = spec.glow_px * ring_scale;
                 let (halo_font, halo_color) = style_for(halo);
@@ -102,7 +106,10 @@ pub fn spawn_neon_text<M: Bundle + Clone>(parent: &mut ChildSpawnerCommands, spe
                         Text::new(spec.value),
                         halo_font.clone(),
                         halo_color,
-                        TextLayout { justify: spec.justify, ..default() },
+                        TextLayout {
+                            justify: spec.justify,
+                            ..default()
+                        },
                         Node {
                             position_type: PositionType::Absolute,
                             left: Val::Px(ux * offset),
@@ -119,7 +126,10 @@ pub fn spawn_neon_text<M: Bundle + Clone>(parent: &mut ChildSpawnerCommands, spe
                 Text::new(spec.value),
                 core_font,
                 core_color,
-                TextLayout { justify: spec.justify, ..default() },
+                TextLayout {
+                    justify: spec.justify,
+                    ..default()
+                },
                 Node {
                     width: spec.width,
                     ..default()

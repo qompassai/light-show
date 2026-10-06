@@ -411,7 +411,6 @@ impl DialogueBank {
             ),
         ])
     }
-
 }
 
 #[cfg(test)]

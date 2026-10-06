@@ -166,11 +166,7 @@ impl Alarm {
     /// untouched — a cleared alarm never re-fires through sync.
     pub fn sync_from_outage(&mut self) {
         self.refresh_severity();
-        if self.outage.resolved
-            && matches!(
-                self.ack,
-                AlarmAck::New | AlarmAck::Acknowledged { .. }
-            )
+        if self.outage.resolved && matches!(self.ack, AlarmAck::New | AlarmAck::Acknowledged { .. })
         {
             self.ack = AlarmAck::Resolved;
         }
@@ -208,7 +204,10 @@ mod tests {
             OutageKind::AerialDamage,
             OutageKind::AmplifierFailure,
         ] {
-            assert_eq!(AlarmSeverity::from_outage(&kind, 0.0), AlarmSeverity::Critical);
+            assert_eq!(
+                AlarmSeverity::from_outage(&kind, 0.0),
+                AlarmSeverity::Critical
+            );
             // Even one second before the complaint timer expires.
             assert_eq!(
                 AlarmSeverity::from_outage(&kind, kind.base_timer_seconds() - 1.0),
@@ -225,24 +224,48 @@ mod tests {
     #[test]
     fn progressive_hazard_escalates_warning_minor_major() {
         let kind = OutageKind::WaterIntrusion; // 120s timer
-        assert_eq!(AlarmSeverity::from_outage(&kind, 0.0), AlarmSeverity::Warning);
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 0.0),
+            AlarmSeverity::Warning
+        );
         // 0.30 * 120 = 36s -> Minor
-        assert_eq!(AlarmSeverity::from_outage(&kind, 36.0), AlarmSeverity::Minor);
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 36.0),
+            AlarmSeverity::Minor
+        );
         // 0.65 * 120 = 78s -> Major
-        assert_eq!(AlarmSeverity::from_outage(&kind, 78.0), AlarmSeverity::Major);
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 78.0),
+            AlarmSeverity::Major
+        );
         // Past expiry -> still Major (never Critical for degrading kinds)
-        assert_eq!(AlarmSeverity::from_outage(&kind, 240.0), AlarmSeverity::Major);
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 240.0),
+            AlarmSeverity::Major
+        );
     }
 
     #[test]
     fn static_hazard_escalates_more_slowly() {
         let kind = OutageKind::ConnectorContamination; // 60s timer
-        assert_eq!(AlarmSeverity::from_outage(&kind, 0.0), AlarmSeverity::Warning);
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 0.0),
+            AlarmSeverity::Warning
+        );
         // 0.40 * 60 = 24s -> Minor (later than the progressive 0.30)
-        assert_eq!(AlarmSeverity::from_outage(&kind, 23.9), AlarmSeverity::Warning);
-        assert_eq!(AlarmSeverity::from_outage(&kind, 24.0), AlarmSeverity::Minor);
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 23.9),
+            AlarmSeverity::Warning
+        );
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 24.0),
+            AlarmSeverity::Minor
+        );
         // 0.80 * 60 = 48s -> Major
-        assert_eq!(AlarmSeverity::from_outage(&kind, 48.0), AlarmSeverity::Major);
+        assert_eq!(
+            AlarmSeverity::from_outage(&kind, 48.0),
+            AlarmSeverity::Major
+        );
     }
 
     #[test]

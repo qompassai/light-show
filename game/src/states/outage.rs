@@ -67,35 +67,106 @@ pub struct ActiveOutage {
 /// the list supports multiple concurrent alarms with ack/dispatch/clear.
 /// The `ActiveOutage` single-outage banner stays for backward compatibility
 /// with the existing outage-repair loop.
+///
+/// Alarm identity is a monotonic `u64` id (see `AlarmList::raise`), never
+/// a `Vec` index: rows are re-sorted for display and cleared alarms are
+/// removed, so indices shift but ids stay stable for the session.
 #[derive(Resource, Default)]
 pub struct AlarmList {
     pub alarms: Vec<Alarm>,
+    next_id: u64,
 }
 
 impl AlarmList {
-    /// Push a new alarm from an outage. Returns the alarm index.
-    pub fn raise(&mut self, outage: Outage, now_secs: f64) -> usize {
-        let id = self.alarms.len() as u64;
-        self.alarms.push(Alarm::new(id, outage, now_secs));
-        self.alarms.len() - 1
-    }
-
-    /// Acknowledge an alarm by index, dispatching a companion.
-    /// No-op if out of bounds.
-    pub fn acknowledge(&mut self, index: usize, companion_idx: u8) {
-        if let Some(alarm) = self.alarms.get_mut(index) {
-            alarm.ack = AlarmAck::Acknowledged { companion_idx };
+    /// Severity rank for ordering: Critical first. Higher is more urgent.
+    fn severity_rank(severity: osp_sim::AlarmSeverity) -> u8 {
+        match severity {
+            osp_sim::AlarmSeverity::Critical => 3,
+            osp_sim::AlarmSeverity::Major => 2,
+            osp_sim::AlarmSeverity::Minor => 1,
+            osp_sim::AlarmSeverity::Warning => 0,
         }
     }
 
-    /// Clear resolved alarms from the list.
+    /// Raise a new alarm from an outage. Assigns the next monotonic id and
+    /// returns it. Ids are never reused within a session, even after
+    /// cleared alarms are removed.
+    pub fn raise(&mut self, outage: Outage, now_secs: f64) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.alarms.push(Alarm::new(id, outage, now_secs));
+        id
+    }
+
+    /// Find an alarm by id.
+    /// NOC console API (see `states::noc`); not yet wired to a screen.
+    #[allow(dead_code)]
+    pub fn get(&self, id: u64) -> Option<&Alarm> {
+        self.alarms.iter().find(|a| a.id == id)
+    }
+
+    /// Acknowledge an alarm by id, dispatching a companion. Records the ack
+    /// timestamp for response-time scoring. Returns false for unknown ids;
+    /// the underlying `Alarm::acknowledge` is idempotent for the rest.
+    pub fn ack(&mut self, id: u64, companion_idx: u8, now_secs: f64) -> bool {
+        match self.alarms.iter_mut().find(|a| a.id == id) {
+            Some(alarm) => {
+                alarm.acknowledge(companion_idx, now_secs);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Remove a resolved alarm by id (archive to history). Only `Resolved`
+    /// alarms can be cleared -- anything else is left in place. Returns
+    /// true when an alarm was removed.
+    /// NOC console API (see `states::noc`); not yet wired to a screen.
+    #[allow(dead_code)]
+    pub fn clear(&mut self, id: u64) -> bool {
+        let before = self.alarms.len();
+        self.alarms
+            .retain(|a| !(a.id == id && matches!(a.ack, AlarmAck::Resolved)));
+        self.alarms.len() < before
+    }
+
+    /// Remove every cleared alarm from the active list (history archival).
     pub fn clear_resolved(&mut self) {
         self.alarms.retain(|a| a.ack != AlarmAck::Cleared);
     }
 
     /// Count of unacknowledged alarms.
     pub fn unacked_count(&self) -> usize {
-        self.alarms.iter().filter(|a| matches!(a.ack, AlarmAck::New)).count()
+        self.alarms
+            .iter()
+            .filter(|a| matches!(a.ack, AlarmAck::New))
+            .count()
+    }
+
+    /// Display order: unacked first, then severity descending, then age
+    /// descending (oldest first -- the one that has been waiting longest).
+    pub fn sorted(&self) -> Vec<&Alarm> {
+        let mut refs: Vec<&Alarm> = self.alarms.iter().collect();
+        refs.sort_by(|a, b| {
+            let unacked_a = matches!(a.ack, AlarmAck::New);
+            let unacked_b = matches!(b.ack, AlarmAck::New);
+            unacked_b
+                .cmp(&unacked_a)
+                .then(Self::severity_rank(b.severity).cmp(&Self::severity_rank(a.severity)))
+                .then(a.raised_at_secs.total_cmp(&b.raised_at_secs))
+        });
+        refs
+    }
+
+    /// The alarm the NOC banner shows: highest-severity unacked alarm,
+    /// oldest first on ties. `None` when everything is acked -- the banner
+    /// shows ALL CLEAR.
+    /// NOC console API (see `states::noc`); not yet wired to a screen.
+    #[allow(dead_code)]
+    pub fn highest_unacked(&self) -> Option<&Alarm> {
+        self.sorted()
+            .into_iter()
+            .find(|a| matches!(a.ack, AlarmAck::New))
     }
 }
 
@@ -131,11 +202,7 @@ struct BannerSlideOut {
     elapsed_secs: f32,
 }
 
-fn announce_outage(
-    mut commands: Commands,
-    active: Res<ActiveOutage>,
-    sfx: Res<crate::audio::Sfx>,
-) {
+fn announce_outage(mut commands: Commands, active: Res<ActiveOutage>, sfx: Res<crate::audio::Sfx>) {
     sfx.play(&mut commands, crate::audio::SfxKind::Alarm);
     if let Some(outage) = &active.outage {
         info!(
@@ -231,7 +298,9 @@ fn teardown_outage_banner(
     // for the 0.25s slide-up + fade-out (Finding 4). The fullscreen fade
     // covers the state swap anyway, so this plays out underneath it.
     for entity in &query {
-        commands.entity(entity).insert(BannerSlideOut { elapsed_secs: 0.0 });
+        commands
+            .entity(entity)
+            .insert(BannerSlideOut { elapsed_secs: 0.0 });
     }
 }
 
@@ -307,6 +376,7 @@ fn tick_outage(
 /// window marks the outage resolved and ends the level as a win. Both
 /// outcomes go straight to `Results` — see the module doc comment for
 /// why this never routes back to `Playing`.
+#[allow(clippy::too_many_arguments)]
 fn check_outage_resolution(
     mut commands: Commands,
     mut active: ResMut<ActiveOutage>,
@@ -318,6 +388,8 @@ fn check_outage_resolution(
     next_state: Res<NextState<GameState>>,
     mut companions: Query<(Entity, &mut CompanionSprite)>,
     sfx: Res<crate::audio::Sfx>,
+    api_progress: Res<crate::states::api_console::ApiProgress>,
+    triage_progress: Res<crate::states::triage_console::TriageProgress>,
 ) {
     let Some(outage) = active.outage.clone() else {
         return;
@@ -327,8 +399,7 @@ fn check_outage_resolution(
     // `check_win_condition`): re-requesting queues a duplicate
     // Results -> Results transition whose OnExit/OnEnter pair rebuilds
     // the results screen mid-frame.
-    let transition_pending =
-        request.0.is_some() || matches!(*next_state, NextState::Pending(_));
+    let transition_pending = request.0.is_some() || matches!(*next_state, NextState::Pending(_));
 
     if !transition_pending && outage.is_expired() {
         sfx.play(&mut commands, crate::audio::SfxKind::Lose);
@@ -337,7 +408,21 @@ fn check_outage_resolution(
         return;
     }
 
+    // API-driver levels additionally require the console sequence —
+    // same gate as the plain win check (see playing::check_win_condition).
+    let api_ok = match &level.api_sequence {
+        Some(seq) => api_progress.is_complete(&seq.expected),
+        None => true,
+    };
+    // Triage levels (Aino's NOC board) additionally require the alarms
+    // acked in the expected priority order.
+    let triage_ok = match &level.alarm_triage {
+        Some(triage) => triage_progress.is_complete(&triage.expected_order),
+        None => true,
+    };
     if !transition_pending
+        && api_ok
+        && triage_ok
         && level.is_win_state_with_outage(
             &live.graph,
             live.tx_dbm,
@@ -426,9 +511,13 @@ mod tests {
             source_node: 0,
             target_node: 1,
             scripted_outage: None,
+            subscribers: vec![],
             on_enter_line: None,
             on_win_line: None,
             on_fail_line: None,
+            api_sequence: None,
+            alarm_triage: None,
+            quiz: None,
         }
     }
 
@@ -466,6 +555,8 @@ mod tests {
         world.init_resource::<NextState<GameState>>();
         world.insert_resource(crate::audio::Sfx::for_tests());
         world.init_resource::<AlarmList>();
+        world.init_resource::<crate::states::api_console::ApiProgress>();
+        world.init_resource::<crate::states::triage_console::TriageProgress>();
 
         world.run_system_once(check_outage_resolution);
 
@@ -490,6 +581,8 @@ mod tests {
         world.init_resource::<NextState<GameState>>();
         world.insert_resource(crate::audio::Sfx::for_tests());
         world.init_resource::<AlarmList>();
+        world.init_resource::<crate::states::api_console::ApiProgress>();
+        world.init_resource::<crate::states::triage_console::TriageProgress>();
 
         world.run_system_once(check_outage_resolution);
 
@@ -524,6 +617,89 @@ mod tests {
         assert_eq!(world.resource::<TransitionRequest>().0, None);
     }
 
+    // ---- AlarmList: id-based NOC alarm management ----
+
+    fn raise_kind(list: &mut AlarmList, kind: osp_sim::OutageKind, at: f64) -> u64 {
+        list.raise(Outage::new(kind, 0, 1), at)
+    }
+
+    #[test]
+    fn raise_assigns_monotonic_ids_never_reused() {
+        let mut list = AlarmList::default();
+        let a = raise_kind(&mut list, osp_sim::OutageKind::FiberCut, 0.0);
+        let b = raise_kind(&mut list, osp_sim::OutageKind::WaterIntrusion, 10.0);
+        assert_eq!((a, b), (0, 1));
+        // Resolve and clear the first; the next id still advances.
+        list.alarms[0].outage.resolved = true;
+        list.alarms[0].sync_from_outage();
+        assert!(list.clear(a));
+        let c = raise_kind(&mut list, osp_sim::OutageKind::Macrobend, 20.0);
+        assert_eq!(c, 2);
+        assert!(list.get(a).is_none());
+    }
+
+    #[test]
+    fn ack_by_id_records_companion_and_timestamp() {
+        let mut list = AlarmList::default();
+        let id = raise_kind(&mut list, osp_sim::OutageKind::WaterIntrusion, 50.0);
+        assert!(list.ack(id, 2, 63.5));
+        let alarm = list.get(id).unwrap();
+        assert_eq!(alarm.ack, AlarmAck::Acknowledged { companion_idx: 2 });
+        assert_eq!(alarm.acked_at_secs, Some(63.5));
+        // Unknown id: no-op, returns false.
+        assert!(!list.ack(999, 0, 0.0));
+    }
+
+    #[test]
+    fn clear_only_removes_resolved_alarms() {
+        let mut list = AlarmList::default();
+        let id = raise_kind(&mut list, osp_sim::OutageKind::FiberCut, 0.0);
+        // Not resolved yet: clear refuses.
+        assert!(!list.clear(id));
+        assert!(list.get(id).is_some());
+        // Resolve, then clear works.
+        list.alarms[0].outage.resolved = true;
+        list.alarms[0].sync_from_outage();
+        assert!(list.clear(id));
+        assert!(list.get(id).is_none());
+    }
+
+    #[test]
+    fn highest_unacked_prefers_severity_then_age() {
+        let mut list = AlarmList::default();
+        // Warning raised first (oldest), then a Critical.
+        let warn = raise_kind(&mut list, osp_sim::OutageKind::WaterIntrusion, 0.0);
+        let crit = raise_kind(&mut list, osp_sim::OutageKind::FiberCut, 30.0);
+        assert_eq!(list.highest_unacked().unwrap().id, crit);
+        // Ack the critical: the older warning surfaces.
+        list.ack(crit, 0, 40.0);
+        assert_eq!(list.highest_unacked().unwrap().id, warn);
+        // Ack everything: banner shows ALL CLEAR.
+        list.ack(warn, 0, 50.0);
+        assert!(list.highest_unacked().is_none());
+    }
+
+    #[test]
+    fn sorted_puts_unacked_first() {
+        let mut list = AlarmList::default();
+        let a = raise_kind(&mut list, osp_sim::OutageKind::FiberCut, 0.0);
+        let b = raise_kind(&mut list, osp_sim::OutageKind::WaterIntrusion, 5.0);
+        list.ack(a, 0, 10.0);
+        let ordered: Vec<u64> = list.sorted().iter().map(|x| x.id).collect();
+        // b is still New so it sorts first despite lower severity.
+        assert_eq!(ordered, vec![b, a]);
+    }
+
+    #[test]
+    fn unacked_count_ignores_acknowledged() {
+        let mut list = AlarmList::default();
+        let a = raise_kind(&mut list, osp_sim::OutageKind::FiberCut, 0.0);
+        raise_kind(&mut list, osp_sim::OutageKind::WaterIntrusion, 5.0);
+        assert_eq!(list.unacked_count(), 2);
+        list.ack(a, 0, 10.0);
+        assert_eq!(list.unacked_count(), 1);
+    }
+
     #[test]
     fn alarm_companion_sets_alarmed_mood_and_resets_frame() {
         let mut world = World::new();
@@ -540,7 +716,10 @@ mod tests {
         assert_eq!(sprite.mood, Mood::Alarmed);
         assert_eq!(sprite.frame, 0);
         // The mood change also triggers the scale pop (Finding 1).
-        assert_eq!(world.query::<&crate::waifu::MoodPop>().iter(&world).len(), 1);
+        assert_eq!(
+            world.query::<&crate::waifu::MoodPop>().iter(&world).len(),
+            1
+        );
     }
 }
 
@@ -618,9 +797,7 @@ fn update_alarm_list_panel(
             };
             let ack_text = match &alarm.ack {
                 AlarmAck::New => "NEW",
-                AlarmAck::Acknowledged { companion_idx } => {
-                    &format!("ACK(c{})", companion_idx)
-                }
+                AlarmAck::Acknowledged { companion_idx } => &format!("ACK(c{})", companion_idx),
                 AlarmAck::Resolved => "RESOLVED",
                 AlarmAck::Cleared => "CLEARED",
             };
@@ -654,11 +831,13 @@ fn update_alarm_list_panel(
     });
 }
 
-/// Keyboard input: number keys 1-9 acknowledge the corresponding alarm,
-/// dispatching companion 0 (the active companion) to it.
+/// Keyboard input: number keys 1-9 acknowledge the corresponding alarm in
+/// display order (see `AlarmList::sorted`), dispatching companion 0 (the
+/// active companion) to it.
 fn handle_alarm_ack_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut alarm_list: ResMut<AlarmList>,
+    time: Res<Time>,
 ) {
     let digit_keys = [
         KeyCode::Digit1,
@@ -671,10 +850,14 @@ fn handle_alarm_ack_input(
         KeyCode::Digit8,
         KeyCode::Digit9,
     ];
+    // Snapshot the ids first: `ack` mutates the list, and the borrow
+    // checker will not let us hold `sorted()` refs across it.
+    let ordered_ids: Vec<u64> = alarm_list.sorted().iter().map(|a| a.id).collect();
     for (i, key) in digit_keys.iter().enumerate() {
         if keyboard.just_pressed(*key) {
-            // Dispatch the active companion (index 0) to the alarm.
-            alarm_list.acknowledge(i, 0);
+            if let Some(id) = ordered_ids.get(i) {
+                alarm_list.ack(*id, 0, time.elapsed_secs_f64());
+            }
         }
     }
 }

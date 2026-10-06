@@ -48,3 +48,24 @@ leaf issues #8–#37. Closing a leaf issue checks off the item.
 
 - #30 Play Console app + keystore; #31 service-account invite;
   #32 fdroiddata MR; #33 Windows installer decision.
+
+## Overnight program (2026-10-05 ~20:05 PDT, Matt authorized)
+Matt: "continue to iterate on lightshow until it is fully finished and
+polished ready to be run on my linux desktop, and publish to fdroid and
+google play store. everything gets tested, validated and curatively fixed
+for issues, persistent memory updated, and commit/push as needed."
+
+- **Model terminology** (Matt directive): chibi = current style (picker/
+  title); mature = young adult (early 20s, NOT aged up) for HD interactions.
+  Three young-adult portraits regenerated, Matt approved ("these look
+  great"), committed (young-adult set; aged-up set discarded).
+- **Dialogue UI** (MMBN-style): built, 9 tests, 400 passing, committed.
+  Portrait box + typewriter + blips + advance. Uses mature portraits.
+- **Level expansion**: content supports ~40-48 levels (not 10). Building
+  character-by-character: Clara (cms/ 6 guides -> 8-10) -> Aino (ams/ 14
+  topics -> 8-10) -> Hikari (bxe/ 6 guides -> 7-9) -> Lea (ta/ 12 quiz
+  files -> 8-10). Clara expansion in progress.
+- **Footage**: capturing all 10 levels to game/assets/footage/<level-id>/
+  (in progress).
+- **Publication**: F-Droid Gates 1-4 + Play prep in progress. Gate 5
+  (GitLab MR) + signing keys + Play upload are Matt-only.

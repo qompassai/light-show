@@ -19,7 +19,7 @@ use bevy::prelude::*;
 
 use super::dialogue::DialogueBank;
 use super::Companion;
-use crate::audio::{Sfx, SfxKind};
+use crate::audio::{dialogue_blip_speed, Sfx, SfxKind};
 use crate::fonts::{BODY, BODY_MEDIUM, DISPLAY, FONT_SIZE_ADJUST};
 use crate::ui::neon::{NEON_CYAN, NEON_DIM, NEON_GOLD};
 
@@ -121,9 +121,7 @@ impl Typewriter {
         self.char_timer_secs += dt_secs;
         let mut new_chars = 0;
         let per_char_secs = 1.0 / TYPEWRITER_CHARS_PER_SEC;
-        while self.char_timer_secs >= per_char_secs
-            && self.revealed_count < self.chars.len()
-        {
+        while self.char_timer_secs >= per_char_secs && self.revealed_count < self.chars.len() {
             self.char_timer_secs -= per_char_secs;
             let c = self.chars[self.revealed_count];
             self.revealed_count += 1;
@@ -266,11 +264,7 @@ pub fn start_dialogue(
 }
 
 /// Hide the dialogue panel and idle the systems.
-pub fn close_dialogue(
-    commands: &mut Commands,
-    ui: &DialogueUiEntities,
-    state: &mut DialogueState,
-) {
+pub fn close_dialogue(commands: &mut Commands, ui: &DialogueUiEntities, state: &mut DialogueState) {
     state.active = false;
     commands.entity(ui.root).insert(Visibility::Hidden);
 }
@@ -284,9 +278,8 @@ fn spawn_dialogue_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let body: Handle<Font> = asset_server.load(BODY);
     let body_medium: Handle<Font> = asset_server.load(BODY_MEDIUM);
     // Placeholder portrait until `start_dialogue` swaps in the real one.
-    let placeholder: Handle<Image> = asset_server.load(
-        Expression::Neutral.portrait_path(Companion::default()),
-    );
+    let placeholder: Handle<Image> =
+        asset_server.load(Expression::Neutral.portrait_path(Companion::default()));
 
     let root = commands
         .spawn((
@@ -419,7 +412,11 @@ fn tick_dialogue(
         state.blip_counter += new_chars;
         if state.blip_counter >= BLIP_EVERY_N_CHARS {
             state.blip_counter %= BLIP_EVERY_N_CHARS;
-            sfx.play(&mut commands, SfxKind::Dialogue);
+            sfx.play_with_speed(
+                &mut commands,
+                SfxKind::Dialogue,
+                dialogue_blip_speed(state.companion),
+            );
         }
     }
     body.0 = state.typewriter.revealed_text();
@@ -429,8 +426,7 @@ fn tick_dialogue(
     state.talk_time_secs += time.delta_secs();
     if let Ok(mut transform) = portraits.single_mut() {
         let scale = if talking {
-            1.0 + TALK_BOUNCE_AMPLITUDE
-                * (state.talk_time_secs * TALK_BOUNCE_RAD_PER_SEC).sin()
+            1.0 + TALK_BOUNCE_AMPLITUDE * (state.talk_time_secs * TALK_BOUNCE_RAD_PER_SEC).sin()
         } else {
             1.0
         };

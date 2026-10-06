@@ -97,6 +97,7 @@ fn playthrough_app() -> App {
         CompanionSelectPlugin,
         PlayingPlugin,
         crate::states::api_console::ApiConsolePlugin,
+        crate::states::triage_console::TriageConsolePlugin,
         OutagePlugin,
         ResultsPlugin,
         SeraphinePlugin,

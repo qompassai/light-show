@@ -136,10 +136,7 @@ fn animate_connect_sparks(
 /// Spawns one success-burst per pending request as a UI child.
 /// The request carries pre-loaded frames so this system needs no
 /// `AssetServer`: the results screen owns the load lifetime.
-fn spawn_success_bursts(
-    mut commands: Commands,
-    mut requests: MessageReader<SpawnSuccessBurst>,
-) {
+fn spawn_success_bursts(mut commands: Commands, mut requests: MessageReader<SpawnSuccessBurst>) {
     for req in requests.read() {
         let first = req.frames[0].clone();
         commands.spawn((
