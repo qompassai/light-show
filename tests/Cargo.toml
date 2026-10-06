@@ -46,6 +46,14 @@ path = "game_quiz.rs"
 name = "edge_cases"
 path = "edge_cases.rs"
 
+[[test]]
+name = "stress_tests"
+path = "stress_tests.rs"
+
+[[test]]
+name = "bevy_issues"
+path = "bevy_issues.rs"
+
 [dependencies]
 osp_sim = { path = "../crates/osp_sim" }
 light-show = { path = "../game" }
