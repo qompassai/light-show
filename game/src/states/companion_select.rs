@@ -336,6 +336,20 @@ fn spawn_companion_card(
                     },
                     TextColor(NEON_GOLD),
                 ));
+                // Trackless specialists (cheat-code unlocks) get a visible
+                // badge: pressing the card stays on this screen by design,
+                // and the badge says why instead of leaving silence.
+                if companion.track_start_index().is_none() {
+                    text.spawn((
+                        Text::new("TRACK COMING SOON"),
+                        TextFont {
+                            font: body.clone().into(),
+                            font_size: FontSize::Px(12.0 * FONT_SIZE_ADJUST),
+                            ..default()
+                        },
+                        TextColor(NEON_DIM),
+                    ));
+                }
             });
         });
 }
@@ -425,6 +439,9 @@ fn handle_select_buttons(
     for (interaction, button) in &interactions {
         if *interaction == Interaction::Pressed {
             let Some(start) = button.0.track_start_index() else {
+                // No track to start: acknowledge the press audibly so it
+                // isn't silent, but stay on the select screen.
+                sfx.play(&mut commands, crate::audio::SfxKind::Click);
                 continue;
             };
             sfx.play(&mut commands, crate::audio::SfxKind::Pick);
