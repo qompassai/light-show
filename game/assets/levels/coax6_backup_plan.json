@@ -1,0 +1,40 @@
+{
+  "id": "c1l6",
+  "title": "Backup Plan",
+  "world": 2,
+  "briefing": "The primary line amp is running hot and maintenance says it will fail within the minute. A backup tap sits closer to the headend on only 100 meters of plant — but closer means hotter, so it needs a SMALLER amp. Build the backup path with the right gain before the primary dies.",
+  "medium": "Coax",
+  "wavelength": "Nm1490",
+  "tx_dbm": 25.0,
+  "window_min_dbm": 8.0,
+  "window_max_dbm": 13.0,
+  "nodes": [
+    {"id": 0, "label": "Headend", "grid_x": 0.0, "grid_y": 0.5},
+    {"id": 1, "label": "Primary Amp Station", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "Backup Amp Station", "grid_x": 1.0, "grid_y": 1.0},
+    {"id": 3, "label": "Tap", "grid_x": 2.0, "grid_y": 0.5},
+    {"id": 4, "label": "Customer Drop", "grid_x": 3.0, "grid_y": 0.5}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"CoaxSpan": {"length_m": 300.0}}},
+    {"from": 0, "to": 2, "component": {"CoaxSpan": {"length_m": 100.0}}},
+    {"from": 3, "to": 4, "component": {"Tap": {"tap_loss_db": 8.0}}}
+  ],
+  "available_components": [
+    {"from": 1, "to": 3, "component": {"Amplifier": {"gain_db": 8.0}}},
+    {"from": 1, "to": 3, "component": {"Amplifier": {"gain_db": 12.0}}},
+    {"from": 2, "to": 3, "component": {"Amplifier": {"gain_db": 2.0}}},
+    {"from": 2, "to": 3, "component": {"Amplifier": {"gain_db": 1.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 4,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "outage_resolved",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": {
+    "edge_from": 1,
+    "edge_to": 3,
+    "fires_after_seconds": 10.0,
+    "kind": "AmplifierFailure"
+  }
+}

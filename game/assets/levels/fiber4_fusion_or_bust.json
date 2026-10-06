@@ -1,0 +1,29 @@
+{
+  "id": "f1l4",
+  "title": "Fusion or Bust",
+  "world": 1,
+  "briefing": "25 km of buried fiber at 1490 nm. The budget is razor thin — a mechanical splice's 0.4 dB will sink you, but a fusion splice's 0.075 dB just barely keeps you afloat. Do the math before you pick up the cleaver.",
+  "medium": "Fiber",
+  "wavelength": "Nm1490",
+  "tx_dbm": -10.0,
+  "window_min_dbm": -17.2,
+  "window_max_dbm": -8.0,
+  "nodes": [
+    {"id": 0, "label": "OLT (Central Office)", "grid_x": 0.0, "grid_y": 0.0},
+    {"id": 1, "label": "Splice Enclosure 22+50", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "ONT (Customer Premise)", "grid_x": 2.0, "grid_y": 0.0}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"Span": {"length_km": 25.0, "plant": "Buried"}}}
+  ],
+  "available_components": [
+    {"from": 1, "to": 2, "component": {"Splice": {"kind": "Fusion", "degradation_db": 0.0}}},
+    {"from": 1, "to": 2, "component": {"Splice": {"kind": "Mechanical", "degradation_db": 0.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 2,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": null
+}

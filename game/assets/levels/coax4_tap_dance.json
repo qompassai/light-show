@@ -1,0 +1,32 @@
+{
+  "id": "c1l4",
+  "title": "Tap Dance",
+  "world": 2,
+  "briefing": "The cascade is already balanced — 20 dB of line amp against 400 meters of plant. All that's left is the tap, and the tap IS the budget: 4 dB leaves the picture hot enough to distort, 12 dB leaves it snowing. Pick the tap that lands in [8, 12].",
+  "medium": "Coax",
+  "wavelength": "Nm1490",
+  "tx_dbm": 20.0,
+  "window_min_dbm": 8.0,
+  "window_max_dbm": 12.0,
+  "nodes": [
+    {"id": 0, "label": "Headend", "grid_x": 0.0, "grid_y": 0.0},
+    {"id": 1, "label": "Amplifier Station", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "Tap", "grid_x": 2.0, "grid_y": 0.0},
+    {"id": 3, "label": "Customer Drop", "grid_x": 3.0, "grid_y": 0.0}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"CoaxSpan": {"length_m": 400.0}}},
+    {"from": 1, "to": 2, "component": {"Amplifier": {"gain_db": 20.0}}}
+  ],
+  "available_components": [
+    {"from": 2, "to": 3, "component": {"Tap": {"tap_loss_db": 4.0}}},
+    {"from": 2, "to": 3, "component": {"Tap": {"tap_loss_db": 8.0}}},
+    {"from": 2, "to": 3, "component": {"Tap": {"tap_loss_db": 12.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 3,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": null
+}

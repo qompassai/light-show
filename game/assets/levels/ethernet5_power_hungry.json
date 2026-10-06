@@ -1,0 +1,81 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Switch": {
+          "poe_budget_w": 30.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Switch": {
+          "poe_budget_w": 60.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Switch": {
+          "poe_budget_w": 15.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "The new camera array draws 45 W of PoE \u2014 more than the old 30 W switches can feed. Cable can't conjure watts. The 50 m Cat6 run is already pulled; place the switch whose PoE budget actually covers the load without browning out.",
+  "endpoint_poe_draw_w": 45.0,
+  "fixed_edges": [
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat6",
+          "length_m": 50.0
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "id": "e1l5",
+  "max_segment_length_m": 100.0,
+  "medium": "Ethernet",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Closet"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "IDF-1"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "IDF-2"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "required_bandwidth_mbps": 1000,
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 2,
+  "title": "Power Hungry",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 4
+}

@@ -1,0 +1,332 @@
+{
+  "api_sequence": null,
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneBySixteen"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "SmartMDU property: twelve units, one GigaSpire per door, all backhauled on PON. The Field Service app has every system associated to its unit \u2014 your job is the headend math. Twelve homes, one split: count the ports before you count the decibels.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 1.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 1.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 2.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 2.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 5
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 6
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 7
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 8
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 9
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 10
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 11
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 12
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 13
+    }
+  ],
+  "id": "clara8",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office)"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "MDU Splitter \u2014 Elm Court Apts"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -2.5,
+      "id": 2,
+      "label": "ONT \u2014 Apt 101 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -2.05,
+      "id": 3,
+      "label": "ONT \u2014 Apt 102 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.6,
+      "id": 4,
+      "label": "ONT \u2014 Apt 103 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.15,
+      "id": 5,
+      "label": "ONT \u2014 Apt 104 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.7,
+      "id": 6,
+      "label": "ONT \u2014 Apt 201 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.25,
+      "id": 7,
+      "label": "ONT \u2014 Apt 202 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.20000000000000018,
+      "id": 8,
+      "label": "ONT \u2014 Apt 203 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.6499999999999999,
+      "id": 9,
+      "label": "ONT \u2014 Apt 204 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.1,
+      "id": 10,
+      "label": "ONT \u2014 Apt 301 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.5499999999999998,
+      "id": 11,
+      "label": "ONT \u2014 Apt 302 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 2.0,
+      "id": 12,
+      "label": "ONT \u2014 Apt 303 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 2.45,
+      "id": 13,
+      "label": "ONT \u2014 Apt 304 (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 1.0,
+      "name": "Apt 101",
+      "node": 2,
+      "profile": "GPON-100",
+      "reg_id": "APT101A"
+    },
+    {
+      "distance_km": 1.5,
+      "name": "Apt 102",
+      "node": 3,
+      "profile": "GPON-100",
+      "reg_id": "APT102B"
+    },
+    {
+      "distance_km": 2.0,
+      "name": "Apt 103",
+      "node": 4,
+      "profile": "GPON-100",
+      "reg_id": "APT103C"
+    },
+    {
+      "distance_km": 2.5,
+      "name": "Apt 104",
+      "node": 5,
+      "profile": "GPON-100",
+      "reg_id": "APT104D"
+    },
+    {
+      "distance_km": 3.0,
+      "name": "Apt 201",
+      "node": 6,
+      "profile": "GPON-100",
+      "reg_id": "APT201E"
+    },
+    {
+      "distance_km": 3.5,
+      "name": "Apt 202",
+      "node": 7,
+      "profile": "GPON-100",
+      "reg_id": "APT202F"
+    },
+    {
+      "distance_km": 4.0,
+      "name": "Apt 203",
+      "node": 8,
+      "profile": "GPON-100",
+      "reg_id": "APT203G"
+    },
+    {
+      "distance_km": 4.5,
+      "name": "Apt 204",
+      "node": 9,
+      "profile": "GPON-100",
+      "reg_id": "APT204H"
+    },
+    {
+      "distance_km": 5.0,
+      "name": "Apt 301",
+      "node": 10,
+      "profile": "GPON-100",
+      "reg_id": "APT301I"
+    },
+    {
+      "distance_km": 5.5,
+      "name": "Apt 302",
+      "node": 11,
+      "profile": "GPON-100",
+      "reg_id": "APT302J"
+    },
+    {
+      "distance_km": 6.0,
+      "name": "Apt 303",
+      "node": 12,
+      "profile": "GPON-100",
+      "reg_id": "APT303K"
+    },
+    {
+      "distance_km": 6.5,
+      "name": "Apt 304",
+      "node": 13,
+      "profile": "GPON-100",
+      "reg_id": "APT304L"
+    }
+  ],
+  "target_node": 2,
+  "title": "Building Turn-Up",
+  "tx_dbm": 3.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

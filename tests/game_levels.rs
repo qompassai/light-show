@@ -235,7 +235,11 @@ fn validate_structure(level: &LevelDef) -> Result<(), LevelError> {
     if level.source_node == level.target_node {
         return Err(invalid(level, "source and target are the same node"));
     }
-    if level.available_components.is_empty() {
+    // A level needs player interaction: placeable board components, an
+    // API console sequence, or both. Pure API-driver levels (Clara's NBI/SMx
+    // puzzles) ship with a pre-lit board and no pills — the console is the
+    // puzzle.
+    if level.available_components.is_empty() && level.api_sequence.is_none() {
         return Err(invalid(level, "no player-placeable components"));
     }
     let edges = level.fixed_edges.iter().map(|e| (e.from, e.to));
@@ -246,6 +250,25 @@ fn validate_structure(level: &LevelDef) -> Result<(), LevelError> {
                 level,
                 format!("edge {from}->{to} names an undeclared node"),
             ));
+        }
+    }
+    if let Some(seq) = &level.api_sequence {
+        if seq.expected.is_empty() {
+            return Err(invalid(level, "api_sequence has empty expected order"));
+        }
+        if seq.api != "nbi" && seq.api != "smx" {
+            return Err(invalid(
+                level,
+                format!("api_sequence has unknown api '{}'", seq.api),
+            ));
+        }
+        for op in &seq.expected {
+            if !seq.choices.contains(op) {
+                return Err(invalid(
+                    level,
+                    format!("api_sequence expects {op:?} not offered in choices"),
+                ));
+            }
         }
     }
     if let Some(outage) = &level.scripted_outage {
@@ -344,15 +367,16 @@ fn validate_unique_ids<'a>(levels: impl Iterator<Item = &'a LevelDef>) -> Result
 
 /// Checks a companion → track-start table against `level_count` levels:
 /// every track lies inside the list, tracks never overlap, and every level
-/// belongs to some track (no unreachable level).
+/// belongs to some track (no unreachable level). Track lengths are
+/// per-companion (`Companion::track_len`): the base four run two-level
+/// tracks, Clara's provisioning track runs ten.
 fn check_progression(
     level_count: usize,
     tracks: &[(Companion, usize)],
-    track_len: usize,
 ) -> Result<(), ProgressionError> {
     let mut owner = vec![false; level_count];
-    for &(companion, start) in tracks {
-        for index in start..start.saturating_add(track_len) {
+    for &(companion, _start) in tracks {
+        for index in companion.track_indices() {
             let slot = owner
                 .get_mut(index)
                 .ok_or(ProgressionError::DanglingTrack { companion, index })?;
@@ -508,16 +532,20 @@ fn every_embedded_level_passes_through_the_game_loader() {
 
 #[test]
 fn base_companion_tracks_cover_every_level_exactly_once() {
-    let result = check_progression(LEVEL_SOURCES.len(), &base_tracks(), Companion::TRACK_LEN);
+    // Base four plus Clara's ten-level provisioning track (indices 8-17)
+    // must own every level exactly once. Aino/Hikari/Lea are trackless.
+    let mut tracks = base_tracks();
+    tracks.push((Companion::Clara, 8));
+    let result = check_progression(LEVEL_SOURCES.len(), &tracks);
     assert_eq!(result, Ok(()));
 }
 
 #[test]
 fn each_track_teaches_its_companions_medium_in_world_order() {
-    for (companion, start) in base_tracks() {
+    for (companion, _start) in base_tracks() {
         let medium = companion_medium(companion).expect("base companions have a medium");
         let mut previous_world = 0;
-        for index in start..start + Companion::TRACK_LEN {
+        for index in companion.track_indices() {
             let level = load_level(index);
             assert_eq!(
                 level.medium, medium,
@@ -757,40 +785,49 @@ fn empty_and_oversized_files_in_a_directory_are_typed_errors() {
 
 #[test]
 fn dangling_overlapping_and_orphan_tracks_are_detected() {
+    // The 50-level registry: five contiguous ten-level blocks.
     let level_count = LEVEL_SOURCES.len();
-    let track_len = Companion::TRACK_LEN;
-    let dangling = [(Companion::Fiber, level_count - 1)];
+    assert_eq!(level_count, 50);
+    let all_tracks: Vec<(Companion, usize)> = vec![
+        (Companion::Fiber, 0),
+        (Companion::Coax, 10),
+        (Companion::Mobile, 20),
+        (Companion::Ethernet, 30),
+        (Companion::Clara, 40),
+    ];
+    // Full registry validates clean.
+    assert_eq!(check_progression(level_count, &all_tracks), Ok(()));
+    // A short registry dangles: Fiber's 0-9 track overflows 5 levels.
     assert_eq!(
-        check_progression(level_count, &dangling, track_len),
+        check_progression(5, &all_tracks),
         Err(ProgressionError::DanglingTrack {
             companion: Companion::Fiber,
-            index: level_count
+            index: 5
         })
     );
-    let overlap = [(Companion::Fiber, 0), (Companion::Coax, 1)];
+    // Missing Clara's block orphans levels 40-49.
+    let no_clara: Vec<(Companion, usize)> = vec![
+        (Companion::Fiber, 0),
+        (Companion::Coax, 10),
+        (Companion::Mobile, 20),
+        (Companion::Ethernet, 30),
+    ];
     assert_eq!(
-        check_progression(level_count, &overlap, track_len),
-        Err(ProgressionError::OverlappingTracks { index: 1 })
-    );
-    let orphan = [(Companion::Fiber, 0)];
-    assert_eq!(
-        check_progression(level_count, &orphan, track_len),
-        Err(ProgressionError::OrphanLevel { index: track_len })
+        check_progression(level_count, &no_clara),
+        Err(ProgressionError::OrphanLevel { index: 40 })
     );
 }
 
 #[test]
 fn specialists_have_no_track_and_out_of_range_indices_clamp() {
-    // Specialist tracks are not built: they expose no start index at all,
-    // so no phantom level index can be produced. `load_level` must still
-    // clamp to the last level rather than index out of bounds.
+    // Trackless specialists expose no start index at all, so no phantom
+    // level index can be produced. Clara's provisioning track is live
+    // (indices 40-49, ten levels). `load_level` must still clamp to the
+    // last level rather than index out of bounds.
     let last_id = load_level(LEVEL_SOURCES.len() - 1).id;
-    for companion in [
-        Companion::Clara,
-        Companion::Aino,
-        Companion::Hikari,
-        Companion::Lea,
-    ] {
+    assert_eq!(Companion::Clara.track_start_index(), Some(40));
+    assert_eq!(Companion::Clara.track_len(), 10);
+    for companion in [Companion::Aino, Companion::Hikari, Companion::Lea] {
         assert_eq!(
             companion.track_start_index(),
             None,

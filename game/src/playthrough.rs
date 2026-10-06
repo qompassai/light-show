@@ -87,10 +87,16 @@ fn playthrough_app() -> App {
     // app doesn't add that plugin, so init it here. Idempotent if the
     // plugin later does the same.
     app.init_resource::<crate::anim::TransitionRequest>();
+    // `FxPlugin` (in the real game app) initializes these; the headless
+    // app doesn't add that plugin, so init them here. The board's pill
+    // systems write `SpawnConnectSpark` on placement.
+    app.init_resource::<bevy::ecs::message::Messages<crate::fx::SpawnConnectSpark>>();
+    app.init_resource::<bevy::ecs::message::Messages<crate::fx::SpawnSuccessBurst>>();
     app.add_plugins((
         MenuPlugin,
         CompanionSelectPlugin,
         PlayingPlugin,
+        crate::states::api_console::ApiConsolePlugin,
         OutagePlugin,
         ResultsPlugin,
         SeraphinePlugin,
@@ -332,9 +338,8 @@ fn tick_outage(app: &mut App, dt_seconds: f64) {
 // Winning playthroughs: all four companions, both levels of each track.
 // ---------------------------------------------------------------------------
 
-/// Séraphine (fiber): w1l1 splice tutorial, then w4l1 where the player
-/// pre-builds the buried protection route before the storm severs the
-/// aerial span.
+/// Séraphine (fiber): w1l1 splice tutorial, then f1l3 where the player
+/// picks a clean connector (the dirty one adds 2 dB and fails).
 #[test]
 fn fiber_track_wins_both_levels_through_real_input() {
     let mut app = playthrough_app();
@@ -344,22 +349,17 @@ fn fiber_track_wins_both_levels_through_real_input() {
     tap_pill(&mut app, 1, 2, 0);
     assert_eq!(expect_results(&app, true), 0);
 
-    // w4l1: build the protection route 0 -> 2 -> 3 BEFORE the storm, then
-    // let the aerial span fail at 20 s. Single-choice pairs are drag-only
-    // (no pill drawn), so lay the route with the real drag gesture.
+    // f1l3 (index 1 in the 50-level layout): clean UPC connector wins;
+    // slot 0 is the clean UPC, slot 1 is dirty, slot 2 is clean APC.
     press_result_action(&mut app, ResultAction::ContinueNextLevel);
     assert_eq!(game_state(&app), GameState::Playing);
     assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 1);
-    drag_route(&mut app, 2, 3);
-    // The storm fires at 20 s and the pre-built route wins on the first
-    // resolution check — pre-building the backup path IS the puzzle.
-    advance_clock(&mut app, 25.0);
+    tap_pill(&mut app, 1, 2, 0);
     expect_results(&app, true);
-    expect_outage_resolved(&app);
 
     // The track loop closes: back to the picker for another medium.
-    press_result_action(&mut app, ResultAction::ReturnToSelect);
-    assert_eq!(game_state(&app), GameState::CompanionSelect);
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(game_state(&app), GameState::Playing);
 }
 
 /// Ondine (coax): c1l1 unity-gain balance, then c1l2's ingress storm.
@@ -376,12 +376,12 @@ fn coax_track_wins_both_levels_through_real_input() {
 
     // c1l1: the 5 dB amp lands the 35 dBmV plant in [0, 15] dBmV.
     tap_pill(&mut app, 1, 2, 0);
-    assert_eq!(expect_results(&app, true), 2);
+    assert_eq!(expect_results(&app, true), 10);
 
     // c1l2: the 3 dB amp starts in window; the storm fires at 15 s and the
     // pre-placed answer wins on the first resolution check.
     press_result_action(&mut app, ResultAction::ContinueNextLevel);
-    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 3);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 11);
     tap_pill(&mut app, 1, 2, 0);
     advance_clock(&mut app, 20.0);
     expect_results(&app, true);
@@ -398,12 +398,12 @@ fn wireless_track_wins_both_levels_through_real_input() {
 
     // m1l1: the 20 dBm repeater closes the 400 m hop into [-75, -40] dBm.
     tap_pill(&mut app, 1, 2, 0);
-    assert_eq!(expect_results(&app, true), 4);
+    assert_eq!(expect_results(&app, true), 20); // wireless1 in 50-level layout
 
     // m1l2: the 20 dBm repeater starts in window; the storm fires at 15 s
     // and the pre-placed answer wins on the first resolution check.
     press_result_action(&mut app, ResultAction::ContinueNextLevel);
-    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 5);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 21);
     tap_pill(&mut app, 1, 2, 0);
     advance_clock(&mut app, 20.0);
     expect_results(&app, true);
@@ -418,11 +418,11 @@ fn ethernet_track_wins_both_levels_through_real_input() {
 
     // e1l1: only the switch beats the 100 m wall — 130 m of copper can't.
     tap_pill(&mut app, 1, 2, 0);
-    assert_eq!(expect_results(&app, true), 6);
+    assert_eq!(expect_results(&app, true), 30); // ethernet1 in 50-level layout
 
     // e1l2: the 60 W switch feeds the 25 W AP with headroom to spare.
     press_result_action(&mut app, ResultAction::ContinueNextLevel);
-    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 7);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 31); // ethernet2 in 50-level layout
     tap_pill(&mut app, 1, 2, 0);
     expect_results(&app, true);
 
@@ -492,10 +492,16 @@ fn wireless_storm_hot_swap_repair_wins_through_real_input() {
 #[test]
 fn fiber_unprotected_span_loses_the_storm() {
     let mut app = playthrough_app();
-    start_track(&mut app, Companion::Fiber);
-    tap_pill(&mut app, 1, 2, 0); // w1l1 win
-    expect_results(&app, true);
-    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    // Jump directly to the outage level (index 7 in 50-level layout).
+    // The test verifies outage mechanics, not track progression.
+    settle(&mut app);
+    app.world_mut().resource_mut::<SelectedCompanion>().0 = Companion::Fiber;
+    app.world_mut().resource_mut::<CurrentLevelIndex>().0 = 7;
+    app.world_mut()
+        .resource_mut::<crate::anim::TransitionRequest>()
+        .0 = Some(GameState::Playing);
+    settle(&mut app);
+    assert_eq!(game_state(&mut app), GameState::Playing);
 
     // Light ONLY the aerial span (1 -> 3) via the drag gesture — no backup
     // route. The storm severs it at 20 s and the outage must time out.
@@ -601,7 +607,7 @@ fn retry_button_replays_the_failed_level() {
     assert_eq!(game_state(&app), GameState::Playing);
     assert_eq!(
         app.world().resource::<CurrentLevelIndex>().0,
-        3,
+        11,
         "retry must replay c1l2, not advance"
     );
     assert!(
@@ -625,4 +631,187 @@ fn back_button_returns_to_menu_without_starting_a_track() {
         app.world().get_resource::<LevelDef>().is_none(),
         "backing out must not load a level"
     );
+}
+
+/// Start Clara's track at `index` without going through the picker
+/// (Clara has no picker card yet — see `Companion::ALL`). Mirrors
+/// `handle_select_buttons`: select companion, set level, request Playing.
+fn start_clara_level(app: &mut App, index: usize) {
+    settle(app);
+    assert_eq!(
+        game_state(app),
+        GameState::MainMenu,
+        "a fresh app boots to the main menu"
+    );
+    app.world_mut().resource_mut::<SelectedCompanion>().0 = Companion::Clara;
+    app.world_mut().resource_mut::<CurrentLevelIndex>().0 = index;
+    app.world_mut()
+        .resource_mut::<crate::anim::TransitionRequest>()
+        .0 = Some(GameState::Playing);
+    settle(app);
+    assert_eq!(game_state(app), GameState::Playing);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, index);
+}
+
+/// Press an API console button for `op` through its real `Interaction`
+/// handler.
+fn press_api_op(app: &mut App, op: crate::level::ApiOp) {
+    let target = {
+        let world = app.world_mut();
+        let mut buttons = world.query::<(Entity, &crate::states::api_console::ApiButton)>();
+        buttons
+            .iter(world)
+            .find(|(_, button)| button.0 == op)
+            .map(|(entity, _)| entity)
+            .expect("API console spawns a button per choice")
+    };
+    press_entity(app, target);
+}
+
+/// Clara (provisioning): all nine levels through real input.
+///
+/// * clara1 (8): 9 subs, 1:16 wins on ports (1:4/1:8 too few).
+/// * clara2 (9): 6 subs + WaterIntrusion outage, 1:8 wins.
+/// * clara3 (10): dead-box swap, 7 subs, 1:8 wins (1:4 too few ports).
+/// * clara4 (11): profile audit — hidden XGS at 2 km overloads on 1:8, so 1:16 wins.
+/// * clara5 (12): pure NBI API sequence.
+/// * clara6 (13): hybrid — 1:8 splitter + NBI bulk sequence.
+/// * clara7 (14): pure SMx REST lifecycle.
+/// * clara8 (15): SmartMDU 12 subs, 1:16 wins on ports.
+/// * clara9 (16): hot OLT — close XGS overloads on 1:16, so 1:32 wins.
+/// * clara10 (17): night cutover — 14 subs + outage + API on a hot OLT.
+///   Expert capstone: 1:32, the NBI bulk sequence, survive the intrusion.
+#[test]
+fn clara_track_wins_all_ten_levels_through_real_input() {
+    use crate::level::ApiOp;
+    let mut app = playthrough_app();
+
+    // clara1: 9 subscribers — only the 1:16 (slot 2 of 3) has the ports.
+    start_clara_level(&mut app, 40);
+    tap_pill(&mut app, 0, 1, 2);
+    assert_eq!(expect_results(&app, true), 40);
+
+    // clara2: storm level — 1:8 (slot 1 of 2), then survive the intrusion.
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 41);
+    tap_pill(&mut app, 0, 1, 1);
+    advance_clock(&mut app, 30.0);
+    expect_results(&app, true);
+    expect_outage_resolved(&app);
+
+    // clara3: dead-box swap — 1:8 (slot 1 of [1:4, 1:8]).
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 42);
+    tap_pill(&mut app, 0, 1, 1);
+    assert_eq!(expect_results(&app, true), 42);
+
+    // clara4: profile audit — 1:16 (slot 1 of [1:8, 1:16]).
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 43);
+    tap_pill(&mut app, 0, 1, 1);
+    assert_eq!(expect_results(&app, true), 43);
+
+    // clara5: pure NBI — drive the console sequence.
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 44);
+    for op in [
+        ApiOp::Login,
+        ApiOp::ShowOnt,
+        ApiOp::CreateService,
+        ApiOp::VerifyService,
+    ] {
+        press_api_op(&mut app, op);
+    }
+    assert_eq!(expect_results(&app, true), 44);
+
+    // clara6: hybrid — 1:8 splitter, then the NBI bulk sequence.
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 45);
+    tap_pill(&mut app, 0, 1, 1);
+    for op in [
+        ApiOp::Login,
+        ApiOp::ShowOnt,
+        ApiOp::CreateService,
+        ApiOp::VerifyService,
+        ApiOp::Logout,
+    ] {
+        press_api_op(&mut app, op);
+    }
+    assert_eq!(expect_results(&app, true), 45);
+
+    // clara7: pure SMx — the REST lifecycle.
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 46);
+    for op in [
+        ApiOp::Login,
+        ApiOp::CreateSubscriber,
+        ApiOp::CreateOnt,
+        ApiOp::CreateService,
+        ApiOp::VerifyService,
+    ] {
+        press_api_op(&mut app, op);
+    }
+    assert_eq!(expect_results(&app, true), 46);
+
+    // clara8: SmartMDU 12 subs — 1:16 (slot 1 of [1:8, 1:16]).
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 47);
+    tap_pill(&mut app, 0, 1, 1);
+    assert_eq!(expect_results(&app, true), 47);
+
+    // clara9: hot OLT — 1:32 (slot 1 of [1:16, 1:32]).
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 48);
+    tap_pill(&mut app, 0, 1, 1);
+    assert_eq!(expect_results(&app, true), 48);
+
+    // clara10: night cutover — 1:32 (slot 1 of [1:16, 1:32]), then the
+    // NBI bulk sequence, then survive the WaterIntrusion at 30 s.
+    press_result_action(&mut app, ResultAction::ContinueNextLevel);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 49);
+    tap_pill(&mut app, 0, 1, 1);
+    for op in [
+        ApiOp::Login,
+        ApiOp::ShowOnt,
+        ApiOp::CreateService,
+        ApiOp::VerifyService,
+        ApiOp::Logout,
+    ] {
+        press_api_op(&mut app, op);
+    }
+    advance_clock(&mut app, 35.0);
+    expect_results(&app, true);
+    expect_outage_resolved(&app);
+
+    // The track loop closes: back to the picker for another companion.
+    press_result_action(&mut app, ResultAction::ReturnToSelect);
+    assert_eq!(game_state(&app), GameState::CompanionSelect);
+}
+
+/// A wrong API pick raises an alarm and does not advance the sequence:
+/// the player must still produce the exact expected order to win.
+#[test]
+fn clara_api_wrong_pick_raises_alarm_without_advancing() {
+    use crate::level::ApiOp;
+    use crate::states::api_console::ApiProgress;
+    let mut app = playthrough_app();
+    // clara5 is index 44.
+    start_clara_level(&mut app, 44);
+
+    // Wrong first pick: RebootOnt instead of Login.
+    press_api_op(&mut app, ApiOp::RebootOnt);
+    let progress = app.world().resource::<ApiProgress>();
+    assert_eq!(progress.alarms_raised, 1);
+    assert!(progress.placed.is_empty());
+
+    // Now the correct sequence still wins.
+    for op in [
+        ApiOp::Login,
+        ApiOp::ShowOnt,
+        ApiOp::CreateService,
+        ApiOp::VerifyService,
+    ] {
+        press_api_op(&mut app, op);
+    }
+    assert_eq!(expect_results(&app, true), 44);
 }

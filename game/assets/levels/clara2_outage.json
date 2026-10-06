@@ -1,0 +1,198 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByFour"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "Storm season on a tired OLT. Six subscribers, water in the feeder splice, and the clock is running \u2014 this is the 'new install, no solid green LED' scenario from the EXOS field guide. Right-size the split for six homes, get everyone in window, and hold the plant together while the fault degrades. Check the NOC console (Aino's board) if the alarms start stacking.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 7.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 9.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 5
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 11.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 6
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 13.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 7
+    }
+  ],
+  "id": "clara2",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office)"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Splitter Cabinet 7+20"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.5,
+      "id": 2,
+      "label": "ONT \u2014 8 Willow (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.9,
+      "id": 3,
+      "label": "ONT \u2014 19 Aspen (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.3,
+      "id": 4,
+      "label": "ONT \u2014 Clinic (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.3,
+      "id": 5,
+      "label": "ONT \u2014 2 Spruce (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.9,
+      "id": 6,
+      "label": "ONT \u2014 44 Holly (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.5,
+      "id": 7,
+      "label": "ONT \u2014 Depot (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": {
+    "edge_from": 0,
+    "edge_to": 1,
+    "fires_after_seconds": 25.0,
+    "kind": "WaterIntrusion"
+  },
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 3.0,
+      "name": "8 Willow",
+      "node": 2,
+      "profile": "GPON-100",
+      "reg_id": "WILLOW8A"
+    },
+    {
+      "distance_km": 5.0,
+      "name": "19 Aspen",
+      "node": 3,
+      "profile": "GPON-100",
+      "reg_id": "ASPEN19"
+    },
+    {
+      "distance_km": 7.0,
+      "name": "Clinic",
+      "node": 4,
+      "profile": "GPON-100",
+      "reg_id": "CLINIC03"
+    },
+    {
+      "distance_km": 9.0,
+      "name": "2 Spruce",
+      "node": 5,
+      "profile": "GPON-100",
+      "reg_id": "SPRUCE2B"
+    },
+    {
+      "distance_km": 11.0,
+      "name": "44 Holly",
+      "node": 6,
+      "profile": "GPON-100",
+      "reg_id": "HOLLY44"
+    },
+    {
+      "distance_km": 13.0,
+      "name": "Depot",
+      "node": 7,
+      "profile": "GPON-100",
+      "reg_id": "DEPOT01"
+    }
+  ],
+  "target_node": 2,
+  "title": "Storm Season",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

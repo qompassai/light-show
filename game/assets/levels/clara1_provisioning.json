@@ -1,0 +1,271 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByFour"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneBySixteen"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "Clara's first turn-up, straight off the EXOS playbook. The office already created the nine subscribers \u2014 registration IDs issued, GPON and XGS profiles assigned. Your job in the field: hang the splitter in cabinet 7+20, then verify every ONT's received power lands inside its service window before you call it done. Count the ports before you count the decibels \u2014 an 8-port splitter cannot serve nine homes.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 2.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 5
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 6
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 8.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 7
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 10.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 8
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 11.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 9
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 12.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 10
+    }
+  ],
+  "id": "clara1",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office)"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Splitter Cabinet 7+20"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -2.0,
+      "id": 2,
+      "label": "ONT \u2014 14 Maple (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.5,
+      "id": 3,
+      "label": "ONT \u2014 Bakery (XGS-1000)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.0,
+      "id": 4,
+      "label": "ONT \u2014 22 Oak (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.5,
+      "id": 5,
+      "label": "ONT \u2014 9 Pine (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.0,
+      "id": 6,
+      "label": "ONT \u2014 31 Cedar (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.5,
+      "id": 7,
+      "label": "ONT \u2014 Farmhouse (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.0,
+      "id": 8,
+      "label": "ONT \u2014 4 Birch (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.5,
+      "id": 9,
+      "label": "ONT \u2014 School (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 2.0,
+      "id": 10,
+      "label": "ONT \u2014 17 Elm (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 2.0,
+      "name": "14 Maple",
+      "node": 2,
+      "profile": "GPON-100",
+      "reg_id": "MAPLE14A"
+    },
+    {
+      "distance_km": 3.0,
+      "name": "Bakery",
+      "node": 3,
+      "profile": "XGS-1000",
+      "reg_id": "BAKERY01"
+    },
+    {
+      "distance_km": 4.0,
+      "name": "22 Oak",
+      "node": 4,
+      "profile": "GPON-100",
+      "reg_id": "OAK22B"
+    },
+    {
+      "distance_km": 5.0,
+      "name": "9 Pine",
+      "node": 5,
+      "profile": "GPON-100",
+      "reg_id": "PINE9C"
+    },
+    {
+      "distance_km": 6.0,
+      "name": "31 Cedar",
+      "node": 6,
+      "profile": "GPON-100",
+      "reg_id": "CEDAR31"
+    },
+    {
+      "distance_km": 8.0,
+      "name": "Farmhouse",
+      "node": 7,
+      "profile": "GPON-100",
+      "reg_id": "FARMHOUSE"
+    },
+    {
+      "distance_km": 10.0,
+      "name": "4 Birch",
+      "node": 8,
+      "profile": "GPON-100",
+      "reg_id": "BIRCH4D"
+    },
+    {
+      "distance_km": 11.0,
+      "name": "School",
+      "node": 9,
+      "profile": "GPON-100",
+      "reg_id": "SCHOOL02"
+    },
+    {
+      "distance_km": 12.0,
+      "name": "17 Elm",
+      "node": 10,
+      "profile": "GPON-100",
+      "reg_id": "ELM17E"
+    }
+  ],
+  "target_node": 2,
+  "title": "First Turn-Up",
+  "tx_dbm": 3.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

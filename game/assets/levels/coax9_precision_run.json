@@ -1,0 +1,32 @@
+{
+  "id": "c1l9",
+  "title": "Precision Run",
+  "world": 6,
+  "briefing": "Expert cascade. A full kilometer of plant plus a 10 dB tap, headend at +58. The [3, 9] window gives you no slack — 17 dB overshoots, 22 dB is absurd. Calculate the exact gain or go home.",
+  "medium": "Coax",
+  "wavelength": "Nm1490",
+  "tx_dbm": 58.0,
+  "window_min_dbm": 3.0,
+  "window_max_dbm": 9.0,
+  "nodes": [
+    {"id": 0, "label": "Headend", "grid_x": 0.0, "grid_y": 0.0},
+    {"id": 1, "label": "Amplifier Station", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "Tap", "grid_x": 2.0, "grid_y": 0.0},
+    {"id": 3, "label": "Customer Drop", "grid_x": 3.0, "grid_y": 0.0}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"CoaxSpan": {"length_m": 1000.0}}},
+    {"from": 2, "to": 3, "component": {"Tap": {"tap_loss_db": 10.0}}}
+  ],
+  "available_components": [
+    {"from": 1, "to": 2, "component": {"Amplifier": {"gain_db": 12.0}}},
+    {"from": 1, "to": 2, "component": {"Amplifier": {"gain_db": 17.0}}},
+    {"from": 1, "to": 2, "component": {"Amplifier": {"gain_db": 22.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 3,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": null
+}

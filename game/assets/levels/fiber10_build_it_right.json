@@ -1,0 +1,38 @@
+{
+  "id": "f1l10",
+  "title": "Build It Right",
+  "world": 5,
+  "briefing": "Storm front inbound. The 6 km aerial span will not survive it — when it goes, only the 14 km buried protection path keeps the customer lit. Build the protection path NOW, and build it right: the long way around needs the low-loss splice.",
+  "medium": "Fiber",
+  "wavelength": "Nm1490",
+  "tx_dbm": -8.0,
+  "window_min_dbm": -12.1,
+  "window_max_dbm": -8.0,
+  "nodes": [
+    {"id": 0, "label": "OLT (Central Office)", "grid_x": 0.0, "grid_y": 0.5},
+    {"id": 1, "label": "Aerial Splice Point", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "Protection Route Splice", "grid_x": 1.0, "grid_y": 1.0},
+    {"id": 3, "label": "ONT (Customer Premise)", "grid_x": 2.0, "grid_y": 0.5}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"Span": {"length_km": 6.0, "plant": "Aerial"}}},
+    {"from": 0, "to": 2, "component": {"Span": {"length_km": 14.0, "plant": "Buried"}}}
+  ],
+  "available_components": [
+    {"from": 1, "to": 3, "component": {"Splice": {"kind": "Fusion", "degradation_db": 0.0}}},
+    {"from": 1, "to": 3, "component": {"Splice": {"kind": "Mechanical", "degradation_db": 0.0}}},
+    {"from": 2, "to": 3, "component": {"Splice": {"kind": "Fusion", "degradation_db": 0.0}}},
+    {"from": 2, "to": 3, "component": {"Splice": {"kind": "Mechanical", "degradation_db": 0.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 3,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "outage_resolved",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": {
+    "edge_from": 1,
+    "edge_to": 3,
+    "fires_after_seconds": 15.0,
+    "kind": "AerialDamage"
+  }
+}

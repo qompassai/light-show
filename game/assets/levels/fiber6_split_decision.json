@@ -1,0 +1,30 @@
+{
+  "id": "f1l6",
+  "title": "Split Decision",
+  "world": 1,
+  "briefing": "PON turn-up. The OLT launches at +3 dBm and the feeder eats 1.4 dB before the splitter cabinet. Your split ratio is the whole budget: 1:8 leaves the ONT screaming hot, 1:32 leaves it starved. Find the Goldilocks split.",
+  "medium": "Fiber",
+  "wavelength": "Nm1490",
+  "tx_dbm": 3.0,
+  "window_min_dbm": -13.0,
+  "window_max_dbm": -11.0,
+  "nodes": [
+    {"id": 0, "label": "OLT (Central Office)", "grid_x": 0.0, "grid_y": 0.0},
+    {"id": 1, "label": "Splitter Cabinet", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "ONT (Customer Premise)", "grid_x": 2.0, "grid_y": 0.0}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"Span": {"length_km": 5.0, "plant": "Buried"}}}
+  ],
+  "available_components": [
+    {"from": 1, "to": 2, "component": {"Splitter": {"ratio": "OneByEight"}}},
+    {"from": 1, "to": 2, "component": {"Splitter": {"ratio": "OneBySixteen"}}},
+    {"from": 1, "to": 2, "component": {"Splitter": {"ratio": "OneByThirtyTwo"}}}
+  ],
+  "source_node": 0,
+  "target_node": 2,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": null
+}

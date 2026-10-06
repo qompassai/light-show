@@ -1,0 +1,217 @@
+{
+  "api_sequence": null,
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByFour"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "Lightning took the ONT at 31 Oak. The swap box is on the truck \u2014 a GigaPro, so 31 Oak goes out the door as XGS-1000. Same reg ID (OAK31X), fresh activation. Seven homes on this cabinet; the truck only stocks 1:4 and 1:8 splits. Count the ports first.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 2.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 5
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 6
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 7.0,
+          "plant": "Aerial"
+        }
+      },
+      "from": 1,
+      "to": 7
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 8.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 8
+    }
+  ],
+  "id": "clara3",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office)"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Splitter Cabinet 3+11"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.5,
+      "id": 2,
+      "label": "ONT \u2014 14 Birch (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.0,
+      "id": 3,
+      "label": "ONT \u2014 22 Cedar (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.5,
+      "id": 4,
+      "label": "ONT \u2014 8 Maple (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.0,
+      "id": 5,
+      "label": "ONT \u2014 31 Oak (XGS-1000)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.5,
+      "id": 6,
+      "label": "ONT \u2014 9 Pine (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.0,
+      "id": 7,
+      "label": "ONT \u2014 17 Elm (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.5,
+      "id": 8,
+      "label": "ONT \u2014 4 Willow (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 2.0,
+      "name": "14 Birch",
+      "node": 2,
+      "profile": "GPON-100",
+      "reg_id": "BIRCH14A"
+    },
+    {
+      "distance_km": 3.0,
+      "name": "22 Cedar",
+      "node": 3,
+      "profile": "GPON-100",
+      "reg_id": "CEDAR22B"
+    },
+    {
+      "distance_km": 4.0,
+      "name": "8 Maple",
+      "node": 4,
+      "profile": "GPON-100",
+      "reg_id": "MAPLE8C"
+    },
+    {
+      "distance_km": 5.0,
+      "name": "31 Oak",
+      "node": 5,
+      "profile": "XGS-1000",
+      "reg_id": "OAK31X"
+    },
+    {
+      "distance_km": 6.0,
+      "name": "9 Pine",
+      "node": 6,
+      "profile": "GPON-100",
+      "reg_id": "PINE9D"
+    },
+    {
+      "distance_km": 7.0,
+      "name": "17 Elm",
+      "node": 7,
+      "profile": "GPON-100",
+      "reg_id": "ELM17E"
+    },
+    {
+      "distance_km": 8.0,
+      "name": "4 Willow",
+      "node": 8,
+      "profile": "GPON-100",
+      "reg_id": "WILLOW4F"
+    }
+  ],
+  "target_node": 2,
+  "title": "Dead Box Swap",
+  "tx_dbm": 3.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

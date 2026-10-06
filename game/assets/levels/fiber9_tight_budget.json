@@ -1,0 +1,32 @@
+{
+  "id": "f1l9",
+  "title": "Tight Budget",
+  "world": 5,
+  "briefing": "Expert work. 22 km at 1550 nm behind a 1:16 split — the feeder, the splitter, and your termination have to line up inside half a decibel. A mechanical splice or a connector will blow it. Only a fusion splice threads this needle.",
+  "medium": "Fiber",
+  "wavelength": "Nm1550",
+  "tx_dbm": 5.0,
+  "window_min_dbm": -13.5,
+  "window_max_dbm": -13.0,
+  "nodes": [
+    {"id": 0, "label": "OLT (Central Office)", "grid_x": 0.0, "grid_y": 0.0},
+    {"id": 1, "label": "Feeder End", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "Splitter Output", "grid_x": 2.0, "grid_y": 0.0},
+    {"id": 3, "label": "ONT (Customer Premise)", "grid_x": 3.0, "grid_y": 0.0}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"Span": {"length_km": 22.0, "plant": "Buried"}}},
+    {"from": 1, "to": 2, "component": {"Splitter": {"ratio": "OneBySixteen"}}}
+  ],
+  "available_components": [
+    {"from": 2, "to": 3, "component": {"Splice": {"kind": "Fusion", "degradation_db": 0.0}}},
+    {"from": 2, "to": 3, "component": {"Splice": {"kind": "Mechanical", "degradation_db": 0.0}}},
+    {"from": 2, "to": 3, "component": {"Connector": {"kind": "Apc", "contamination_db": 0.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 3,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": null
+}

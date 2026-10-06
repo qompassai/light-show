@@ -1,0 +1,424 @@
+{
+  "api_sequence": null,
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneBySixteen"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByThirtyTwo"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "Sixteen drops on one split and the OLT is running hot at +5 dBm. The lobby AP is XGS, one kilometer out \u2014 on a small split it will overload before the far units even wake up. This is the backwards one: you need MORE loss, not less. Size the split for the hottest ONT, then check the farthest.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 1.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 2.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 5
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 6
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 7
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 7.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 8
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 8.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 9
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 9.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 10
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 10.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 11
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 12
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 13
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 14
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 7.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 15
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 8.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 16
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 9.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 17
+    }
+  ],
+  "id": "clara9",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office) \u2014 hot"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "MDU Splitter \u2014 Pine Tower"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -3.0,
+      "id": 2,
+      "label": "ONT \u2014 Lobby AP (XGS-1000)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -2.6,
+      "id": 3,
+      "label": "ONT \u2014 Apt 101 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -2.2,
+      "id": 4,
+      "label": "ONT \u2014 Apt 102 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.7999999999999998,
+      "id": 5,
+      "label": "ONT \u2014 Apt 103 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.4,
+      "id": 6,
+      "label": "ONT \u2014 Apt 104 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.0,
+      "id": 7,
+      "label": "ONT \u2014 Apt 201 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.5999999999999996,
+      "id": 8,
+      "label": "ONT \u2014 Apt 202 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.19999999999999973,
+      "id": 9,
+      "label": "ONT \u2014 Apt 203 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.20000000000000018,
+      "id": 10,
+      "label": "ONT \u2014 Apt 204 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.6000000000000001,
+      "id": 11,
+      "label": "ONT \u2014 Apt 301 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.0,
+      "id": 12,
+      "label": "ONT \u2014 Apt 302 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.4000000000000004,
+      "id": 13,
+      "label": "ONT \u2014 Apt 303 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.8000000000000007,
+      "id": 14,
+      "label": "ONT \u2014 Apt 304 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 2.2,
+      "id": 15,
+      "label": "ONT \u2014 Garage IoT (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 2.6000000000000005,
+      "id": 16,
+      "label": "ONT \u2014 Roof AP (XGS-1000)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 3.0,
+      "id": 17,
+      "label": "ONT \u2014 Office (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 1.0,
+      "name": "Lobby AP",
+      "node": 2,
+      "profile": "XGS-1000",
+      "reg_id": "LOBBY01X"
+    },
+    {
+      "distance_km": 2.0,
+      "name": "Apt 101",
+      "node": 3,
+      "profile": "GPON-100",
+      "reg_id": "B101A"
+    },
+    {
+      "distance_km": 3.0,
+      "name": "Apt 102",
+      "node": 4,
+      "profile": "GPON-100",
+      "reg_id": "B102B"
+    },
+    {
+      "distance_km": 4.0,
+      "name": "Apt 103",
+      "node": 5,
+      "profile": "GPON-100",
+      "reg_id": "B103C"
+    },
+    {
+      "distance_km": 5.0,
+      "name": "Apt 104",
+      "node": 6,
+      "profile": "GPON-100",
+      "reg_id": "B104D"
+    },
+    {
+      "distance_km": 6.0,
+      "name": "Apt 201",
+      "node": 7,
+      "profile": "GPON-100",
+      "reg_id": "B201E"
+    },
+    {
+      "distance_km": 7.0,
+      "name": "Apt 202",
+      "node": 8,
+      "profile": "GPON-100",
+      "reg_id": "B202F"
+    },
+    {
+      "distance_km": 8.0,
+      "name": "Apt 203",
+      "node": 9,
+      "profile": "GPON-100",
+      "reg_id": "B203G"
+    },
+    {
+      "distance_km": 9.0,
+      "name": "Apt 204",
+      "node": 10,
+      "profile": "GPON-100",
+      "reg_id": "B204H"
+    },
+    {
+      "distance_km": 10.0,
+      "name": "Apt 301",
+      "node": 11,
+      "profile": "GPON-100",
+      "reg_id": "B301I"
+    },
+    {
+      "distance_km": 4.5,
+      "name": "Apt 302",
+      "node": 12,
+      "profile": "GPON-100",
+      "reg_id": "B302J"
+    },
+    {
+      "distance_km": 5.5,
+      "name": "Apt 303",
+      "node": 13,
+      "profile": "GPON-100",
+      "reg_id": "B303K"
+    },
+    {
+      "distance_km": 6.5,
+      "name": "Apt 304",
+      "node": 14,
+      "profile": "GPON-100",
+      "reg_id": "B304L"
+    },
+    {
+      "distance_km": 7.5,
+      "name": "Garage IoT",
+      "node": 15,
+      "profile": "GPON-100",
+      "reg_id": "GARAGE01"
+    },
+    {
+      "distance_km": 8.5,
+      "name": "Roof AP",
+      "node": 16,
+      "profile": "XGS-1000",
+      "reg_id": "ROOF01X"
+    },
+    {
+      "distance_km": 9.5,
+      "name": "Office",
+      "node": 17,
+      "profile": "GPON-100",
+      "reg_id": "OFFICE01"
+    }
+  ],
+  "target_node": 2,
+  "title": "Tight Budget",
+  "tx_dbm": 5.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

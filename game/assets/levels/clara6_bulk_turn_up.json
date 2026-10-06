@@ -1,0 +1,166 @@
+{
+  "api_sequence": {
+    "api": "nbi",
+    "choices": [
+      "Login",
+      "ShowOnt",
+      "CreateService",
+      "UpdateService",
+      "RebootOnt",
+      "VerifyService",
+      "Logout"
+    ],
+    "expected": [
+      "Login",
+      "ShowOnt",
+      "CreateService",
+      "VerifyService",
+      "Logout"
+    ]
+  },
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByFour"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "Four homes, one cabinet, and the office wants them all live through the NBI \u2014 no desktop clicking. Hang the right split, then drive the bulk sequence: log in, read each ONT, create the services, verify, log out. A reboot mid-sequence will alarm the NOC, so keep your clicks clean.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 7.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 9.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 5
+    }
+  ],
+  "id": "clara6",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office)"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Splitter Cabinet 5+44"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.0,
+      "id": 2,
+      "label": "ONT \u2014 5 Juniper (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.30000000000000004,
+      "id": 3,
+      "label": "ONT \u2014 12 Larch (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.3999999999999999,
+      "id": 4,
+      "label": "ONT \u2014 7 Cypress (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.0999999999999996,
+      "id": 5,
+      "label": "ONT \u2014 21 Redwood (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 3.0,
+      "name": "5 Juniper",
+      "node": 2,
+      "profile": "GPON-100",
+      "reg_id": "JUNIPER5A"
+    },
+    {
+      "distance_km": 5.0,
+      "name": "12 Larch",
+      "node": 3,
+      "profile": "GPON-100",
+      "reg_id": "LARCH12B"
+    },
+    {
+      "distance_km": 7.0,
+      "name": "7 Cypress",
+      "node": 4,
+      "profile": "GPON-100",
+      "reg_id": "CYPRESS7C"
+    },
+    {
+      "distance_km": 9.0,
+      "name": "21 Redwood",
+      "node": 5,
+      "profile": "GPON-100",
+      "reg_id": "REDWOOD21D"
+    }
+  ],
+  "target_node": 2,
+  "title": "Bulk Turn-Up",
+  "tx_dbm": 3.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

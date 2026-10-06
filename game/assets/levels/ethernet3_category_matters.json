@@ -1,0 +1,84 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat5e",
+          "length_m": 40.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat6",
+          "length_m": 40.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat6",
+          "length_m": 50.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "The closet run is 60 m of Cat6 \u2014 good for 10 Gbps. But the slowest cable sets the speed for the whole path, and the far end needs 5 Gbps. Pick the 40 m run that doesn't bottleneck the link. A faster cable can't fix a slow one already in the wall.",
+  "endpoint_poe_draw_w": 0.0,
+  "fixed_edges": [
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat6",
+          "length_m": 60.0
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "id": "e1l3",
+  "max_segment_length_m": 100.0,
+  "medium": "Ethernet",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Closet"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "IDF-1"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "IDF-2"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "required_bandwidth_mbps": 5000,
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 2,
+  "title": "Category Matters",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 4
+}

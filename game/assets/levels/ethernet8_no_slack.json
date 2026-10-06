@@ -1,0 +1,98 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Switch": {
+          "poe_budget_w": 30.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Switch": {
+          "poe_budget_w": 20.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat6",
+          "length_m": 5.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "90 m of Cat6, then 90 m of legacy Cat5e \u2014 both near the 100 m wall, and the Cat5e caps the whole path at 1 Gbps. The far end needs exactly that: 1 Gbps and 25 W of PoE. Every parameter is tight. The switch must split the segments, feed the watts, and live with the Cat5e bottleneck.",
+  "endpoint_poe_draw_w": 25.0,
+  "fixed_edges": [
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat6",
+          "length_m": 90.0
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "EthernetRun": {
+          "category": "Cat5e",
+          "length_m": 90.0
+        }
+      },
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "id": "e1l8",
+  "max_segment_length_m": 100.0,
+  "medium": "Ethernet",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Closet"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "IDF-1"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "IDF-2"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 3,
+      "label": "Floor-2"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "required_bandwidth_mbps": 1000,
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 3,
+  "title": "No Slack",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

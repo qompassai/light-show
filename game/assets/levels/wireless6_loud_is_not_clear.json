@@ -1,0 +1,94 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 20.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 30.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 30.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "Two 500 m hops, and someone left a 30 dB amplifier on the bench. Tempting \u2014 but an amplifier shouts the wreckage louder: it boosts noise with the signal, and the second 500 m hop buries it again. Only a regenerative repeater hands the far site a clean signal. Pick the power that lands in the window without overdriving it.",
+  "fixed_edges": [
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 500,
+          "frequency_mhz": 2400
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 500,
+          "frequency_mhz": 2400
+        }
+      },
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "id": "m1l6",
+  "medium": "Wireless",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Site A"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "West Relay"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "East Relay"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 3,
+      "label": "Site B"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 3,
+  "title": "Loud Is Not Clear",
+  "tx_dbm": 20.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -65.0,
+  "window_min_dbm": -75.0,
+  "world": 3
+}

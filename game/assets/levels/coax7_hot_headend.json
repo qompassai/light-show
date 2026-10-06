@@ -1,0 +1,32 @@
+{
+  "id": "c1l7",
+  "title": "Hot Headend",
+  "world": 2,
+  "briefing": "The headend is screaming at +45 dBmV and the customer is only 100 meters away — every amplifier in your kit would overdrive the drop into distortion. Sometimes the answer isn't more gain, it's more cable. Use a long coax run as a pad.",
+  "medium": "Coax",
+  "wavelength": "Nm1490",
+  "tx_dbm": 45.0,
+  "window_min_dbm": 0.0,
+  "window_max_dbm": 15.0,
+  "nodes": [
+    {"id": 0, "label": "Headend", "grid_x": 0.0, "grid_y": 0.0},
+    {"id": 1, "label": "Pad Point", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "Tap", "grid_x": 2.0, "grid_y": 0.0},
+    {"id": 3, "label": "Customer Drop", "grid_x": 3.0, "grid_y": 0.0}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"CoaxSpan": {"length_m": 100.0}}},
+    {"from": 2, "to": 3, "component": {"Tap": {"tap_loss_db": 8.0}}}
+  ],
+  "available_components": [
+    {"from": 1, "to": 2, "component": {"CoaxSpan": {"length_m": 500.0}}},
+    {"from": 1, "to": 2, "component": {"CoaxSpan": {"length_m": 800.0}}},
+    {"from": 1, "to": 2, "component": {"Amplifier": {"gain_db": 10.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 3,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": null
+}

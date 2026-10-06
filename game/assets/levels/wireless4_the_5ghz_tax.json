@@ -1,0 +1,94 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 20.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 30.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Amplifier": {
+          "gain_db": 20.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "The 5.8 GHz band is clear of interference, but physics charges a tax: free-space loss climbs with frequency. These 250 m hops lose about 96 dB each at 5.8 GHz \u2014 nearly 8 dB more than at 2.4. Don't use 2.4 GHz math on a 5.8 GHz link. Pick the repeater that closes it.",
+  "fixed_edges": [
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 250,
+          "frequency_mhz": 5800
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 250,
+          "frequency_mhz": 5800
+        }
+      },
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "id": "m1l4",
+  "medium": "Wireless",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Site A"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "West Relay"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "East Relay"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 3,
+      "label": "Site B"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 3,
+  "title": "The 5GHz Tax",
+  "tx_dbm": 20.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -70.0,
+  "window_min_dbm": -80.0,
+  "world": 3
+}

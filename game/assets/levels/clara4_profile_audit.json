@@ -1,0 +1,194 @@
+{
+  "api_sequence": null,
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneBySixteen"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "The ticket says six GPON homes. The ticket is wrong \u2014 the Clinic was upgraded to XGS-1000 last month and nobody updated the record. XGS overloads a full dB sooner than GPON. The close ONT on a hot split will cook. Audit the profiles, then pick the split that keeps every window happy \u2014 including the one the ticket forgot.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 2.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 8.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 5
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 10.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 6
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 12.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 7
+    }
+  ],
+  "id": "clara4",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office)"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Splitter Cabinet 9+02"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.5,
+      "id": 2,
+      "label": "ONT \u2014 8 Willow (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.9,
+      "id": 3,
+      "label": "ONT \u2014 19 Aspen (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.30000000000000004,
+      "id": 4,
+      "label": "ONT \u2014 Clinic (XGS-1000)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.2999999999999998,
+      "id": 5,
+      "label": "ONT \u2014 2 Spruce (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.8999999999999999,
+      "id": 6,
+      "label": "ONT \u2014 44 Holly (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.5,
+      "id": 7,
+      "label": "ONT \u2014 Depot (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 4.0,
+      "name": "8 Willow",
+      "node": 2,
+      "profile": "GPON-100",
+      "reg_id": "WILLOW8A"
+    },
+    {
+      "distance_km": 6.0,
+      "name": "19 Aspen",
+      "node": 3,
+      "profile": "GPON-100",
+      "reg_id": "ASPEN19B"
+    },
+    {
+      "distance_km": 2.0,
+      "name": "Clinic",
+      "node": 4,
+      "profile": "XGS-1000",
+      "reg_id": "CLINIC03X"
+    },
+    {
+      "distance_km": 8.0,
+      "name": "2 Spruce",
+      "node": 5,
+      "profile": "GPON-100",
+      "reg_id": "SPRUCE2C"
+    },
+    {
+      "distance_km": 10.0,
+      "name": "44 Holly",
+      "node": 6,
+      "profile": "GPON-100",
+      "reg_id": "HOLLY44D"
+    },
+    {
+      "distance_km": 12.0,
+      "name": "Depot",
+      "node": 7,
+      "profile": "GPON-100",
+      "reg_id": "DEPOT01E"
+    }
+  ],
+  "target_node": 2,
+  "title": "Profile Audit",
+  "tx_dbm": 3.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

@@ -1,0 +1,33 @@
+{
+  "id": "f1l7",
+  "title": "Bend Don't Break",
+  "world": 1,
+  "briefing": "Someone kinked the drop below minimum bend radius — a 5 dB macrobend sitting right in your path. You can splice straight through it and eat the loss, or take the 12 km bypass around. A bad bend costs more than extra distance.",
+  "medium": "Fiber",
+  "wavelength": "Nm1490",
+  "tx_dbm": -10.0,
+  "window_min_dbm": -16.0,
+  "window_max_dbm": -8.0,
+  "nodes": [
+    {"id": 0, "label": "OLT (Central Office)", "grid_x": 0.0, "grid_y": 0.5},
+    {"id": 1, "label": "Junction", "grid_x": 1.0, "grid_y": 0.5},
+    {"id": 2, "label": "Kinked Drop", "grid_x": 2.0, "grid_y": 0.0},
+    {"id": 3, "label": "Bypass Splice", "grid_x": 2.0, "grid_y": 1.0},
+    {"id": 4, "label": "ONT (Customer Premise)", "grid_x": 3.0, "grid_y": 0.5}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"Span": {"length_km": 5.0, "plant": "Buried"}}},
+    {"from": 1, "to": 2, "component": {"Macrobend": {"excess_loss_db": 5.0}}},
+    {"from": 1, "to": 3, "component": {"Span": {"length_km": 12.0, "plant": "Buried"}}}
+  ],
+  "available_components": [
+    {"from": 2, "to": 4, "component": {"Splice": {"kind": "Fusion", "degradation_db": 0.0}}},
+    {"from": 3, "to": 4, "component": {"Splice": {"kind": "Fusion", "degradation_db": 0.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 4,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "level_win",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": null
+}

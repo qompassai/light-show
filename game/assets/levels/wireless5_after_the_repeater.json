@@ -1,0 +1,94 @@
+{
+  "available_components": [
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 15.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 20.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Repeater": {
+          "tx_dbm": 25.0
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "A short 200 m hop feeds the relay, then a long 400 m hop to the far site. Linka drills this into every tech: a regenerative repeater erases everything before it. That first hop is irrelevant \u2014 size the repeater for the 400 m hop AFTER it. That's the only math that matters.",
+  "fixed_edges": [
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 200,
+          "frequency_mhz": 2400
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "WirelessHop": {
+          "distance_m": 400,
+          "frequency_mhz": 2400
+        }
+      },
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "id": "m1l5",
+  "medium": "Wireless",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Site A"
+    },
+    {
+      "grid_x": 1.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "West Relay"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "East Relay"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 3,
+      "label": "Site B"
+    }
+  ],
+  "on_enter_line": "clean_splice",
+  "on_fail_line": "level_fail_cold",
+  "on_win_line": "level_win",
+  "scripted_outage": null,
+  "source_node": 0,
+  "target_node": 3,
+  "title": "After the Repeater",
+  "tx_dbm": 20.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -70.0,
+  "window_min_dbm": -75.0,
+  "world": 3
+}

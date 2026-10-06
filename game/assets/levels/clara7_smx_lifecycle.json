@@ -1,0 +1,64 @@
+{
+  "api_sequence": {
+    "api": "smx",
+    "choices": [
+      "Login",
+      "CreateSubscriber",
+      "CreateOnt",
+      "CreateService",
+      "DeleteSubscriber",
+      "VerifyService",
+      "Logout"
+    ],
+    "expected": [
+      "Login",
+      "CreateSubscriber",
+      "CreateOnt",
+      "CreateService",
+      "VerifyService"
+    ]
+  },
+  "available_components": [],
+  "briefing": "AXOS OLT in the cabinet \u2014 that means SMx, not the old CMS NBI. REST/JSON on :18443, no sessions, no SOAP. Walk the subscriber lifecycle: log in, create the subscriber, pre-provision the ONT, create the service, verify. (Careful: SMx is stateless \u2014 hitting Logout here is a tell that you're thinking in SOAP.)",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 0.1,
+          "plant": "Buried"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "id": "clara7",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "Tech Phone"
+    },
+    {
+      "grid_x": 4.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "SMx Server"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [],
+  "target_node": 1,
+  "title": "SMx Lifecycle",
+  "tx_dbm": -12.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

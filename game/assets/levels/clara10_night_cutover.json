@@ -1,0 +1,401 @@
+{
+  "api_sequence": {
+    "api": "nbi",
+    "choices": [
+      "Login",
+      "ShowOnt",
+      "CreateService",
+      "UpdateService",
+      "RebootOnt",
+      "VerifyService",
+      "Logout"
+    ],
+    "expected": [
+      "Login",
+      "ShowOnt",
+      "CreateService",
+      "VerifyService",
+      "Logout"
+    ]
+  },
+  "available_components": [
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneBySixteen"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByThirtyTwo"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "briefing": "The expert cutover. Fourteen drops on one split, the OLT running hot at +6 dBm, and a storm cell sitting over the feeder route. The NOC uplink is XGS at two kilometers \u2014 on a small split it will overload before the far units wake up. Hang the split that tames the hot ONT, drive the NBI bulk turn-up, and hold the plant together when the water gets in. Everything you've learned, one level.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 2.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 3.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 3
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 4.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 4
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 5
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 6
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 7.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 7
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 8.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 8
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 9.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 9
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 10.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 10
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 11.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 11
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 12.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 12
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 5.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 13
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 8.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 14
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 6.5,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 15
+    }
+  ],
+  "id": "clara10",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "OLT (Central Office) \u2014 hot"
+    },
+    {
+      "grid_x": 3.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Cutover Cabinet 1+99"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -3.0,
+      "id": 2,
+      "label": "ONT \u2014 NOC Uplink (XGS-1000)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -2.55,
+      "id": 3,
+      "label": "ONT \u2014 Apt 101 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -2.1,
+      "id": 4,
+      "label": "ONT \u2014 Apt 102 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.65,
+      "id": 5,
+      "label": "ONT \u2014 Apt 103 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -1.2,
+      "id": 6,
+      "label": "ONT \u2014 Apt 104 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.75,
+      "id": 7,
+      "label": "ONT \u2014 Apt 201 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": -0.2999999999999998,
+      "id": 8,
+      "label": "ONT \u2014 Apt 202 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.1499999999999999,
+      "id": 9,
+      "label": "ONT \u2014 Apt 203 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 0.6000000000000001,
+      "id": 10,
+      "label": "ONT \u2014 Apt 204 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.0499999999999998,
+      "id": 11,
+      "label": "ONT \u2014 Apt 301 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.5,
+      "id": 12,
+      "label": "ONT \u2014 Apt 302 (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 1.9500000000000002,
+      "id": 13,
+      "label": "ONT \u2014 Elevator (GPON-100)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 2.4000000000000004,
+      "id": 14,
+      "label": "ONT \u2014 Roof AP (XGS-1000)"
+    },
+    {
+      "grid_x": 6.0,
+      "grid_y": 2.8500000000000005,
+      "id": 15,
+      "label": "ONT \u2014 Office (GPON-100)"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": {
+    "edge_from": 0,
+    "edge_to": 1,
+    "fires_after_seconds": 30.0,
+    "kind": "WaterIntrusion"
+  },
+  "source_node": 0,
+  "subscribers": [
+    {
+      "distance_km": 2.0,
+      "name": "NOC Uplink",
+      "node": 2,
+      "profile": "XGS-1000",
+      "reg_id": "NOCUPLINK"
+    },
+    {
+      "distance_km": 3.0,
+      "name": "Apt 101",
+      "node": 3,
+      "profile": "GPON-100",
+      "reg_id": "C101A"
+    },
+    {
+      "distance_km": 4.0,
+      "name": "Apt 102",
+      "node": 4,
+      "profile": "GPON-100",
+      "reg_id": "C102B"
+    },
+    {
+      "distance_km": 5.0,
+      "name": "Apt 103",
+      "node": 5,
+      "profile": "GPON-100",
+      "reg_id": "C103C"
+    },
+    {
+      "distance_km": 6.0,
+      "name": "Apt 104",
+      "node": 6,
+      "profile": "GPON-100",
+      "reg_id": "C104D"
+    },
+    {
+      "distance_km": 7.0,
+      "name": "Apt 201",
+      "node": 7,
+      "profile": "GPON-100",
+      "reg_id": "C201E"
+    },
+    {
+      "distance_km": 8.0,
+      "name": "Apt 202",
+      "node": 8,
+      "profile": "GPON-100",
+      "reg_id": "C202F"
+    },
+    {
+      "distance_km": 9.0,
+      "name": "Apt 203",
+      "node": 9,
+      "profile": "GPON-100",
+      "reg_id": "C203G"
+    },
+    {
+      "distance_km": 10.0,
+      "name": "Apt 204",
+      "node": 10,
+      "profile": "GPON-100",
+      "reg_id": "C204H"
+    },
+    {
+      "distance_km": 11.0,
+      "name": "Apt 301",
+      "node": 11,
+      "profile": "GPON-100",
+      "reg_id": "C301I"
+    },
+    {
+      "distance_km": 12.0,
+      "name": "Apt 302",
+      "node": 12,
+      "profile": "GPON-100",
+      "reg_id": "C302J"
+    },
+    {
+      "distance_km": 5.5,
+      "name": "Elevator",
+      "node": 13,
+      "profile": "GPON-100",
+      "reg_id": "ELEVATOR1"
+    },
+    {
+      "distance_km": 8.5,
+      "name": "Roof AP",
+      "node": 14,
+      "profile": "XGS-1000",
+      "reg_id": "ROOF10X"
+    },
+    {
+      "distance_km": 6.5,
+      "name": "Office",
+      "node": 15,
+      "profile": "GPON-100",
+      "reg_id": "OFFICE10"
+    }
+  ],
+  "target_node": 2,
+  "title": "Night Cutover",
+  "tx_dbm": 6.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 5
+}

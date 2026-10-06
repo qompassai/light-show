@@ -1,0 +1,35 @@
+{
+  "id": "f1l8",
+  "title": "Contamination Event",
+  "world": 1,
+  "briefing": "A tech left a connector dirty and the customer's ticket just escalated — you have 60 seconds to re-terminate the patch panel. The budget is tight enough that only the lowest-loss clean connector survives. Move fast and pick right.",
+  "medium": "Fiber",
+  "wavelength": "Nm1490",
+  "tx_dbm": -10.0,
+  "window_min_dbm": -14.0,
+  "window_max_dbm": -8.0,
+  "nodes": [
+    {"id": 0, "label": "OLT (Central Office)", "grid_x": 0.0, "grid_y": 0.0},
+    {"id": 1, "label": "Patch Panel", "grid_x": 1.0, "grid_y": 0.0},
+    {"id": 2, "label": "ONT (Customer Premise)", "grid_x": 2.0, "grid_y": 0.0}
+  ],
+  "fixed_edges": [
+    {"from": 0, "to": 1, "component": {"Span": {"length_km": 13.0, "plant": "Buried"}}}
+  ],
+  "available_components": [
+    {"from": 1, "to": 2, "component": {"Connector": {"kind": "Upc", "contamination_db": 0.0}}},
+    {"from": 1, "to": 2, "component": {"Connector": {"kind": "Apc", "contamination_db": 0.0}}},
+    {"from": 1, "to": 2, "component": {"Splice": {"kind": "Mechanical", "degradation_db": 0.0}}}
+  ],
+  "source_node": 0,
+  "target_node": 2,
+  "on_enter_line": "clean_splice",
+  "on_win_line": "outage_resolved",
+  "on_fail_line": "level_fail_cold",
+  "scripted_outage": {
+    "edge_from": 1,
+    "edge_to": 2,
+    "fires_after_seconds": 10.0,
+    "kind": "ConnectorContamination"
+  }
+}
