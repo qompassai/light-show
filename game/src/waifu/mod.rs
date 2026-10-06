@@ -16,6 +16,7 @@
 //! which companion is on screen.
 
 pub mod dialogue;
+pub mod dialogue_ui;
 pub mod sprite;
 
 use bevy::prelude::*;
@@ -269,6 +270,24 @@ impl Companion {
             Companion::Aino => "aino",
             Companion::Hikari => "hikari",
             Companion::Lea => "lea",
+        }
+    }
+
+    /// Dialogue-box portrait, relative to the game's asset root.
+    /// Mature portraits are the in-game default per policy; the original
+    /// four ship only base portrait JPGs (their mature art lives in the
+    /// sprite sheets), so they use base here. Léa's portrait is not
+    /// generated yet — the path is a placeholder until her art lands.
+    pub fn portrait_path(&self) -> &'static str {
+        match self {
+            Companion::Fiber => "art/companions/seraphine_portrait.jpg",
+            Companion::Coax => "art/companions/ondine_portrait.jpg",
+            Companion::Mobile => "art/companions/linka_portrait.jpg",
+            Companion::Ethernet => "art/companions/lattice_portrait.jpg",
+            Companion::Clara => "art/companions/clara_portrait_mature.jpg",
+            Companion::Aino => "art/companions/aino_portrait_mature.jpg",
+            Companion::Hikari => "art/companions/hikari_portrait_mature.jpg",
+            Companion::Lea => "art/companions/lea_portrait.jpg",
         }
     }
 

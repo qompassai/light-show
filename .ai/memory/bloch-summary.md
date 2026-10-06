@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791253955
-Git HEAD: 72e15d2c8330e1c1f5f9d3af57216293405fe2b1
+Generated: 1791254264
+Git HEAD: d963adad4b616b1a83e0d1ee4d5e256991827cb2
 
 ## Files: 266 total
 
@@ -18,14 +18,14 @@ Git HEAD: 72e15d2c8330e1c1f5f9d3af57216293405fe2b1
 - xml: 5 files
 - python: 5 files
 - kotlin: 4 files
-- properties: 2 files
 - lock: 2 files
+- properties: 2 files
+- html: 1 files
+- cff: 1 files
 - uproject: 1 files
 - bat: 1 files
-- nix: 1 files
-- html: 1 files
 - css: 1 files
-- cff: 1 files
+- nix: 1 files
 
 ## Top definitions by probability
 
@@ -34,8 +34,8 @@ Git HEAD: 72e15d2c8330e1c1f5f9d3af57216293405fe2b1
 3. mod `game/src/lib.rs::waifu` (p=0.033)
 4. mod `game/src/lib.rs::board` (p=0.032)
 5. const `game/src/fonts.rs::FONT_SIZE_ADJUST` (p=0.027)
-6. mod `game/src/lib.rs::fonts` (p=0.025)
-7. enum `game/src/waifu/mod.rs::Companion` (p=0.025)
+6. enum `game/src/waifu/mod.rs::Companion` (p=0.025)
+7. mod `game/src/lib.rs::fonts` (p=0.025)
 8. const `crates/osp_sim/src/lib.rs::GPON_ONT` (p=0.024)
 9. const `crates/osp_sim/src/lib.rs::DEFAULT_TX_DBM` (p=0.024)
 10. const `game/src/cheat_codes.rs::_` (p=0.020)
