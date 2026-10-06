@@ -1,6 +1,11 @@
 #!/bin/bash
 # Auto-refresh bloch persistent memory after every commit.
 # Installed to .git/hooks/post-commit (see scripts/hooks/install.sh).
+#
+# RECURSION GUARD: the amend below re-triggers post-commit. Skip when
+# BLOCH_HOOK_ACTIVE is set (set by ourselves before amending).
+[ -n "$BLOCH_HOOK_ACTIVE" ] && exit 0
+
 set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
@@ -12,7 +17,7 @@ if [ -x "$HOME/.cargo/bin/bloch" ]; then
     # Stage the refreshed map if it changed (amend into the commit quietly).
     if ! git diff --quiet -- .ai/memory/bloch-last.json .ai/memory/bloch-summary.md 2>/dev/null; then
         git add .ai/memory/bloch-last.json .ai/memory/bloch-summary.md
-        git commit --amend --no-edit --no-verify -q 2>/dev/null || true
+        BLOCH_HOOK_ACTIVE=1 git commit --amend --no-edit --no-verify -q 2>/dev/null || true
     fi
 fi
 
