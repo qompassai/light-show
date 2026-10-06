@@ -153,11 +153,34 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
         .add_plugins(states::menu::MenuPlugin)
         .add_plugins(states::companion_select::CompanionSelectPlugin)
         .add_plugins(states::credits::CreditsPlugin)
-        .add_plugins(states::playing::PlayingPlugin)
-        .add_plugins(states::api_console::ApiConsolePlugin)
-        .add_plugins(states::quiz::QuizPlugin)
-        .add_plugins(states::triage_console::TriageConsolePlugin)
-        .add_plugins(states::outage::OutagePlugin)
+        .add_plugins(states::playing::PlayingPlugin);
+    // Skip UI plugins in footage mode for the 28 Clara/Aino/Hikari levels
+    // to avoid Bevy B0001 (their Text queries conflict). The footage driver
+    // places components directly, bypassing UI.
+    #[cfg(debug_assertions)]
+    let footage_skip_ui = footage_args.level_id.as_ref().is_some_and(|id| {
+        matches!(
+            id.as_str(),
+            "clara3" | "clara4" | "clara5" | "clara6" | "clara7" | "clara8" |
+            "clara9" | "clara10" |
+            "aino1" | "aino2" | "aino3" | "aino4" | "aino5" | "aino6" |
+            "aino7" | "aino8" | "aino9" | "aino10" |
+            "hikari1" | "hikari2" | "hikari3" | "hikari4" | "hikari5" |
+            "hikari6" | "hikari7" | "hikari8" | "hikari9" | "hikari10"
+        )
+    });
+    #[cfg(not(debug_assertions))]
+    let footage_skip_ui = false;
+    if !footage_skip_ui {
+        app.add_plugins(states::api_console::ApiConsolePlugin);
+        app.add_plugins(states::quiz::QuizPlugin);
+        app.add_plugins(states::triage_console::TriageConsolePlugin);
+    } else {
+        app.init_resource::<states::api_console::ApiProgress>();
+        app.init_resource::<states::quiz::QuizProgress>();
+        app.init_resource::<states::triage_console::TriageProgress>();
+    }
+    app.add_plugins(states::outage::OutagePlugin)
         .add_plugins(states::results::ResultsPlugin)
         .add_plugins(waifu::SeraphinePlugin)
         .add_plugins(waifu::dialogue_ui::DialogueUiPlugin)

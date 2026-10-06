@@ -80,25 +80,29 @@ struct QuizRoot;
 #[derive(Component)]
 pub struct QuizChoice(pub usize);
 
+/// Marker on the Text label inside a QuizChoice button.
+#[derive(Component)]
+pub(crate) struct QuizChoiceLabel;
+
 /// Marker on the Next/Finish button.
 #[derive(Component)]
-struct QuizNext;
+pub(crate) struct QuizNext;
 
 /// Marker on the question text.
 #[derive(Component)]
-struct QuizQuestionText;
+pub(crate) struct QuizQuestionText;
 
 /// Marker on the progress line ("Question 3/10").
 #[derive(Component)]
-struct QuizProgressLine;
+pub(crate) struct QuizProgressLine;
 
 /// Marker on the explanation panel.
 #[derive(Component)]
-struct QuizExplanation;
+pub(crate) struct QuizExplanation;
 
 /// Marker on the feedback line ("Correct!" / "Not quite.").
 #[derive(Component)]
-struct QuizFeedback;
+pub(crate) struct QuizFeedback;
 
 pub struct QuizPlugin;
 
@@ -195,6 +199,7 @@ pub(crate) fn setup_quiz_ui(
                 ))
                 .with_children(|btn| {
                     btn.spawn((
+                        QuizChoiceLabel,
                         Text::new(format!("{}. {}", (b'A' + i as u8) as char, choice)),
                         TextFont {
                             font: body.clone().into(),
@@ -262,7 +267,7 @@ fn question_text(quiz: &QuizDef, idx: usize) -> String {
 /// Handle choice button clicks: record the answer, show feedback +
 /// explanation, reveal the Next button.
 #[allow(clippy::too_many_arguments)]
-fn handle_quiz_choices(
+pub(crate) fn handle_quiz_choices(
     mut commands: Commands,
     level: Res<LevelDef>,
     mut progress: ResMut<QuizProgress>,
@@ -336,7 +341,7 @@ fn handle_quiz_choices(
 
 /// Handle the Next button: advance or finish the quiz.
 #[allow(clippy::too_many_arguments)]
-fn handle_quiz_next(
+pub(crate) fn handle_quiz_next(
     mut commands: Commands,
     level: Res<LevelDef>,
     mut progress: ResMut<QuizProgress>,
@@ -358,11 +363,28 @@ fn handle_quiz_next(
             Without<QuizQuestionText>,
             Without<QuizProgressLine>,
             Without<QuizFeedback>,
+            Without<QuizChoiceLabel>,
         ),
     >,
     mut next_btn: Query<&mut Node, With<QuizNext>>,
     mut choice_labels: Query<(&QuizChoice, &Children)>,
-    mut texts: Query<&mut Text, Without<QuizQuestionText>>,
+    mut texts: Query<
+        &mut Text,
+        (
+            With<QuizChoiceLabel>,
+            Without<crate::states::api_console::ApiStatusLine>,
+            Without<crate::states::api_console::ApiAlarmLine>,
+            Without<crate::states::triage_console::TriageStatusLine>,
+            Without<crate::states::triage_console::TriageWrongLine>,
+            Without<crate::waifu::dialogue_ui::DialogueBodyText>,
+            Without<crate::ui::LedgerText>,
+            Without<crate::states::outage::OutageBannerText>,
+            Without<QuizExplanation>,
+            Without<QuizFeedback>,
+            Without<QuizQuestionText>,
+            Without<QuizProgressLine>,
+        ),
+    >,
     mut outcome: ResMut<LevelOutcome>,
     mut request: ResMut<TransitionRequest>,
     next_state: Res<NextState<GameState>>,

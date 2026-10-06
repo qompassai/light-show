@@ -62,11 +62,11 @@ pub struct ApiButton(pub ApiOp);
 
 /// Marker on the status line ("3/5 calls — next: Show ONT").
 #[derive(Component)]
-struct ApiStatusLine;
+pub(crate) struct ApiStatusLine;
 
 /// Marker on the alarm counter line.
 #[derive(Component)]
-struct ApiAlarmLine;
+pub(crate) struct ApiAlarmLine;
 
 pub struct ApiConsolePlugin;
 

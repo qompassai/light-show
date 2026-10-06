@@ -63,11 +63,11 @@ pub struct TriageButton(pub u8);
 
 /// Marker on the status line ("2/5 acked").
 #[derive(Component)]
-struct TriageStatusLine;
+pub(crate) struct TriageStatusLine;
 
 /// Marker on the wrong-pick counter line.
 #[derive(Component)]
-struct TriageWrongLine;
+pub(crate) struct TriageWrongLine;
 
 pub struct TriageConsolePlugin;
 

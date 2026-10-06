@@ -1115,6 +1115,7 @@ mod tests {
             .map(|s| Outage::new(OutageKind::from(s.kind), s.edge_from, s.edge_to))
     }
 
+
     // Every bundled level must be winnable, and — except the fiber
     // tutorial, where both splice types are valid — exactly one pill per
     // level may win. A level with zero winning pills soft-locks the

@@ -176,7 +176,7 @@ struct OutageBanner;
 
 /// The countdown text child, refreshed every frame by `update_outage_banner`.
 #[derive(Component)]
-struct OutageBannerText;
+pub(crate) struct OutageBannerText;
 
 /// Seconds for the banner slide-down entrance (Finding 4).
 const BANNER_SLIDE_IN_SECS: f32 = 0.35;

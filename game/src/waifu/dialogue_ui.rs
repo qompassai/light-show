@@ -206,6 +206,14 @@ pub struct DialogueUiEntities {
 #[derive(Component)]
 struct DialoguePortrait;
 
+/// Marker on the dialogue body Text (typewriter target).
+#[derive(Component)]
+pub(crate) struct DialogueBodyText;
+
+/// Marker on the advance-indicator entity.
+#[derive(Component)]
+struct DialogueAdvance;
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -344,6 +352,7 @@ fn spawn_dialogue_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let body_text = commands
         .spawn((
+            DialogueBodyText,
             Text::new(""),
             TextFont {
                 font: body.clone().into(),
@@ -358,6 +367,7 @@ fn spawn_dialogue_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Advance indicator: pulsing "▼" when the line is complete.
     let advance = commands
         .spawn((
+            DialogueAdvance,
             Text::new("▼"),
             TextFont {
                 font: body_medium.into(),
@@ -397,9 +407,9 @@ fn tick_dialogue(
     sfx: Res<Sfx>,
     mut state: ResMut<DialogueState>,
     ui: Res<DialogueUiEntities>,
-    mut texts: Query<&mut Text>,
+    mut texts: Query<&mut Text, With<DialogueBodyText>>,
     mut portraits: Query<&mut Transform, With<DialoguePortrait>>,
-    mut advance_parts: Query<(&mut TextColor, &mut Visibility)>,
+    mut advance_parts: Query<(&mut TextColor, &mut Visibility), With<DialogueAdvance>>,
 ) {
     if !state.active {
         return;
