@@ -5,18 +5,19 @@
 //! `build_app()` so there is exactly one place that configures the App.
 
 mod anim;
-mod audio;
+mod asset_root;
+pub mod audio;
 #[cfg(debug_assertions)]
 mod bench;
 mod board;
-pub(crate) mod cheat_codes;
+pub mod cheat_codes;
 mod fonts;
-mod level;
+pub mod level;
 #[cfg(test)]
 mod playthrough;
 mod states;
 mod ui;
-mod waifu;
+pub mod waifu;
 
 use bevy::prelude::*;
 use bevy::render::renderer::RenderAdapterInfo;
@@ -58,12 +59,29 @@ fn main() {
             .with_tag("LightShow")
             .with_max_level(log::LevelFilter::Info),
     );
-    build_app().run();
+    // Android loads assets from the APK; this root only feeds the music
+    // decode guard and is the same compile-time path it always used.
+    build_app(concat!(env!("CARGO_MANIFEST_DIR"), "/assets").into()).run();
 }
 
-/// Desktop entry point, called from `src/main.rs`.
+/// Desktop entry point, called from `src/main.rs`. Exits with status 1 and
+/// the list of searched directories when no assets directory exists, rather
+/// than opening a window with no fonts, sprites, or music.
 pub fn run() {
-    build_app().run();
+    let search_env = asset_root::AssetSearchEnv::from_process();
+    let asset_root = match asset_root::resolve(&search_env, asset_root::probe_dir) {
+        Ok(dir) => dir,
+        Err(tried) => {
+            eprintln!("[light-show] error: no assets directory found. Searched:");
+            for path in &tried {
+                eprintln!("[light-show]   {}", path.display());
+            }
+            eprintln!("[light-show] Install assets/ at one of these, or set BEVY_ASSET_ROOT.");
+            std::process::exit(1);
+        }
+    };
+    eprintln!("[light-show] assets: {}", asset_root.display());
+    build_app(asset_root).run();
 }
 
 /// Logs the wgpu backend and adapter the renderer actually initialized,
@@ -97,7 +115,9 @@ fn log_render_backend_once(
     }
 }
 
-fn build_app() -> App {
+/// `asset_root` is the absolute directory assets load from; on desktop it
+/// replaces Bevy's exe-relative default so an installed binary finds them.
+fn build_app(asset_root: std::path::PathBuf) -> App {
     let mut app = App::new();
     #[cfg(debug_assertions)]
     let bench_args = bench::BenchArgs::from_args();
@@ -109,6 +129,16 @@ fn build_app() -> App {
         }),
         ..default()
     });
+    // An absolute `file_path` replaces Bevy's base path when joined.
+    #[cfg(not(target_os = "android"))]
+    let plugins = plugins.set(AssetPlugin {
+        file_path: asset_root
+            .to_str()
+            .expect("asset_root::resolve only returns UTF-8 paths")
+            .to_owned(),
+        ..default()
+    });
+    app.insert_resource(audio::AssetRootDir(asset_root));
     // `--bench-backend` swaps in a backend-forcing `RenderPlugin`; without
     // the flag the builder is returned untouched (byte-identical plugins).
     #[cfg(debug_assertions)]

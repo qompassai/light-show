@@ -272,6 +272,9 @@ impl LevelDef {
                                     } => {
                                         format!("{min_mbps} Mbps < {required_mbps} Mbps required")
                                     }
+                                    EthernetViolation::NonFiniteInput { field } => {
+                                        format!("non-finite input for {field}")
+                                    }
                                     EthernetViolation::UnsupportedComponent { detail, .. } => {
                                         detail.clone()
                                     }

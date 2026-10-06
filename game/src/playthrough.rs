@@ -257,7 +257,7 @@ fn start_track(app: &mut App, companion: Companion) {
         "the picked companion is the selected one"
     );
     assert_eq!(
-        app.world().resource::<CurrentLevelIndex>().0,
+        Some(app.world().resource::<CurrentLevelIndex>().0),
         companion.track_start_index(),
         "the track starts at the companion's first level"
     );

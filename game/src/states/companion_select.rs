@@ -30,8 +30,12 @@ impl Plugin for CompanionSelectPlugin {
                     handle_back_button,
                     animate_select_cards,
                     highlight_select_cards,
+                    // Words before Konami: `KonamiState::consumes` must see
+                    // the pre-feed progress. If Konami fed first, progress
+                    // would already have advanced past the key and B/A would
+                    // be misclassified as plain letters.
+                    detect_code_words.before(detect_konami_code),
                     detect_konami_code,
-                    detect_code_words,
                 )
                     .run_if(in_state(GameState::CompanionSelect)),
             )
@@ -55,14 +59,22 @@ fn detect_konami_code(
 }
 
 /// Watches for typed code words: JUSTINBAILEY, ABACABB, BLASTPROCESSING, TRIFORCE.
-/// Each unlocks its companion. Backspace clears the buffer.
+/// Each unlocks its companion. Backspace clears the buffer. Keys that advance
+/// the Konami sequence are skipped (must run before `detect_konami_code`).
 fn detect_code_words(
     mut buffer: ResMut<CodeWordBuffer>,
     mut unlocked: ResMut<UnlockedSpecialists>,
     keyboard: Res<ButtonInput<KeyCode>>,
+    konami: Res<KonamiState>,
 ) {
     // Letter keys A-Z
     for key in keyboard.get_just_pressed() {
+        if konami.consumes(*key) {
+            // The Konami B and A would otherwise land here as letters "BA".
+            // Matching is exact-whole-buffer, so that stray prefix would
+            // block every later code word until Backspace/Enter.
+            continue;
+        }
         let c = match key {
             KeyCode::KeyA => 'A', KeyCode::KeyB => 'B', KeyCode::KeyC => 'C',
             KeyCode::KeyD => 'D', KeyCode::KeyE => 'E', KeyCode::KeyF => 'F',
@@ -400,6 +412,8 @@ fn highlight_select_cards(
 /// A card press selects the companion *and* starts its level track: the
 /// sprite/dialogue swap still happens in
 /// `waifu::respawn_on_companion_change`, which reacts to the resource.
+/// A companion without a built track stays on this screen. This is the
+/// only gate into `Playing`, so `Results` can rely on a tracked companion.
 fn handle_select_buttons(
     mut commands: Commands,
     interactions: Query<(&Interaction, &SelectButton), Changed<Interaction>>,
@@ -410,9 +424,12 @@ fn handle_select_buttons(
 ) {
     for (interaction, button) in &interactions {
         if *interaction == Interaction::Pressed {
+            let Some(start) = button.0.track_start_index() else {
+                continue;
+            };
             sfx.play(&mut commands, crate::audio::SfxKind::Pick);
             selected.0 = button.0;
-            index.0 = button.0.track_start_index();
+            index.0 = start;
             request.0 = Some(GameState::Playing);
         }
     }
@@ -462,14 +479,25 @@ mod tests {
         world.run_system_once(handle_select_buttons);
 
         assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Ethernet);
-        assert_eq!(
-            world.resource::<CurrentLevelIndex>().0,
-            Companion::Ethernet.track_start_index()
-        );
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 6);
         assert!(matches!(
             world.resource::<TransitionRequest>().0,
             Some(GameState::Playing)
         ));
+    }
+
+    #[test]
+    fn pressing_a_trackless_specialist_card_stays_on_the_select_screen() {
+        let mut world = world_with_select_state();
+        world.spawn((SelectButton(Companion::Lea), Interaction::Pressed));
+
+        world
+            .run_system_once(handle_select_buttons)
+            .expect("select system runs");
+
+        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Fiber);
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 0);
+        assert!(world.resource::<TransitionRequest>().0.is_none());
     }
 
     #[test]
@@ -596,11 +624,19 @@ mod tests {
 
     #[test]
     fn every_companion_starts_a_distinct_two_level_track() {
-        let starts: Vec<usize> = Companion::ALL
+        let starts: Vec<Option<usize>> = Companion::ALL
             .iter()
             .map(|c| c.track_start_index())
             .collect();
-        assert_eq!(starts, vec![0, 2, 4, 6]);
+        assert_eq!(starts, vec![Some(0), Some(2), Some(4), Some(6)]);
         assert_eq!(Companion::TRACK_LEN, 2);
+        for specialist in [
+            Companion::Aino,
+            Companion::Clara,
+            Companion::Hikari,
+            Companion::Lea,
+        ] {
+            assert_eq!(specialist.track_start_index(), None, "{specialist:?}");
+        }
     }
 }

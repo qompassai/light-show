@@ -12,6 +12,10 @@ use bevy::prelude::*;
 use crate::waifu::Companion;
 use std::collections::HashSet;
 
+/// Re-exported so integration tests can drive `KonamiState::feed` without
+/// taking a direct `bevy` dependency.
+pub use bevy::prelude::KeyCode;
+
 /// Which specialist companions are unlocked. Base four (Fiber/Coax/Mobile/
 /// Ethernet) are always available; these four need codes or level completion.
 #[derive(Resource, Default)]
@@ -55,10 +59,22 @@ pub fn code_word_to_companion(code: &str) -> Option<Companion> {
 /// Konami Code sequence: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A START
 #[derive(Resource, Default)]
 pub struct KonamiState {
-    pub progress: usize,
+    /// Keys of `SEQUENCE` matched so far. Private so nothing outside `feed`
+    /// can break the `progress < SEQUENCE.len()` invariant that indexing
+    /// relies on.
+    progress: usize,
 }
 
+// The failure table must cover the sequence one-to-one.
+const _: () = assert!(KonamiState::FAILURE.len() == KonamiState::SEQUENCE.len());
+
 impl KonamiState {
+    /// KMP prefix function of `SEQUENCE`: `FAILURE[i]` is the length of the
+    /// longest proper prefix of `SEQUENCE[..=i]` that is also its suffix.
+    /// Only the leading `Up, Up` overlaps itself, so every other entry is 0.
+    /// Verified against an independent recomputation in the unit tests.
+    const FAILURE: [usize; 11] = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
     const SEQUENCE: &'static [KeyCode] = &[
         KeyCode::ArrowUp,
         KeyCode::ArrowUp,
@@ -74,19 +90,40 @@ impl KonamiState {
         KeyCode::Enter,
     ];
 
-    /// Feed a keypress. Returns true when the full sequence completes.
+    /// True when this keypress advances the Konami sequence and therefore
+    /// belongs to it (used to keep Konami keys out of the code-word buffer).
+    pub fn consumes(&self, key: KeyCode) -> bool {
+        self.progress < Self::SEQUENCE.len() && key == Self::SEQUENCE[self.progress]
+    }
+
+    /// Feed a keypress. Returns true when the full sequence completes, after
+    /// which the matcher re-arms at progress 0.
+    ///
+    /// On a mismatch it falls back through `FAILURE` (KMP) instead of
+    /// restarting, so an extra leading Up still completes. Bounded: each
+    /// fallback strictly shrinks the match, so at most `SEQUENCE.len()`
+    /// iterations per key.
     pub fn feed(&mut self, key: KeyCode) -> bool {
-        if key == Self::SEQUENCE[self.progress] {
-            self.progress += 1;
-            if self.progress >= Self::SEQUENCE.len() {
-                self.progress = 0;
-                return true;
-            }
-        } else {
-            // Reset, but check if this key starts a new sequence
-            self.progress = if key == Self::SEQUENCE[0] { 1 } else { 0 };
+        debug_assert!(self.progress < Self::SEQUENCE.len());
+        let mut matched = self.progress;
+        while matched > 0 && key != Self::SEQUENCE[matched] {
+            matched = Self::FAILURE[matched - 1];
         }
+        if key == Self::SEQUENCE[matched] {
+            matched += 1;
+        }
+        if matched == Self::SEQUENCE.len() {
+            self.progress = 0;
+            return true;
+        }
+        self.progress = matched;
         false
+    }
+
+    /// Keys of the sequence matched so far.
+    /// Invariant: `0 <= progress < SEQUENCE.len()` (11).
+    pub fn progress(&self) -> usize {
+        self.progress
     }
 }
 
@@ -147,7 +184,23 @@ mod tests {
         k.feed(KeyCode::ArrowUp);
         k.feed(KeyCode::ArrowUp);
         k.feed(KeyCode::KeyX); // wrong
-        assert_eq!(k.progress, 0);
+        assert_eq!(k.progress(), 0);
+    }
+
+    #[test]
+    fn konami_failure_table_matches_a_naive_recomputation() {
+        // Definition, not KMP: for each i, the longest k < i + 1 with
+        // seq[..k] == seq[i + 1 - k..=i], compared key by key.
+        let seq = KonamiState::SEQUENCE;
+        for i in 0..seq.len() {
+            let mut longest = 0;
+            for k in 1..=i {
+                if (0..k).all(|j| seq[j] == seq[i + 1 - k + j]) {
+                    longest = k;
+                }
+            }
+            assert_eq!(KonamiState::FAILURE[i], longest, "FAILURE[{i}]");
+        }
     }
 
     #[test]

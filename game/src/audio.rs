@@ -16,6 +16,7 @@
 //! two tracks are both alive.
 
 use std::io::Cursor;
+use std::path::{Path, PathBuf};
 
 use crate::level::{load_level, CurrentLevelIndex};
 use crate::states::{GameState, LevelOutcome};
@@ -42,6 +43,11 @@ impl Plugin for MusicPlugin {
             .add_systems(OnExit(GameState::Credits), stop_music);
     }
 }
+
+/// The same directory `AssetPlugin` loads from (see `lib::build_app`), so
+/// the decode guard below validates exactly the file bevy_audio will play.
+#[derive(Resource, Debug, Clone)]
+pub struct AssetRootDir(pub PathBuf);
 
 /// Marks the currently-playing music track's entity so `stop_music` can
 /// find and despawn it on the way out of any state.
@@ -122,20 +128,19 @@ pub fn results_track(won: bool) -> &'static str {
 // By validating here on the main thread, we log a clear error and skip
 // the track instead of crashing audio.
 //
-// The path is relative to `game/assets/` (same as the AssetServer root).
-// Uses `CARGO_MANIFEST_DIR` so it resolves correctly regardless of the
-// process working directory.
-fn audio_file_decodable(path: &str) -> bool {
-    let full_path = format!("{}/assets/{}", env!("CARGO_MANIFEST_DIR"), path);
+// `path` is relative to `asset_root`, the AssetServer's own root, so the
+// guard reads the installed file rather than a compile-time source path.
+fn audio_file_decodable(asset_root: &Path, path: &str) -> bool {
+    let full_path = asset_root.join(path);
     let bytes = match std::fs::read(&full_path) {
         Ok(b) => b,
         Err(e) => {
-            bevy::log::error!("Music track not found: {} ({})", full_path, e);
+            bevy::log::error!("Music track not found: {} ({})", full_path.display(), e);
             return false;
         }
     };
     if bytes.is_empty() {
-        bevy::log::error!("Music track is empty: {}", full_path);
+        bevy::log::error!("Music track is empty: {}", full_path.display());
         return false;
     }
     // Mirror bevy_audio 0.19.1's Decodable::decoder() exactly.
@@ -146,7 +151,7 @@ fn audio_file_decodable(path: &str) -> bool {
     {
         Ok(_) => true,
         Err(e) => {
-            bevy::log::error!("Music track failed to decode: {} ({:?})", full_path, e);
+            bevy::log::error!("Music track failed to decode: {} ({:?})", full_path.display(), e);
             false
         }
     }
@@ -155,11 +160,17 @@ fn audio_file_decodable(path: &str) -> bool {
 // Bevy systems: spawn the selected track on state enter, despawn on exit.
 // ---------------------------------------------------------------------------
 
-fn spawn_track(commands: &mut Commands, asset_server: &AssetServer, path: &str, looping: bool) {
+fn spawn_track(
+    commands: &mut Commands,
+    asset_server: &AssetServer,
+    asset_root: &AssetRootDir,
+    path: &str,
+    looping: bool,
+) {
     // Curative guard: validate decodability on the main thread before
     // handing the asset to bevy_audio. If the file is corrupt, we log
     // and skip instead of panicking a worker thread in `decoder().unwrap()`.
-    if !audio_file_decodable(path) {
+    if !audio_file_decodable(&asset_root.0, path) {
         return;
     }
     commands.spawn((
@@ -176,13 +187,18 @@ fn spawn_track(commands: &mut Commands, asset_server: &AssetServer, path: &str, 
     ));
 }
 
-fn play_menu_track(mut commands: Commands, asset_server: Res<AssetServer>) {
-    spawn_track(&mut commands, &asset_server, menu_track(), true);
+fn play_menu_track(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    asset_root: Res<AssetRootDir>,
+) {
+    spawn_track(&mut commands, &asset_server, &asset_root, menu_track(), true);
 }
 
 fn play_level_track(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    asset_root: Res<AssetRootDir>,
     level_index: Res<CurrentLevelIndex>,
 ) {
     // `load_level` parses the compile-time-embedded level JSON (the same
@@ -192,6 +208,7 @@ fn play_level_track(
     spawn_track(
         &mut commands,
         &asset_server,
+        &asset_root,
         playing_track(level_index.0, world),
         true,
     );
@@ -200,11 +217,13 @@ fn play_level_track(
 fn play_outage_track(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    asset_root: Res<AssetRootDir>,
     mut outage_count: Local<u32>,
 ) {
     spawn_track(
         &mut commands,
         &asset_server,
+        &asset_root,
         outage_track(*outage_count),
         true,
     );
@@ -216,11 +235,13 @@ fn play_outage_track(
 fn play_results_track(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    asset_root: Res<AssetRootDir>,
     outcome: Res<LevelOutcome>,
 ) {
     spawn_track(
         &mut commands,
         &asset_server,
+        &asset_root,
         results_track(outcome.won),
         false,
     );
@@ -394,13 +415,8 @@ impl Plugin for SfxPlugin {
 mod tests {
     use super::*;
 
-    /// Every path the music manager can return must actually exist under
-    /// `game/assets/` — a typo here would otherwise only surface as
-    /// silence at manual playtest, never a build error
-    /// (`AssetServer::load` takes a path, not a compile-time checked
-    /// handle). Covers every tier including both rotation slots.
-    #[test]
-    fn every_referenced_track_exists_on_disk() {
+    /// Every path the music manager can return, every tier and rotation slot.
+    fn every_music_path() -> Vec<&'static str> {
         let mut paths = vec![menu_track(), results_track(true), results_track(false)];
         for world in 0..=5 {
             for level_index in 0..2 {
@@ -410,7 +426,45 @@ mod tests {
         for outage_count in 0..2 {
             paths.push(outage_track(outage_count));
         }
-        for path in paths {
+        paths
+    }
+
+    /// bevy_audio's `Decodable::decoder()` unwraps the decode result on a
+    /// task-pool thread, so any shipped file the compiled-in decoders can't
+    /// read panics the game the first time it plays. `audio_file_decodable`
+    /// mirrors that decoder exactly (rodio's features unify across the
+    /// graph), so this proves every SFX and track will decode in-game.
+    /// Regression: the SFX are WAV and Bevy's `wav` feature was missing, so
+    /// the first button click panicked with `IoError("end of stream")`.
+    #[test]
+    fn every_shipped_audio_file_decodes() {
+        let asset_root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"));
+        let sfx_paths = ALL_SFX_KINDS.map(sfx_path);
+        for path in sfx_paths.iter().copied().chain(every_music_path()) {
+            assert!(
+                audio_file_decodable(asset_root, path),
+                "{path} does not decode with the compiled-in rodio decoders"
+            );
+        }
+    }
+
+    /// Adversarial: the guard must reject, not panic on, bytes that no
+    /// decoder accepts and on a path that does not exist.
+    #[test]
+    fn decode_guard_rejects_garbage_and_missing_files() {
+        let src_dir = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/src"));
+        assert!(!audio_file_decodable(src_dir, "audio.rs"));
+        assert!(!audio_file_decodable(src_dir, "no-such-track.mp3"));
+    }
+
+    /// Every path the music manager can return must actually exist under
+    /// `game/assets/` — a typo here would otherwise only surface as
+    /// silence at manual playtest, never a build error
+    /// (`AssetServer::load` takes a path, not a compile-time checked
+    /// handle). Covers every tier including both rotation slots.
+    #[test]
+    fn every_referenced_track_exists_on_disk() {
+        for path in every_music_path() {
             let on_disk = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string() + path;
             assert!(
                 std::path::Path::new(&on_disk).is_file(),

@@ -44,8 +44,14 @@ bevy = { version = "0.19", default-features = false, features = [
     "bevy_audio",
     "bevy_log",
     "ui_picking",
-    "vorbis",
+    # bevy_audio unwraps its decode result, so every shipped format needs a
+    # decoder or the game panics on first play: WAV for assets/sfx/, and
+    # symphonia's Ogg demuxer + Vorbis (lewton, the plain `vorbis` feature,
+    # rejects music/hard/subspaceaudio-action2-army-approaching.ogg).
+    # Guarded by audio::tests::every_shipped_audio_file_decodes.
+    "symphonia-vorbis",
     "mp3",
+    "wav",
     "png",
     "x11",
     "multi_threaded",
@@ -68,8 +74,9 @@ bevy = { version = "0.19", default-features = false, features = [
     "bevy_audio",
     "bevy_log",
     "ui_picking",
-    "vorbis",
+    "symphonia-vorbis",
     "mp3",
+    "wav",
     "png",
     "android-native-activity",
     "multi_threaded",

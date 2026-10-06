@@ -98,8 +98,33 @@ pub struct Outage {
     pub kind: OutageKind,
     pub edge_from: u32,
     pub edge_to: u32,
+    /// Seconds since the outage was raised. Invariant: always finite and
+    /// non-negative. [`Outage::tick`] only accepts finite positive steps,
+    /// and deserialization clamps anything else to 0.0 (see
+    /// `deserialize_elapsed_non_negative`), so forged or corrupt input can
+    /// neither un-expire the outage nor turn accumulated extra loss
+    /// negative (which the link budget would then apply as gain).
+    #[serde(deserialize_with = "deserialize_elapsed_non_negative")]
     pub elapsed_seconds: f64,
     pub resolved: bool,
+}
+
+/// `elapsed_seconds` deserializer: the timer invariant lives here, in one
+/// documented place. Only finite, non-negative values are meaningful
+/// elapsed time — a negative value would un-expire the outage and drive
+/// accumulated extra loss negative, and NaN would poison the timer. Both
+/// clamp to 0.0, mirroring [`Outage::tick`]'s guard that only finite
+/// positive steps count.
+fn deserialize_elapsed_non_negative<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = f64::deserialize(deserializer)?;
+    if value.is_finite() && value >= 0.0 {
+        Ok(value)
+    } else {
+        Ok(0.0)
+    }
 }
 
 impl Outage {
@@ -113,8 +138,12 @@ impl Outage {
         }
     }
 
+    /// Advance the complaint timer. Only finite, positive `dt_seconds`
+    /// counts: a negative step would hand back time already lost (even
+    /// un-expiring the outage), and NaN would poison `elapsed_seconds`
+    /// into instant expiry at full accumulated loss.
     pub fn tick(&mut self, dt_seconds: f64) {
-        if !self.resolved {
+        if !self.resolved && dt_seconds.is_finite() && dt_seconds > 0.0 {
             self.elapsed_seconds += dt_seconds;
         }
     }
@@ -134,12 +163,20 @@ impl Outage {
     /// what gives the coax/wireless repair levels their rebalancing
     /// window.
     pub fn accumulated_extra_loss_db(&self) -> f64 {
-        match self.kind {
+        let raw_db = match self.kind {
             OutageKind::WaterIntrusion => (self.elapsed_seconds / 10.0).min(15.0),
             OutageKind::IngressNoise | OutageKind::WirelessInterference => {
                 (self.elapsed_seconds / 10.0).min(12.0)
             }
             _ => 0.0,
+        };
+        // Defense in depth: extra loss is a loss, never gain — clamp the
+        // floor at 0 dB. NaN propagates instead of flooring to 0 so corrupt
+        // state fails closed downstream rather than routing for free.
+        if raw_db.is_nan() {
+            f64::NAN
+        } else {
+            raw_db.max(0.0)
         }
     }
 }
@@ -204,6 +241,105 @@ mod tests {
             assert!(!kind.flavor_text().is_empty());
             assert!(kind.base_timer_seconds() > 0.0);
         }
+    }
+
+    // ---- validation: timer boundaries and loss accumulation ----
+
+    /// ConnectorContamination's base complaint timer.
+    const CONTAMINATION_TIMER_S: f64 = 60.0;
+    /// WaterIntrusion's accumulated-loss ceiling.
+    const WATER_INTRUSION_CAP_DB: f64 = 15.0;
+
+    #[test]
+    fn expires_exactly_at_the_timer_boundary() {
+        let mut o = Outage::new(OutageKind::ConnectorContamination, 1, 2);
+        o.tick(CONTAMINATION_TIMER_S);
+        assert_relative_eq_local(o.time_remaining(), 0.0);
+        assert!(o.is_expired(), "remaining == 0 must count as expired");
+    }
+
+    #[test]
+    fn not_expired_just_before_the_boundary() {
+        let mut o = Outage::new(OutageKind::ConnectorContamination, 1, 2);
+        o.tick(CONTAMINATION_TIMER_S - 0.001);
+        assert!(!o.is_expired());
+        assert!(o.time_remaining() > 0.0);
+    }
+
+    #[test]
+    fn time_remaining_clamps_at_zero_long_after_expiry() {
+        let mut o = Outage::new(OutageKind::FiberCut, 1, 2);
+        o.tick(10_000.0);
+        assert_relative_eq_local(o.time_remaining(), 0.0);
+    }
+
+    #[test]
+    fn water_intrusion_saturates_at_its_cap() {
+        let mut o = Outage::new(OutageKind::WaterIntrusion, 1, 2);
+        o.tick(1_000.0);
+        assert_relative_eq_local(o.accumulated_extra_loss_db(), WATER_INTRUSION_CAP_DB);
+    }
+
+    #[test]
+    fn static_and_cut_hazards_accumulate_no_extra_loss() {
+        for kind in [
+            OutageKind::ConnectorContamination,
+            OutageKind::Macrobend,
+            OutageKind::FiberCut,
+            OutageKind::AerialDamage,
+        ] {
+            let mut o = Outage::new(kind, 1, 2);
+            o.tick(100.0);
+            assert_relative_eq_local(o.accumulated_extra_loss_db(), 0.0);
+        }
+    }
+
+    // ---- adversarial: resolution and clock faults ----
+
+    #[test]
+    fn resolved_outage_freezes_its_timer_and_never_expires() {
+        let mut o = Outage::new(OutageKind::WaterIntrusion, 1, 2);
+        o.tick(30.0);
+        o.resolved = true;
+        o.tick(500.0);
+        assert_relative_eq_local(o.elapsed_seconds, 30.0);
+        assert!(!o.is_expired());
+    }
+
+    #[test]
+    fn negative_dt_cannot_rewind_an_expired_outage() {
+        // A clock glitch must not hand the player back time they lost.
+        let mut o = Outage::new(OutageKind::ConnectorContamination, 1, 2);
+        o.tick(CONTAMINATION_TIMER_S);
+        o.tick(-30.0);
+        assert!(o.is_expired());
+        assert_relative_eq_local(o.elapsed_seconds, CONTAMINATION_TIMER_S);
+    }
+
+    #[test]
+    fn non_finite_dt_is_ignored() {
+        // NaN would otherwise poison elapsed_seconds: time_remaining's
+        // max(0.0) turns NaN into 0 (instant expiry) and the loss cap's
+        // min() turns it into a full 15 dB hit.
+        for dt in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let mut o = Outage::new(OutageKind::WaterIntrusion, 1, 2);
+            o.tick(5.0);
+            o.tick(dt);
+            assert_relative_eq_local(o.elapsed_seconds, 5.0);
+            assert!(!o.is_expired(), "dt={dt} expired the outage");
+            assert_relative_eq_local(o.accumulated_extra_loss_db(), 0.5);
+        }
+    }
+
+    #[test]
+    fn outage_roundtrips_through_serde() {
+        let mut o = Outage::new(OutageKind::IngressNoise, 3, 4);
+        o.tick(12.5);
+        let json = serde_json::to_string(&o).expect("serialize");
+        let back: Outage = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(back.kind, OutageKind::IngressNoise);
+        assert_eq!((back.edge_from, back.edge_to), (3, 4));
+        assert_relative_eq_local(back.elapsed_seconds, 12.5);
     }
 
     fn assert_relative_eq_local(a: f64, b: f64) {

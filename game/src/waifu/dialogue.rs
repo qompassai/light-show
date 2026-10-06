@@ -16,7 +16,10 @@ use bevy::prelude::*;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+/// Event key → candidate lines. Deserializes from the flat
+/// `{"event_key": ["line", ...]}` shape of `assets/dialogue/*.json`.
 #[derive(Resource, Debug, Clone, Deserialize)]
+#[serde(transparent)]
 pub struct DialogueBank {
     pub lines: HashMap<String, Vec<String>>,
 }
@@ -460,6 +463,17 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn bank_deserializes_from_the_flat_json_shape() {
+        let json = r#"{"level_win": ["Nice run!"], "outage_start": ["Lights out."]}"#;
+        let bank: DialogueBank = serde_json::from_str(json).expect("flat bank JSON parses");
+        assert_eq!(bank.lines.len(), 2);
+        assert_eq!(bank.random_line("level_win"), Some("Nice run!"));
+        assert_eq!(bank.random_line("outage_start"), Some("Lights out."));
+        let wrapped = r#"{"lines": {"level_win": ["Nice run!"]}}"#;
+        assert!(serde_json::from_str::<DialogueBank>(wrapped).is_err());
     }
 
     #[test]

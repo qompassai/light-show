@@ -3,13 +3,14 @@ resolver = "2"
 members = [
     "crates/osp_sim",
     "game",
+    "tests",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 authors = ["Qompass AI <opensource@qompass.ai>"]
-license = "GPL-3.0-or-later"
+license = "Apache-2.0"
 repository = "https://github.com/qompassai/light-show"
 
 [profile.release]

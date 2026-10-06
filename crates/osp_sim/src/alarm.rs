@@ -388,4 +388,131 @@ mod tests {
         assert_eq!(back.ack, AlarmAck::Acknowledged { companion_idx: 3 });
         assert_eq!(back.raised_at_secs, 7.5);
     }
+
+    // ---- validation: threshold edges and sync without resolution ----
+
+    /// WirelessInterference's 100 s timer makes urgency == elapsed / 100.
+    const INTERFERENCE_TIMER_S: f64 = 100.0;
+    /// Just under a threshold, in seconds of elapsed time.
+    const JUST_BEFORE_S: f64 = 0.01;
+
+    #[test]
+    fn progressive_thresholds_are_inclusive_lower_bounds() {
+        let kind = OutageKind::WirelessInterference;
+        assert_eq!(kind.base_timer_seconds(), INTERFERENCE_TIMER_S);
+        let at = |secs: f64| AlarmSeverity::from_outage(&kind, secs);
+        assert_eq!(at(30.0 - JUST_BEFORE_S), AlarmSeverity::Warning);
+        assert_eq!(at(30.0), AlarmSeverity::Minor);
+        assert_eq!(at(65.0 - JUST_BEFORE_S), AlarmSeverity::Minor);
+        assert_eq!(at(65.0), AlarmSeverity::Major);
+    }
+
+    #[test]
+    fn macrobend_uses_the_static_thresholds() {
+        let kind = OutageKind::Macrobend; // 60 s timer: Minor at 24, Major at 48
+        let at = |secs: f64| AlarmSeverity::from_outage(&kind, secs);
+        assert_eq!(at(47.9), AlarmSeverity::Minor);
+        assert_eq!(at(48.0), AlarmSeverity::Major);
+        // A progressive hazard at the same urgency (0.30) would already
+        // be Minor; static hazards are still Warning there.
+        assert_eq!(at(18.0), AlarmSeverity::Warning);
+    }
+
+    #[test]
+    fn new_alarm_from_a_pre_aged_outage_reflects_its_elapsed_time() {
+        let mut aged = outage(OutageKind::WaterIntrusion);
+        aged.tick(100.0); // urgency 0.83 → Major
+        let alarm = Alarm::new(1, aged, 100.0);
+        assert_eq!(alarm.severity, AlarmSeverity::Major);
+    }
+
+    #[test]
+    fn sync_escalates_severity_without_resolving() {
+        let mut alarm = Alarm::new(1, outage(OutageKind::IngressNoise), 0.0);
+        alarm.acknowledge(1, 2.0);
+        alarm.outage.tick(100.0);
+        alarm.sync_from_outage();
+        assert_eq!(alarm.severity, AlarmSeverity::Major);
+        assert_eq!(alarm.ack, AlarmAck::Acknowledged { companion_idx: 1 });
+    }
+
+    #[test]
+    fn expired_but_unresolved_alarm_can_still_be_dispatched() {
+        let mut alarm = Alarm::new(1, outage(OutageKind::Macrobend), 0.0);
+        alarm.outage.tick(500.0);
+        alarm.sync_from_outage();
+        assert!(alarm.outage.is_expired());
+        alarm.acknowledge(2, 500.0);
+        assert_eq!(alarm.ack, AlarmAck::Acknowledged { companion_idx: 2 });
+    }
+
+    // ---- adversarial: non-finite clocks and lifecycle races ----
+
+    #[test]
+    fn nan_elapsed_falls_back_to_warning() {
+        assert_eq!(
+            AlarmSeverity::from_outage(&OutageKind::WaterIntrusion, f64::NAN),
+            AlarmSeverity::Warning
+        );
+        assert_eq!(
+            AlarmSeverity::from_outage(&OutageKind::Macrobend, f64::NAN),
+            AlarmSeverity::Warning
+        );
+    }
+
+    #[test]
+    fn infinite_elapsed_caps_degrading_kinds_at_major() {
+        for kind in [OutageKind::IngressNoise, OutageKind::ConnectorContamination] {
+            assert_eq!(
+                AlarmSeverity::from_outage(&kind, f64::INFINITY),
+                AlarmSeverity::Major
+            );
+        }
+    }
+
+    #[test]
+    fn resolved_alarm_stays_resolved_if_outage_flaps_before_clear() {
+        let mut alarm = Alarm::new(1, outage(OutageKind::WaterIntrusion), 0.0);
+        alarm.outage.resolved = true;
+        alarm.sync_from_outage();
+        // Sim flaps back to unresolved before the player archives it.
+        alarm.outage.resolved = false;
+        alarm.sync_from_outage();
+        assert_eq!(alarm.ack, AlarmAck::Resolved);
+        alarm.clear();
+        assert_eq!(alarm.ack, AlarmAck::Cleared);
+    }
+
+    #[test]
+    fn resolved_alarm_severity_does_not_keep_escalating() {
+        let mut alarm = Alarm::new(1, outage(OutageKind::WaterIntrusion), 0.0);
+        alarm.outage.tick(10.0);
+        alarm.outage.resolved = true;
+        alarm.sync_from_outage();
+        let frozen = alarm.severity;
+        // The outage's timer is frozen once resolved, so later frames
+        // cannot push a finished alarm up the list.
+        alarm.outage.tick(1_000.0);
+        alarm.sync_from_outage();
+        assert_eq!(alarm.severity, frozen);
+        assert_eq!(frozen, AlarmSeverity::Warning);
+    }
+
+    #[test]
+    fn clear_is_idempotent_and_resync_is_inert() {
+        let mut alarm = Alarm::new(1, outage(OutageKind::FiberCut), 0.0);
+        alarm.outage.resolved = true;
+        alarm.sync_from_outage();
+        alarm.clear();
+        alarm.clear();
+        alarm.sync_from_outage();
+        assert_eq!(alarm.ack, AlarmAck::Cleared);
+        assert_eq!(alarm.acked_at_secs, None);
+    }
+
+    #[test]
+    fn unknown_ack_state_is_rejected_by_serde() {
+        let parsed: Result<AlarmAck, _> = serde_json::from_str("\"Snoozed\"");
+        assert!(parsed.is_err());
+    }
 }

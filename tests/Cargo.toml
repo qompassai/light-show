@@ -1,0 +1,45 @@
+[package]
+name = "light-show-tests"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Integration tests validating the whole light-show repo: physics, game logic, assets, structure."
+
+# Test files live directly in tests/ (Matt's "test dir"), wired explicitly
+# so the layout stays flat and obvious.
+
+[[test]]
+name = "physics_link_budget"
+path = "physics_link_budget.rs"
+
+[[test]]
+name = "physics_adversarial"
+path = "physics_adversarial.rs"
+
+[[test]]
+name = "game_levels"
+path = "game_levels.rs"
+
+[[test]]
+name = "game_cheats_dialogue"
+path = "game_cheats_dialogue.rs"
+
+[[test]]
+name = "game_audio"
+path = "game_audio.rs"
+
+[[test]]
+name = "assets_images"
+path = "assets_images.rs"
+
+[[test]]
+name = "structural"
+path = "structural.rs"
+
+[dependencies]
+osp_sim = { path = "../crates/osp_sim" }
+light-show = { path = "../game" }
+image = "0.25"
+serde_json = "1"

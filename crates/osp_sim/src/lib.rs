@@ -74,4 +74,67 @@ mod tests {
         assert!(w.margin(-15.0) > 0.0);
         assert!(w.margin(-30.0) < 0.0);
     }
+
+    // ---- validation: window / margin math ----
+
+    #[test]
+    fn margin_inside_is_distance_to_nearest_edge() {
+        // GPON ONT window is −27 … −8 dBm. At −15: 12 dB above the floor,
+        // 7 dB below the ceiling → margin 7.
+        let w = ReceiveWindow::GPON_ONT;
+        assert_eq!(w.margin(-15.0), 7.0);
+        // −25: 2 dB above the floor is the binding edge.
+        assert_eq!(w.margin(-25.0), 2.0);
+    }
+
+    #[test]
+    fn window_edges_are_inclusive_with_zero_margin() {
+        let w = ReceiveWindow::GPON_ONT;
+        assert!(w.contains(w.min_dbm));
+        assert!(w.contains(w.max_dbm));
+        assert_eq!(w.margin(w.min_dbm), 0.0);
+        assert_eq!(w.margin(w.max_dbm), 0.0);
+    }
+
+    #[test]
+    fn margin_outside_is_signed_overshoot() {
+        let w = ReceiveWindow::GPON_ONT;
+        assert_eq!(w.margin(-30.0), -3.0); // 3 dB too weak
+        assert_eq!(w.margin(-5.0), -3.0); // 3 dB too hot
+    }
+
+    // ---- adversarial: non-finite levels must fail closed ----
+
+    #[test]
+    fn nan_level_is_never_in_window_or_comfortable() {
+        let w = ReceiveWindow::GPON_ONT;
+        assert!(!w.contains(f64::NAN));
+        let margin = w.margin(f64::NAN);
+        assert!(
+            margin.is_nan() || margin <= 0.0,
+            "NaN reported margin {margin}"
+        );
+    }
+
+    #[test]
+    fn infinite_levels_are_out_of_window_with_infinite_deficit() {
+        let w = ReceiveWindow::GPON_ONT;
+        for level in [f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(!w.contains(level));
+            assert_eq!(w.margin(level), f64::NEG_INFINITY);
+        }
+    }
+
+    #[test]
+    fn inverted_window_contains_nothing() {
+        // Adversarial: a level file with min/max swapped must not accept
+        // any received level.
+        let w = ReceiveWindow {
+            min_dbm: -8.0,
+            max_dbm: -27.0,
+        };
+        for level in [-30.0, -27.0, -15.0, -8.0, 0.0] {
+            assert!(!w.contains(level), "{level} accepted by inverted window");
+        }
+    }
 }

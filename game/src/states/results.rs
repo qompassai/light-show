@@ -293,8 +293,18 @@ fn show_results(
         .unwrap_or("...")
         .to_string();
 
-    let track_end = selected.0.track_start_index() + Companion::TRACK_LEN - 1;
-    let has_next_level = index.0 < track_end;
+    // Invariant: Results is only reachable with a tracked (base-four)
+    // companion, because the select screen is the sole gate into Playing
+    // and refuses trackless ones. If that ever breaks, fail loudly in dev
+    // and offer no "next level" rather than invent a phantom index.
+    let track_start = selected.0.track_start_index();
+    debug_assert!(
+        track_start.is_some(),
+        "{:?} reached Results without a level track",
+        selected.0
+    );
+    let has_next_level =
+        track_start.is_some_and(|start| index.0 < start + Companion::TRACK_LEN - 1);
 
     commands
         .spawn((

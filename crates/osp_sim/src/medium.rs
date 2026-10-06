@@ -74,4 +74,28 @@ mod tests {
         assert_eq!(Medium::Wireless.units_label(), "dBm");
         assert_eq!(Medium::Ethernet.units_label(), "");
     }
+
+    #[test]
+    fn every_medium_roundtrips_through_serde() {
+        for medium in [
+            Medium::Fiber,
+            Medium::Coax,
+            Medium::Wireless,
+            Medium::Ethernet,
+        ] {
+            let json = serde_json::to_string(&medium).expect("serialize");
+            let back: Medium = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(back, medium);
+        }
+    }
+
+    #[test]
+    fn unknown_medium_strings_are_rejected() {
+        // Adversarial: a typo'd or invented medium in a level file must
+        // fail to load rather than map onto some other discipline.
+        for raw in ["\"Plasma\"", "\"fiber\"", "\"FIBER\"", "\"\"", "0", "null"] {
+            let parsed: Result<Medium, _> = serde_json::from_str(raw);
+            assert!(parsed.is_err(), "{raw} must not parse as a Medium");
+        }
+    }
 }

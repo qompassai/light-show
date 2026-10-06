@@ -226,19 +226,18 @@ impl Companion {
     /// Levels per companion track (see `level::LEVEL_SOURCES`).
     pub const TRACK_LEN: usize = 2;
 
-    /// Index into `level::LEVEL_SOURCES` of this companion's first level.
-    /// Tracks are laid out two at a time in `Companion::ALL` order.
-    pub fn track_start_index(&self) -> usize {
+    /// First level index (into `level::LEVEL_SOURCES`) of this companion's
+    /// two-level track. Tracks are laid out two at a time in
+    /// `Companion::ALL` order.
+    /// `None` for specialists: no track is built yet, so they are unplayable;
+    /// `None` must never be turned into a phantom level index.
+    pub fn track_start_index(&self) -> Option<usize> {
         match self {
-            Companion::Fiber => 0,
-            Companion::Coax => 2,
-            Companion::Mobile => 4,
-            Companion::Ethernet => 6,
-            // Specialist tracks not yet built; reserved indices.
-            Companion::Clara => 8,
-            Companion::Aino => 10,
-            Companion::Hikari => 12,
-            Companion::Lea => 14,
+            Companion::Fiber => Some(0),
+            Companion::Coax => Some(2),
+            Companion::Mobile => Some(4),
+            Companion::Ethernet => Some(6),
+            Companion::Clara | Companion::Aino | Companion::Hikari | Companion::Lea => None,
         }
     }
 
