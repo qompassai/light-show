@@ -42,6 +42,10 @@ path = "structural.rs"
 name = "game_quiz"
 path = "game_quiz.rs"
 
+[[test]]
+name = "edge_cases"
+path = "edge_cases.rs"
+
 [dependencies]
 osp_sim = { path = "../crates/osp_sim" }
 light-show = { path = "../game" }
