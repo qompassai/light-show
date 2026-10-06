@@ -19,8 +19,8 @@ pub mod dialogue;
 pub mod dialogue_ui;
 pub mod sprite;
 
-use bevy::prelude::*;
 use bevy::image::{TextureAtlas, TextureAtlasLayout};
+use bevy::prelude::*;
 use dialogue::DialogueBank;
 
 pub struct SeraphinePlugin;
@@ -70,7 +70,9 @@ pub(crate) struct MoodPop {
 /// pop is in flight restarts it, so call sites must only call this when
 /// the mood actually changes (not every frame of a steady state).
 pub(crate) fn trigger_mood_pop(commands: &mut Commands, entity: Entity) {
-    commands.entity(entity).insert(MoodPop { elapsed_secs: 0.0 });
+    commands
+        .entity(entity)
+        .insert(MoodPop { elapsed_secs: 0.0 });
 }
 
 /// Plays the 0.15s mood pop: scale 1.0 -> 1.08 -> 1.0, both halves eased
@@ -87,7 +89,8 @@ fn animate_mood_pop(
         let scale = if t < 0.5 {
             1.0 + (MOOD_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped(t * 2.0)
         } else {
-            MOOD_POP_PEAK - (MOOD_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped((t - 0.5) * 2.0)
+            MOOD_POP_PEAK
+                - (MOOD_POP_PEAK - 1.0) * EaseFunction::BackOut.sample_clamped((t - 0.5) * 2.0)
         };
         transform.scale = Vec3::splat(scale.max(0.01));
         if t >= 1.0 {
@@ -225,21 +228,36 @@ impl Companion {
     }
 
     /// Levels per companion track (see `level::LEVEL_SOURCES`).
+    /// Kept for call sites that only need the base-four length;
+    /// prefer `track_len()` per companion.
     pub const TRACK_LEN: usize = 2;
+    /// All level indices (into `level::LEVEL_SOURCES`) in this companion's
+    /// track, in play order. The registry is laid out as six contiguous
+    /// ten-level blocks: Fiber 0-9, Coax 10-19, Mobile 20-29,
+    /// Ethernet 30-39, Clara 40-49, Aino 50-59, Hikari 60-69, Léa 70-79.
+    pub fn track_indices(&self) -> Vec<usize> {
+        match self {
+            Companion::Fiber => (0..10).collect(),
+            Companion::Coax => (10..20).collect(),
+            Companion::Mobile => (20..30).collect(),
+            Companion::Ethernet => (30..40).collect(),
+            Companion::Clara => (40..50).collect(),
+            Companion::Aino => (50..60).collect(),
+            Companion::Hikari => (60..70).collect(),
+            Companion::Lea => (70..80).collect(),
+        }
+    }
+
+    /// Levels in this companion's track.
+    pub fn track_len(&self) -> usize {
+        self.track_indices().len()
+    }
 
     /// First level index (into `level::LEVEL_SOURCES`) of this companion's
-    /// two-level track. Tracks are laid out two at a time in
-    /// `Companion::ALL` order.
-    /// `None` for specialists: no track is built yet, so they are unplayable;
-    /// `None` must never be turned into a phantom level index.
+    /// track. `None` for specialists: no track is built yet, so they are
+    /// unplayable; `None` must never be turned into a phantom level index.
     pub fn track_start_index(&self) -> Option<usize> {
-        match self {
-            Companion::Fiber => Some(0),
-            Companion::Coax => Some(2),
-            Companion::Mobile => Some(4),
-            Companion::Ethernet => Some(6),
-            Companion::Clara | Companion::Aino | Companion::Hikari | Companion::Lea => None,
-        }
+        self.track_indices().first().copied()
     }
 
     /// The companion's discipline accent color — the neon outline and FX

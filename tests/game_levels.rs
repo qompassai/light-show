@@ -22,7 +22,7 @@ use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process;
 
-use light_show::level::{load_level, LevelDef, MediumDef, LEVEL_SOURCES};
+use light_show::level::{load_level, ApiOp, LevelDef, MediumDef, LEVEL_SOURCES};
 use light_show::waifu::Companion;
 
 /// Upper bound on level files read from one directory.
@@ -229,17 +229,23 @@ fn validate_structure(level: &LevelDef) -> Result<(), LevelError> {
         }
     }
     let declared = |id: u32| node_ids.contains(&id);
-    if !declared(level.source_node) || !declared(level.target_node) {
+    // Quiz levels have no board; source/target are unused.
+    if level.quiz.is_none() && (!declared(level.source_node) || !declared(level.target_node)) {
         return Err(invalid(level, "source/target node is not declared"));
     }
-    if level.source_node == level.target_node {
+    if level.quiz.is_none() && level.source_node == level.target_node {
         return Err(invalid(level, "source and target are the same node"));
     }
     // A level needs player interaction: placeable board components, an
-    // API console sequence, or both. Pure API-driver levels (Clara's NBI/SMx
-    // puzzles) ship with a pre-lit board and no pills — the console is the
-    // puzzle.
-    if level.available_components.is_empty() && level.api_sequence.is_none() {
+    // API console sequence, an alarm-triage puzzle, a quiz, or a mix.
+    // Pure API-driver levels (Clara's NBI/SMx puzzles) ship with a pre-lit
+    // board and no pills — the console is the puzzle. Aino's triage and
+    // Lea's quiz levels likewise need no board pills.
+    if level.available_components.is_empty()
+        && level.api_sequence.is_none()
+        && level.alarm_triage.is_none()
+        && level.quiz.is_none()
+    {
         return Err(invalid(level, "no player-placeable components"));
     }
     let edges = level.fixed_edges.iter().map(|e| (e.from, e.to));
@@ -256,7 +262,7 @@ fn validate_structure(level: &LevelDef) -> Result<(), LevelError> {
         if seq.expected.is_empty() {
             return Err(invalid(level, "api_sequence has empty expected order"));
         }
-        if seq.api != "nbi" && seq.api != "smx" {
+        if seq.api != "nbi" && seq.api != "smx" && seq.api != "ams" && seq.api != "bxe" {
             return Err(invalid(
                 level,
                 format!("api_sequence has unknown api '{}'", seq.api),
@@ -294,6 +300,10 @@ fn validate_win_condition(level: &LevelDef) -> Result<(), LevelError> {
         MediumDef::Coax => &COAX_ENVELOPE_DBMV,
         MediumDef::Wireless => &WIRELESS_ENVELOPE_DBM,
         MediumDef::Ethernet => return validate_ethernet(level),
+        // Study (quiz) levels never win via the board -- the quiz UI
+        // owns the win condition -- so the physical envelope check
+        // does not apply.
+        MediumDef::Study => return Ok(()),
     };
     let (tx, low, high) = (level.tx_dbm, level.window_min_dbm, level.window_max_dbm);
     if !(tx.is_finite() && low.is_finite() && high.is_finite()) {
@@ -532,10 +542,14 @@ fn every_embedded_level_passes_through_the_game_loader() {
 
 #[test]
 fn base_companion_tracks_cover_every_level_exactly_once() {
-    // Base four plus Clara's ten-level provisioning track (indices 8-17)
-    // must own every level exactly once. Aino/Hikari/Lea are trackless.
+    // Base four plus Clara's ten-level provisioning track, Aino's
+    // ten-level NOC track, Lea's ten-level quiz track, and Hikari's
+    // ten-level field track must own every level exactly once.
     let mut tracks = base_tracks();
-    tracks.push((Companion::Clara, 8));
+    tracks.push((Companion::Clara, 40));
+    tracks.push((Companion::Aino, 50));
+    tracks.push((Companion::Hikari, 60));
+    tracks.push((Companion::Lea, 70));
     let result = check_progression(LEVEL_SOURCES.len(), &tracks);
     assert_eq!(result, Ok(()));
 }
@@ -785,15 +799,18 @@ fn empty_and_oversized_files_in_a_directory_are_typed_errors() {
 
 #[test]
 fn dangling_overlapping_and_orphan_tracks_are_detected() {
-    // The 50-level registry: five contiguous ten-level blocks.
+    // The 80-level registry: eight contiguous ten-level blocks.
     let level_count = LEVEL_SOURCES.len();
-    assert_eq!(level_count, 50);
+    assert_eq!(level_count, 80);
     let all_tracks: Vec<(Companion, usize)> = vec![
         (Companion::Fiber, 0),
         (Companion::Coax, 10),
         (Companion::Mobile, 20),
         (Companion::Ethernet, 30),
         (Companion::Clara, 40),
+        (Companion::Aino, 50),
+        (Companion::Hikari, 60),
+        (Companion::Lea, 70),
     ];
     // Full registry validates clean.
     assert_eq!(check_progression(level_count, &all_tracks), Ok(()));
@@ -816,24 +833,260 @@ fn dangling_overlapping_and_orphan_tracks_are_detected() {
         check_progression(level_count, &no_clara),
         Err(ProgressionError::OrphanLevel { index: 40 })
     );
+    // Missing Aino's block orphans levels 50-59.
+    let no_aino: Vec<(Companion, usize)> = vec![
+        (Companion::Fiber, 0),
+        (Companion::Coax, 10),
+        (Companion::Mobile, 20),
+        (Companion::Ethernet, 30),
+        (Companion::Clara, 40),
+    ];
+    assert_eq!(
+        check_progression(level_count, &no_aino),
+        Err(ProgressionError::OrphanLevel { index: 50 })
+    );
 }
 
 #[test]
 fn specialists_have_no_track_and_out_of_range_indices_clamp() {
-    // Trackless specialists expose no start index at all, so no phantom
-    // level index can be produced. Clara's provisioning track is live
-    // (indices 40-49, ten levels). `load_level` must still clamp to the
+    // All specialists now have live tracks: Clara (40-49), Aino (50-59),
+    // Hikari (60-69), Lea (70-79). `load_level` must still clamp to the
     // last level rather than index out of bounds.
     let last_id = load_level(LEVEL_SOURCES.len() - 1).id;
     assert_eq!(Companion::Clara.track_start_index(), Some(40));
     assert_eq!(Companion::Clara.track_len(), 10);
-    for companion in [Companion::Aino, Companion::Hikari, Companion::Lea] {
-        assert_eq!(
-            companion.track_start_index(),
-            None,
-            "{companion:?} now has levels; extend tests"
-        );
-    }
+    assert_eq!(Companion::Aino.track_start_index(), Some(50));
+    assert_eq!(Companion::Aino.track_len(), 10);
+    assert_eq!(Companion::Lea.track_start_index(), Some(70));
+    assert_eq!(Companion::Lea.track_len(), 10);
+    assert_eq!(Companion::Hikari.track_start_index(), Some(60));
+    assert_eq!(Companion::Hikari.track_len(), 10);
     assert_eq!(load_level(LEVEL_SOURCES.len()).id, last_id);
     assert_eq!(load_level(usize::MAX).id, last_id);
+}
+
+#[test]
+fn aino_track_has_ten_levels_at_50_to_59() {
+    assert_eq!(
+        Companion::Aino.track_indices(),
+        (50..60).collect::<Vec<_>>()
+    );
+    assert_eq!(Companion::Aino.track_len(), 10);
+    for (i, index) in (50..60).enumerate() {
+        let level = load_level(index);
+        assert!(
+            level.id.starts_with("aino"),
+            "level {index} id {} is not an Aino level",
+            level.id
+        );
+        assert_eq!(level.world, 6, "Aino level {} not in world 6", level.id);
+        let _ = i;
+    }
+}
+
+#[test]
+fn aino_triage_orders_are_valid_permutations() {
+    // Every triage level's expected_order must be exactly the set of its
+    // alarm ids, each once: no missing alarms, no dupes, no phantoms.
+    for index in Companion::Aino.track_indices() {
+        let level = load_level(index);
+        let Some(triage) = &level.alarm_triage else {
+            continue;
+        };
+        let mut alarm_ids: Vec<u8> = triage.alarms.iter().map(|a| a.id).collect();
+        let mut expected = triage.expected_order.clone();
+        alarm_ids.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(
+            alarm_ids, expected,
+            "Aino level {} triage order is not a permutation of alarm ids",
+            level.id
+        );
+        // Summaries must be non-empty: the console shows them on buttons.
+        for alarm in &triage.alarms {
+            assert!(
+                !alarm.summary.is_empty(),
+                "Aino level {} alarm {} has empty summary",
+                level.id,
+                alarm.id
+            );
+        }
+    }
+}
+
+#[test]
+fn aino_triage_covers_progressive_difficulty() {
+    // Tutorial starts with a single alarm; the finale combines everything.
+    let first = load_level(50);
+    let triage = first.alarm_triage.as_ref().expect("aino1 needs triage");
+    assert_eq!(
+        triage.alarms.len(),
+        1,
+        "aino1 should be a single-alarm tutorial"
+    );
+    let last = load_level(59);
+    let triage = last.alarm_triage.as_ref().expect("aino10 needs triage");
+    assert!(
+        triage.alarms.len() >= 5,
+        "aino10 should be a multi-alarm finale"
+    );
+    assert!(
+        last.api_sequence.is_some(),
+        "aino10 should combine triage with an NBI query"
+    );
+}
+
+#[test]
+fn aino_api_sequences_use_ams_ops_and_valid_choices() {
+    // Aino's NBI levels must use the AMS API tag and AMS operations;
+    // choices must contain every expected op (plus distractors).
+    let ams_ops = [
+        ApiOp::Login,
+        ApiOp::GetAllManagedElements,
+        ApiOp::GetManagedElement,
+        ApiOp::StartSupervision,
+        ApiOp::StopSupervision,
+        ApiOp::GetNeStatus,
+        ApiOp::EnableMaintenanceMode,
+        ApiOp::DisableMaintenanceMode,
+        ApiOp::ExecuteNeAction,
+    ];
+    let mut found_nbi = 0;
+    for index in Companion::Aino.track_indices() {
+        let level = load_level(index);
+        let Some(seq) = &level.api_sequence else {
+            continue;
+        };
+        found_nbi += 1;
+        assert_eq!(
+            seq.api, "ams",
+            "Aino level {} must use the ams API",
+            level.id
+        );
+        for op in &seq.expected {
+            assert!(
+                ams_ops.contains(op),
+                "Aino level {} expected op {:?} is not an AMS op",
+                level.id,
+                op
+            );
+            assert!(
+                seq.choices.contains(op),
+                "Aino level {} choices missing expected op {:?}",
+                level.id,
+                op
+            );
+        }
+        assert!(
+            seq.choices.len() > seq.expected.len(),
+            "Aino level {} needs distractor choices",
+            level.id
+        );
+    }
+    assert!(found_nbi >= 4, "Aino track needs several NBI levels");
+}
+
+#[test]
+fn aino_levels_are_all_completable_by_construction() {
+    // Playthrough-by-construction: every Aino level's board is either
+    // trivially in-window (triage/NBI focus) or has placeable components
+    // covering source->target; every console puzzle has a valid solution.
+    for index in Companion::Aino.track_indices() {
+        let level = load_level(index);
+        // Board: fixed edges already connect source->target, or there are
+        // components available to place.
+        let fixed_connects = level.fixed_edges.iter().any(|e| {
+            (e.from == level.source_node && e.to == level.target_node)
+                || (e.from == level.target_node && e.to == level.source_node)
+        });
+        let can_place = !level.available_components.is_empty();
+        assert!(
+            fixed_connects || can_place,
+            "Aino level {} has no path to win",
+            level.id
+        );
+        // Triage and API puzzles are validated separately; their presence
+        // here just confirms the level actually exercises them.
+        let has_console = level.alarm_triage.is_some() || level.api_sequence.is_some();
+        assert!(has_console, "Aino level {} has no console puzzle", level.id);
+    }
+}
+
+#[test]
+fn hikari_api_sequences_use_bxe_ops_and_valid_choices() {
+    // Hikari's portal levels must use the BxE API tag and BxE operations;
+    // choices must contain every expected op (plus distractors).
+    let bxe_ops = [
+        ApiOp::Login,
+        ApiOp::SearchAddress,
+        ApiOp::ListDevices,
+        ApiOp::ReadDiagnostics,
+        ApiOp::RunSpeedTest,
+        ApiOp::CertifyInstall,
+    ];
+    let mut found_bxe = 0;
+    for index in Companion::Hikari.track_indices() {
+        let level = load_level(index);
+        let Some(seq) = &level.api_sequence else {
+            continue;
+        };
+        found_bxe += 1;
+        assert_eq!(
+            seq.api, "bxe",
+            "Hikari level {} must use the bxe API",
+            level.id
+        );
+        for op in &seq.expected {
+            assert!(
+                bxe_ops.contains(op),
+                "Hikari level {} expected op {:?} is not a BxE op",
+                level.id,
+                op
+            );
+            assert!(
+                seq.choices.contains(op),
+                "Hikari level {} choices missing expected op {:?}",
+                level.id,
+                op
+            );
+        }
+        assert!(
+            seq.choices.len() > seq.expected.len(),
+            "Hikari level {} needs distractors in choices",
+            level.id
+        );
+    }
+    assert!(
+        found_bxe >= 3,
+        "Hikari track needs several BxE portal levels"
+    );
+}
+
+#[test]
+fn hikari_levels_are_all_completable_by_construction() {
+    // Playthrough-by-construction: every Hikari level's board is either
+    // trivially in-window (portal focus) or has placeable components
+    // covering source->target; every console puzzle has a valid solution.
+    for index in Companion::Hikari.track_indices() {
+        let level = load_level(index);
+        assert_eq!(
+            level.medium,
+            MediumDef::Fiber,
+            "Hikari level {} is not fiber",
+            level.id
+        );
+        assert_eq!(level.world, 7, "Hikari level {} not in world 7", level.id);
+        // Board: fixed edges already connect source->target, or there are
+        // components available to place.
+        let fixed_connects = level.fixed_edges.iter().any(|e| {
+            (e.from == level.source_node && e.to == level.target_node)
+                || (e.from == level.target_node && e.to == level.source_node)
+        });
+        let can_place = !level.available_components.is_empty();
+        assert!(
+            fixed_connects || can_place,
+            "Hikari level {} has no path to win",
+            level.id
+        );
+    }
 }

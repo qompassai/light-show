@@ -15,6 +15,9 @@ pub enum MediumDef {
     Coax,
     Wireless,
     Ethernet,
+    /// Study/quiz levels (Léa's track): no physical medium is simulated.
+    /// The board is unused; the quiz UI owns the win condition.
+    Study,
 }
 
 impl From<MediumDef> for Medium {
@@ -24,6 +27,9 @@ impl From<MediumDef> for Medium {
             MediumDef::Coax => Medium::Coax,
             MediumDef::Wireless => Medium::Wireless,
             MediumDef::Ethernet => Medium::Ethernet,
+            // Quiz levels never simulate the board; the mapping is
+            // unreachable in practice. Fiber is the arbitrary fallback.
+            MediumDef::Study => Medium::Fiber,
         }
     }
 }
@@ -99,12 +105,14 @@ pub struct SubscriberDef {
     pub reg_id: String,
 }
 
-/// An NBI/SMx API operation the player can issue. Clara's API-puzzle
-/// levels (see `docs/reference/tds/cms/guides/cms-nbi-api.md` and
-/// `docs/reference/tds/cms/guides/smx-api.md`). Deserialized from level
-/// JSON by variant name; unknown names fail the parse loudly.
-/// NBI (CMS) speaks SOAP/XML; SMx speaks REST/JSON — the enum covers
-/// both, and each level's `api` tag says which door you're knocking on.
+/// An NBI/SMx/BxE API operation the player can issue. Clara's API-puzzle
+/// levels use the NBI/SMx variants (see `docs/reference/tds/cms/guides/`);
+/// Aino's NOC levels use the AMS NBI variants; Hikari's field levels use
+/// the BxE portal variants (see `docs/reference/tds/bxe/`).
+/// Deserialized from level JSON by variant name; unknown names fail the
+/// parse loudly. NBI (CMS/AMS) speaks SOAP/XML; SMx speaks REST/JSON;
+/// BxE is the field portal workflow -- the enum covers all three, and
+/// each level's `api` tag says which door you're knocking on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub enum ApiOp {
     /// Authenticate. NBI: `<auth><login>` returning a SessionID;
@@ -131,6 +139,38 @@ pub enum ApiOp {
     CreateOnt,
     /// SMx REST: DELETE the subscriber (churn / cleanup).
     DeleteSubscriber,
+    // --- AMS NBI (Aino NOC track): SOAP operations from the
+    // `10-nbi-soap-reference.md` endpoint catalog. ---
+    /// AMS NBI: `getAllManagedElements` -- list every supervised NE.
+    GetAllManagedElements,
+    /// AMS NBI: `getManagedElement` -- pull one NE record.
+    GetManagedElement,
+    /// AMS NBI: `startSupervision` -- begin polling an NE.
+    StartSupervision,
+    /// AMS NBI: `stopSupervision` -- pause polling (pre-maintenance).
+    StopSupervision,
+    /// AMS NBI: `getStatus` -- read the NE current alarm state.
+    GetNeStatus,
+    /// AMS NBI: `enableMaintenanceMode` -- silence alarms during work.
+    EnableMaintenanceMode,
+    /// AMS NBI: `disableMaintenanceMode` -- resume normal alarming.
+    DisableMaintenanceMode,
+    /// AMS NBI: `executeAction` -- run a test action on the NE.
+    ExecuteNeAction,
+    // --- BxE portal (Hikari field track): portal workflows from
+    // `docs/reference/tds/bxe/`. The portal is slow, so the fast path
+    // matters as much as the right path. ---
+    /// BxE: search the portal by street address (the slow GUI path).
+    SearchAddress,
+    /// BxE: list the ONT/router inventory on the customer account.
+    ListDevices,
+    /// BxE: pull live diagnostics -- light levels, errors, logs.
+    /// Also the direct-API shortcut when the device ID is cached.
+    ReadDiagnostics,
+    /// BxE: trigger a remote speed test against the ONT.
+    RunSpeedTest,
+    /// BxE: certify the install -- all tests passed, record it.
+    CertifyInstall,
 }
 
 impl ApiOp {
@@ -147,6 +187,19 @@ impl ApiOp {
             ApiOp::CreateSubscriber => "Create Subscriber",
             ApiOp::CreateOnt => "Create ONT",
             ApiOp::DeleteSubscriber => "Delete Subscriber",
+            ApiOp::GetAllManagedElements => "List NEs",
+            ApiOp::GetManagedElement => "Get NE",
+            ApiOp::StartSupervision => "Start Supervision",
+            ApiOp::StopSupervision => "Stop Supervision",
+            ApiOp::GetNeStatus => "Get Status",
+            ApiOp::EnableMaintenanceMode => "Maint On",
+            ApiOp::DisableMaintenanceMode => "Maint Off",
+            ApiOp::ExecuteNeAction => "Execute Action",
+            ApiOp::SearchAddress => "Search Address",
+            ApiOp::ListDevices => "List Devices",
+            ApiOp::ReadDiagnostics => "Read Diagnostics",
+            ApiOp::RunSpeedTest => "Speed Test",
+            ApiOp::CertifyInstall => "Certify",
         }
     }
 
@@ -163,6 +216,19 @@ impl ApiOp {
             ApiOp::CreateSubscriber => "POST /ems/subscriber",
             ApiOp::CreateOnt => "Pre-provision the ONT",
             ApiOp::DeleteSubscriber => "DELETE the subscriber",
+            ApiOp::GetAllManagedElements => "List every supervised NE",
+            ApiOp::GetManagedElement => "Pull one NE record",
+            ApiOp::StartSupervision => "Begin polling the NE",
+            ApiOp::StopSupervision => "Pause polling before maintenance",
+            ApiOp::GetNeStatus => "Read the NE alarm state",
+            ApiOp::EnableMaintenanceMode => "Silence alarms during work",
+            ApiOp::DisableMaintenanceMode => "Resume normal alarming",
+            ApiOp::ExecuteNeAction => "Run a test action on the NE",
+            ApiOp::SearchAddress => "Find the customer by street address",
+            ApiOp::ListDevices => "Show ONT/router on the account",
+            ApiOp::ReadDiagnostics => "Pull light levels, errors, logs",
+            ApiOp::RunSpeedTest => "Run a remote speed test",
+            ApiOp::CertifyInstall => "Certify: all tests passed",
         }
     }
 }
@@ -174,7 +240,8 @@ impl ApiOp {
 /// punishing exploration.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ApiSequenceDef {
-    /// Which API is being driven: "nbi" (CMS SOAP/XML) or "smx" (REST/JSON).
+    /// Which API is being driven: "nbi" (CMS/AMS SOAP/XML), "smx"
+    /// (REST/JSON), or "bxe" (field portal workflow).
     pub api: String,
     /// The correct call order.
     pub expected: Vec<ApiOp>,
@@ -189,6 +256,134 @@ pub struct ApiSequenceDef {
 /// non-empty placed (a level-authoring bug, not a pass).
 pub fn verify_api_sequence(expected: &[ApiOp], placed: &[ApiOp]) -> bool {
     !expected.is_empty() && expected == placed
+}
+
+/// NOC alarm severity for Aino's triage levels. Mirrors
+/// `osp_sim::AlarmSeverity` ranks: Critical outranks everything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub enum AlarmSeverityDef {
+    Critical,
+    Major,
+    Minor,
+    Warning,
+}
+
+/// One alarm on Aino's NOC board: an id, a severity, and a one-line
+/// summary the triage console shows on its ack button.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AlarmDef {
+    /// Stable within the level; the triage console keys buttons by it.
+    pub id: u8,
+    pub severity: AlarmSeverityDef,
+    pub summary: String,
+}
+
+/// Alarm-triage puzzle (Aino's NOC track): when present, the player must
+/// acknowledge the listed alarms through the triage console in exactly
+/// `expected_order` (highest priority first) before the level counts as
+/// won. The board win check still applies underneath.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AlarmTriageDef {
+    /// Alarms raised when the level starts.
+    pub alarms: Vec<AlarmDef>,
+    /// Correct ack order: alarm ids, highest priority first. A wrong
+    /// pick bumps the console's wrong-pick counter but never fails the
+    /// level -- triage teaches priority, it does not punish exploration.
+    pub expected_order: Vec<u8>,
+}
+
+/// Verify an alarm ack order: exact ordered match against expected.
+/// Same fail-closed semantics as `verify_api_sequence`.
+pub fn verify_triage_order(expected: &[u8], acked: &[u8]) -> bool {
+    !expected.is_empty() && expected == acked
+}
+
+/// Which NEC/article domain a quiz question belongs to. Drives Léa's
+/// per-domain scoring and the "study more" recommendations on the
+/// results screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub enum QuizDomain {
+    /// NEC Articles 90, 100, 110 — general requirements, definitions.
+    GeneralRequirements,
+    /// NEC Article 250 — grounding and bonding.
+    GroundingBonding,
+    /// NEC Articles 300-398 — wiring methods.
+    WiringMethods,
+    /// NEC Articles 500-516 — hazardous (classified) locations.
+    HazardousLocations,
+    /// NEC Articles 705-780 — special conditions.
+    SpecialConditions,
+    /// NEC Articles 800-830 — communications systems (Léa's home turf).
+    CommsSystems,
+    /// Theory and calculations (Ohm's law, power, dB math).
+    Theory,
+    /// Washington State law: RCW 19.28 + WAC 296-46B.
+    WashingtonLaw,
+}
+
+/// One quiz question in Léa's track. Deserialized from the level JSON;
+/// the `answer` string from the source quiz data is resolved to
+/// `correct_idx` at import time (see `tools/import_quiz.py`).
+#[derive(Debug, Clone, Deserialize)]
+pub struct QuizQuestion {
+    /// Stable id, e.g. "nec250-001".
+    pub id: String,
+    /// The question text.
+    pub prompt: String,
+    /// Exactly four choices, in display order.
+    pub choices: [String; 4],
+    /// Index into `choices` of the correct answer (pre-shuffle).
+    pub correct_idx: usize,
+    /// Léa's teaching moment, shown after the player answers.
+    pub explanation: String,
+    /// NEC article reference for lookup, e.g. "NEC 250.4(A)(1)".
+    pub article_ref: Option<String>,
+    /// Which domain this question belongs to.
+    pub domain: QuizDomain,
+}
+
+/// A quiz level's question set (Léa's track). When a `LevelDef` carries
+/// `Some(quiz)`, the board is unused and the quiz UI owns the level:
+/// answer every question, score at or above `pass_pct`, and the level
+/// counts as won.
+#[derive(Debug, Clone, Deserialize)]
+pub struct QuizDef {
+    /// Questions in presentation order.
+    pub questions: Vec<QuizQuestion>,
+    /// Fraction of questions that must be answered correctly to pass.
+    /// Defaults to 0.70 (the 70% exam standard).
+    #[serde(default = "default_quiz_pass_pct")]
+    pub pass_pct: f32,
+    /// Optional per-question time limit in seconds. `None` = untimed.
+    #[serde(default)]
+    pub time_limit_s: Option<u64>,
+}
+
+fn default_quiz_pass_pct() -> f32 {
+    0.70
+}
+
+/// Score a completed quiz: `(correct, total)`. `answers[i]` is the
+/// player's chosen index for `questions[i]`; missing answers count as
+/// wrong. Fail-closed: length mismatch never panics.
+pub fn score_quiz(questions: &[QuizQuestion], answers: &[usize]) -> (usize, usize) {
+    let total = questions.len();
+    let correct = questions
+        .iter()
+        .zip(answers.iter())
+        .filter(|(q, a)| **a == q.correct_idx)
+        .count();
+    (correct, total)
+}
+
+/// True when the player's answers meet the quiz's pass threshold.
+/// Empty question sets never pass (a level-authoring bug, not a win).
+pub fn quiz_passed(quiz: &QuizDef, answers: &[usize]) -> bool {
+    if quiz.questions.is_empty() {
+        return false;
+    }
+    let (correct, total) = score_quiz(&quiz.questions, answers);
+    total > 0 && (correct as f32 / total as f32) >= quiz.pass_pct
 }
 
 /// Per-subscriber result of provisioning verification.
@@ -294,6 +489,15 @@ pub struct LevelDef {
     /// still applies underneath.
     #[serde(default)]
     pub api_sequence: Option<ApiSequenceDef>,
+    /// Alarm-triage puzzle (Aino's NOC track): when present, the player
+    /// must also ack the alarms in the expected priority order through
+    /// the triage console before the level counts as won.
+    #[serde(default)]
+    pub alarm_triage: Option<AlarmTriageDef>,
+    /// Quiz level (Léa's study track): when present, the board is unused
+    /// and the quiz UI owns the win condition. See `QuizDef`.
+    #[serde(default)]
+    pub quiz: Option<QuizDef>,
     /// Optional dialogue hook keys fired on enter/win/fail — looked up in
     /// the Séraphine dialogue bank.
     pub on_enter_line: Option<String>,
@@ -420,6 +624,12 @@ impl LevelDef {
         wavelength: Wavelength,
         outage: Option<&Outage>,
     ) -> bool {
+        // Quiz levels (Léa's track) never win via the board: the quiz
+        // UI owns the win condition through `quiz_passed`. Without this
+        // guard an empty board could spuriously satisfy a budget check.
+        if self.quiz.is_some() {
+            return false;
+        }
         // Provisioning levels (Clara's track) replace the single-path
         // budget check: every subscriber must land inside its demanded
         // profile's window behind the placed splitter.
@@ -641,6 +851,36 @@ pub const LEVEL_SOURCES: &[&str] = &[
     include_str!("../assets/levels/clara8_building_turn_up.json"),
     include_str!("../assets/levels/clara9_tight_budget.json"),
     include_str!("../assets/levels/clara10_night_cutover.json"),
+    include_str!("../assets/levels/aino1_first_shift.json"),
+    include_str!("../assets/levels/aino2_triage_order.json"),
+    include_str!("../assets/levels/aino3_the_cascade.json"),
+    include_str!("../assets/levels/aino4_bulk_ack.json"),
+    include_str!("../assets/levels/aino5_query_the_nbi.json"),
+    include_str!("../assets/levels/aino6_supervision.json"),
+    include_str!("../assets/levels/aino7_night_shift.json"),
+    include_str!("../assets/levels/aino8_maintenance_window.json"),
+    include_str!("../assets/levels/aino9_soap_fault.json"),
+    include_str!("../assets/levels/aino10_all_clear.json"),
+    include_str!("../assets/levels/hikari1_first_day.json"),
+    include_str!("../assets/levels/hikari2_address_to_diagnostics.json"),
+    include_str!("../assets/levels/hikari3_beat_the_callback.json"),
+    include_str!("../assets/levels/hikari4_dirty_drop.json"),
+    include_str!("../assets/levels/hikari5_certify_it.json"),
+    include_str!("../assets/levels/hikari6_slow_portal.json"),
+    include_str!("../assets/levels/hikari7_bend_in_the_wall.json"),
+    include_str!("../assets/levels/hikari8_splitter_closet.json"),
+    include_str!("../assets/levels/hikari9_night_trouble.json"),
+    include_str!("../assets/levels/hikari10_master_tech.json"),
+    include_str!("../assets/levels/lea1_tutorial.json"),
+    include_str!("../assets/levels/lea2_grounding.json"),
+    include_str!("../assets/levels/lea3_wiring_methods.json"),
+    include_str!("../assets/levels/lea4_hazloc.json"),
+    include_str!("../assets/levels/lea5_special_conditions.json"),
+    include_str!("../assets/levels/lea6_comms_systems.json"),
+    include_str!("../assets/levels/lea7_theory.json"),
+    include_str!("../assets/levels/lea8_wa_law.json"),
+    include_str!("../assets/levels/lea9_wa_admin.json"),
+    include_str!("../assets/levels/lea10_mock_exam.json"),
 ];
 
 /// Which bundled level is currently active. Advance this (e.g. from the
@@ -668,6 +908,11 @@ mod tests {
         for (idx, _) in LEVEL_SOURCES.iter().enumerate() {
             let level = load_level(idx);
             assert!(!level.id.is_empty(), "level {idx} has an empty id");
+            // Quiz levels never use the board -- the quiz UI owns their
+            // win condition -- so board-shape assertions don't apply.
+            if level.quiz.is_some() {
+                continue;
+            }
             assert!(!level.nodes.is_empty(), "level {idx} has no nodes");
             assert!(
                 level.window_min_dbm < level.window_max_dbm,
@@ -889,6 +1134,9 @@ mod tests {
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Mobile 20-29
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Ethernet 30-39
             1, 1, 1, 1, 0, 1, 0, 1, 1, 1, // Clara 40-49
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Aino 50-59 (pure triage/API; pills span edges)
+            2, 0, 2, 2, 1, 0, 1, 1, 2, 1, // Hikari 60-69
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Lea 70-79 (quiz levels never win via board)
         ];
         assert_eq!(
             LEVEL_SOURCES.len(),
@@ -963,5 +1211,46 @@ mod tests {
             ),
             "30 dBm repeater must ride out m1l2 80 s into the interference storm"
         );
+    }
+
+    /// BxE portal ops (Hikari's field track): every variant needs a
+    /// non-empty label and blurb (the console renders both), and the
+    /// address-to-diagnostics / slow-portal / master-tech sequences
+    /// must verify through the shared sequence checker.
+    #[test]
+    fn bxe_ops_have_labels_and_verify_sequences() {
+        for op in [
+            ApiOp::SearchAddress,
+            ApiOp::ListDevices,
+            ApiOp::ReadDiagnostics,
+            ApiOp::RunSpeedTest,
+            ApiOp::CertifyInstall,
+        ] {
+            assert!(!op.label().is_empty(), "{op:?} has an empty label");
+            assert!(!op.blurb().is_empty(), "{op:?} has an empty blurb");
+        }
+        // hikari2: full portal path.
+        let full = [
+            ApiOp::Login,
+            ApiOp::SearchAddress,
+            ApiOp::ListDevices,
+            ApiOp::ReadDiagnostics,
+        ];
+        assert!(verify_api_sequence(&full, &full));
+        assert!(!verify_api_sequence(&full, &full[..3]));
+        // hikari6: the slow-portal shortcut skips search entirely.
+        let fast = [ApiOp::Login, ApiOp::ReadDiagnostics];
+        assert!(verify_api_sequence(&fast, &fast));
+        assert!(!verify_api_sequence(&fast, &full));
+        // hikari10: the complete certification workflow.
+        let certify = [
+            ApiOp::Login,
+            ApiOp::SearchAddress,
+            ApiOp::ListDevices,
+            ApiOp::ReadDiagnostics,
+            ApiOp::RunSpeedTest,
+            ApiOp::CertifyInstall,
+        ];
+        assert!(verify_api_sequence(&certify, &certify));
     }
 }
