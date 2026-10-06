@@ -2,7 +2,7 @@
 
 ## Code
 
-Original code © Qompass AI, licensed under GPL-3.0-or-later (see
+Original code © Qompass AI, licensed under Apache-2.0 (see
 `LICENSE`). Third-party Rust crates retain their own licenses as declared
 in `Cargo.lock` (all permissive/copyleft-compatible: MIT/Apache-2.0 for the
 Bevy ecosystem).
@@ -21,7 +21,7 @@ copyrightable expression.
 - **OSP component iconography** (fusion/mechanical splice, UPC/APC
   connector, splitter, OLT, ONT, macrobend, water intrusion): filled,
   transparent-background 64x64 sprites generated deterministically by
-  `tools/gen_placeholder_art.py` (original tool code, GPL-3.0-or-later, no
+  `tools/gen_placeholder_art.py` (original tool code, Apache-2.0, no
   external asset dependency, no AI generation involved). Wired into
   gameplay as the on-board per-pill icons in `game/src/board.rs`. Editable
   sources for further hand-painting live at `art/aseprite/component_icons/`
@@ -34,7 +34,7 @@ copyrightable expression.
   `game/assets/sprites/<name>/`, animated README profile GIFs, and the
   Android launcher icon set) are AI portrait art made on primo using free
   images (rights confirmed by Matt, 2026-09-30). `tools/gen_companion_art.py`
-  and `tools/gen_app_icon.py` (both original code, GPL-3.0-or-later) perform
+  and `tools/gen_app_icon.py` (both original code, Apache-2.0) perform
   the crop/pixelate/tint/icon-assembly steps deterministically from those
   source portraits.
   - No proprietary SDK or network call is required at build or run time to

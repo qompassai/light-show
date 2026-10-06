@@ -221,12 +221,12 @@ bacon test          # run a named job
 ### `deny.toml` — license / advisory / ban policy
 
 `cargo deny check` enforces the dependency policy for a store-shipped
-GPL-3.0-or-later game (cargo-deny 0.20.2 on primo, `/usr/bin/cargo-deny`):
+Apache-2.0 game (cargo-deny 0.20.2 on primo, `/usr/bin/cargo-deny`):
 
 - **licenses**: allow-list is the policy (deny-by-default since
-  cargo-deny 0.18.4) — permissive licenses plus the GPL-3.0 family,
-  which is compatible with the project's own license. AGPL and
-  GPL-2.0-family are denied by omission.
+  cargo-deny 0.18.4) — permissive licenses only (MIT/Apache-2.0/BSD),
+  compatible with the project's own license. Copyleft licenses
+  (GPL/AGPL/LGPL families) are denied by omission.
 - **advisories**: yanked crates are denied; unmaintained-crate
   advisories fail for any crate in the tree. Known exceptions carry a
   dated reason in `advisories.ignore` (e.g. RUSTSEC-2026-0192,

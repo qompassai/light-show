@@ -28,7 +28,7 @@ reference copy). Key requirements this project is designed to satisfy:
 ```yaml
 Categories:
   - Puzzle Game
-License: GPL-3.0-or-later
+License: Apache-2.0
 SourceCode: https://github.com/qompassai/light-show
 IssueTracker: https://github.com/qompassai/light-show/issues
 

@@ -27,7 +27,7 @@
 -- duration (matches the `Timer::from_seconds(0.18, ...)` animation rate
 -- in `game/src/waifu/mod.rs`, so preview playback timing in Aseprite
 -- already matches in-game timing).
--- SPDX-License-Identifier: GPL-3.0-or-later
+-- SPDX-License-Identifier: Apache-2.0
 -- #################################################################
 
 local params = app.params

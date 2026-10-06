@@ -33,7 +33,7 @@ const ATTRIBUTION: &str = include_str!("../../assets/music/ATTRIBUTION.txt");
 /// Code/art/font credits shown above the music block. Kept short: the
 /// full licensing detail lives in `docs/CREDITS.md` and
 /// `game/assets/music/CREDITS.md`.
-const CODE_ART_FONT_CREDITS: &str = "Code: Qompass AI (GPL-3.0-or-later).\nArt: original tool-generated sprites; companion\nportraits AI-generated (rights cleared).\nFonts: Monaspace Neon + Inter (SIL OFL 1.1).";
+const CODE_ART_FONT_CREDITS: &str = "Code: Qompass AI (Apache-2.0).\nArt: original tool-generated sprites; companion\nportraits AI-generated (rights cleared).\nFonts: Monaspace Neon + Inter (SIL OFL 1.1).";
 
 #[derive(Component)]
 struct CreditsRoot;

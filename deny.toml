@@ -4,11 +4,11 @@
 # /usr/bin/cargo-deny). Also wired into Matt's Neovim toolchain via the
 # `rust-development` skill.
 #
-# Policy: this is a GPL-3.0-or-later game. In cargo-deny >= 0.18.4 every
+# Policy: this is an Apache-2.0 game. In cargo-deny >= 0.18.4 every
 # license is denied unless explicitly allowed, so the `allow` list IS the
-# policy: permissive licenses plus the GPL-3.0 family (compatible with the
-# project's own license). AGPL and the GPL-2.0 family are denied by
-# omission (network-copyleft and license-compatibility risk).
+# policy: permissive licenses only (compatible with the project's own
+# license). Copyleft licenses (GPL/AGPL/LGPL families) are denied by
+# omission so any copyleft dependency stays a conscious decision.
 
 [graph]
 # The project's real build matrix: desktop Linux plus the three Android
@@ -37,13 +37,6 @@ allow = [
     "Unicode-3.0",
     "Unicode-DFS-2016",
     "Zlib",
-    # GPL-3.0-family is license-compatible with this GPL-3.0-or-later
-    # project; kept as explicit allow entries (not blanket copyleft)
-    # so any new copyleft dependency stays a conscious decision.
-    "GPL-3.0-only",
-    "GPL-3.0-or-later",
-    "LGPL-3.0-only",
-    "LGPL-3.0-or-later",
 ]
 private = { ignore = true }
 

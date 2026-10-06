@@ -118,7 +118,7 @@ screenshots, and the Play Console/`fdroiddata` listing steps — see
 <details>
 <summary>License</summary>
 
-GPL-3.0-or-later. See [`LICENSE`](LICENSE) and
+Apache-2.0. See [`LICENSE`](LICENSE) and
 [`docs/CREDITS.md`](docs/CREDITS.md) for asset attribution.
 
 </details>
