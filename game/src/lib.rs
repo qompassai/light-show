@@ -16,6 +16,7 @@ mod fonts;
 mod footage;
 mod fx;
 pub mod level;
+pub mod save;
 #[cfg(test)]
 mod playthrough;
 mod states;
@@ -182,6 +183,7 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     }
     app.add_plugins(states::outage::OutagePlugin)
         .add_plugins(states::results::ResultsPlugin)
+        .add_plugins(save::SavePlugin)
         .add_plugins(waifu::SeraphinePlugin)
         .add_plugins(waifu::dialogue_ui::DialogueUiPlugin)
         .add_plugins(fx::FxPlugin)

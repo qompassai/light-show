@@ -66,6 +66,10 @@ path = "android_windows.rs"
 name = "security"
 path = "security.rs"
 
+[[test]]
+name = "save_files"
+path = "save_files.rs"
+
 [dependencies]
 osp_sim = { path = "../crates/osp_sim" }
 light-show = { path = "../game" }

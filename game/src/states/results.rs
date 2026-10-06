@@ -261,6 +261,8 @@ fn show_results(
     dialogue: Res<DialogueBank>,
     asset_server: Res<AssetServer>,
     mut favor: ResMut<FavorPoints>,
+    save: Option<ResMut<crate::save::SaveData>>,
+    save_writer: Option<MessageWriter<crate::save::SaveRequest>>,
 ) {
     info!("Level complete — won={}", outcome.won);
     crate::test_log!("level_result won={}", outcome.won);
@@ -270,6 +272,16 @@ fn show_results(
     const FAVOR_PER_WIN: u32 = 10;
     if outcome.won {
         favor.0 = favor.0.saturating_add(FAVOR_PER_WIN);
+    }
+
+    // Persist progression: a win records the level; favor syncs to the
+    // save via SavePlugin's change-detected system.
+    if outcome.won {
+        if let (Some(mut save), Some(mut writer)) = (save, save_writer) {
+            if save.complete_level(&level.id) {
+                writer.write(crate::save::SaveRequest);
+            }
+        }
     }
 
     let ledger_text = level.signal_ledger(
