@@ -127,6 +127,23 @@ Eight levels, two per companion, laid out in `game/src/level.rs`
 | 7 | `ethernet1_hundred_meter_wall.json` | Lattice | The 100 m wall: segment-length discipline |
 | 8 | `ethernet2_power_budget.json` | Lattice | PoE budget: power every device without oversubscribing |
 
+## Advanced track (Calista / Amara / Terra)
+
+Unlocked by completing the Séraphine/Ondine/Linka level sets (see the
+unlock system in `game/TODO.md`). Three new companions, three new
+disciplines — the game graduates from single-board puzzles to
+network-scale thinking.
+
+| Companion | Discipline | What changes |
+|---|---|---|
+| Calista | PON provisioning | Service profiles and split ratios: every ONT on a shared PON must land inside its tier's optical window. Bulk turn-ups, worst-case path verification. See `docs/CALIX_PROVISIONING.md`. |
+| Amara | NOC triage | The NOC console (`GameState::NocConsole`): a live alarm list across all four media, ack/dispatch/clear workflow, severity that ages. Triage under pressure instead of one fault at a time. See `docs/NOC_CONSOLE.md`. |
+| Terra | OSP construction | MST/tap-plan puzzles: assign homes to multiport terminals, mind the port counts and the drop lengths, survive the backhoe. See `docs/OSP_DFN_GUIDE.md`. |
+
+Design rule for the advanced track: every level must have exactly one clean
+solution and at least one near-miss that fails by a small, legible margin.
+The lesson is always in the near-miss.
+
 ## Companion System
 
 - Four anime AI-hologram companions, one per access technology. Each has a
