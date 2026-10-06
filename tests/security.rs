@@ -20,6 +20,7 @@
 //! no runtime exposure).
 
 use light_show::level::LevelDef;
+use std::path::PathBuf;
 
 fn parse(s: &str) -> Result<LevelDef, serde_json::Error> {
     serde_json::from_str(s)
@@ -214,6 +215,84 @@ fn sec_cheat_codes_require_exact_sequence() {
         src.contains("SEQUENCE"),
         "cheat code sequence constant missing"
     );
+}
+
+// --- SFX decode guard parity ---------------------------------------------------
+// bevy_audio 0.19.1's Decodable::decoder() calls `.unwrap()` — a corrupt
+// file panics a worker thread. Music tracks go through audio_file_decodable;
+// this test gives one-shot SFX the same protection at test time (the files
+// are static, so decode-verifying all 17 here is the guard).
+
+use light_show::audio::{sfx_path, SfxKind};
+use std::io::Cursor;
+
+const ALL_SFX: [SfxKind; 17] = [
+    SfxKind::Click,
+    SfxKind::Pick,
+    SfxKind::Place,
+    SfxKind::Alarm,
+    SfxKind::Tick,
+    SfxKind::Win,
+    SfxKind::Lose,
+    SfxKind::Dialogue,
+    SfxKind::Fanfare,
+    SfxKind::Hover,
+    SfxKind::Error,
+    SfxKind::Zap,
+    SfxKind::AlarmUrgent,
+    SfxKind::AlarmSoft,
+    SfxKind::MenuOpen,
+    SfxKind::MenuClose,
+    SfxKind::TabSwitch,
+];
+
+#[test]
+fn sec_all_sfx_decode_cleanly() {
+    let root = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
+        .join("game")
+        .join("assets");
+    for kind in ALL_SFX {
+        let rel = sfx_path(kind);
+        let full = root.join(rel);
+        let bytes = std::fs::read(&full)
+            .unwrap_or_else(|e| panic!("SFX missing: {} ({})", rel, e));
+        assert!(!bytes.is_empty(), "SFX empty: {}", rel);
+        // Mirror bevy_audio 0.19.1's decode path: must not panic.
+        let decoded = rodio::Decoder::builder()
+            .with_byte_len(bytes.len() as u64)
+            .with_data(Cursor::new(bytes))
+            .build();
+        assert!(
+            decoded.is_ok(),
+            "SFX undecodable (would panic bevy_audio worker thread): {}",
+            rel
+        );
+    }
+}
+
+#[test]
+fn sec_corrupt_sfx_bytes_do_not_panic_decoder() {
+    // Adversarial: garbage fed to the same decoder bevy_audio uses must
+    // produce Err, never a panic. (A repackaged APK with corrupt assets
+    // must crash gracefully at worst, not take down a worker thread
+    // with an unwrap panic.)
+    for garbage in [
+        vec![],
+        vec![0u8; 16],
+        b"RIFF....WAVEfmt ".to_vec(),
+        vec![0xFF; 1024],
+    ] {
+        let result = std::panic::catch_unwind(|| {
+            rodio::Decoder::builder()
+                .with_byte_len(garbage.len() as u64)
+                .with_data(Cursor::new(garbage))
+                .build()
+        });
+        assert!(
+            result.is_ok(),
+            "decoder panicked on garbage input instead of returning Err"
+        );
+    }
 }
 
 // --- Dependency audit --------------------------------------------------------
