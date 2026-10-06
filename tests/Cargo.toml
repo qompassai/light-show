@@ -54,6 +54,14 @@ path = "stress_tests.rs"
 name = "bevy_issues"
 path = "bevy_issues.rs"
 
+[[test]]
+name = "shader_render"
+path = "shader_render.rs"
+
+[[test]]
+name = "android_windows"
+path = "android_windows.rs"
+
 [dependencies]
 osp_sim = { path = "../crates/osp_sim" }
 light-show = { path = "../game" }
