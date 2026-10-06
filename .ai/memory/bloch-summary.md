@@ -1,9 +1,9 @@
 # bloch summary
 
-Generated: 1791288955
-Git HEAD: cefaf659ddbe81006b5ee4d37a7105b0068cc7e3
+Generated: 1791289009
+Git HEAD: b1cf034790a1fb41462f15060242a9333a29c1ec
 
-## Files: 354 total
+## Files: 355 total
 
 ## Languages
 
@@ -14,17 +14,18 @@ Git HEAD: cefaf659ddbe81006b5ee4d37a7105b0068cc7e3
 - lua: 9 files
 - toml: 8 files
 - txt: 7 files
-- python: 6 files
 - text: 6 files
+- python: 6 files
 - xml: 5 files
 - kotlin: 4 files
-- properties: 2 files
 - lock: 2 files
+- properties: 2 files
+- nix: 1 files
+- css: 1 files
 - uproject: 1 files
 - html: 1 files
 - cff: 1 files
-- css: 1 files
-- nix: 1 files
+- yaml: 1 files
 - bat: 1 files
 
 ## Top definitions by probability
@@ -38,8 +39,8 @@ Git HEAD: cefaf659ddbe81006b5ee4d37a7105b0068cc7e3
 7. const `game/src/level.rs::LEVEL_SOURCES` (p=0.023)
 8. enum `game/src/waifu/mod.rs::Companion` (p=0.022)
 9. mod `game/src/lib.rs::fonts` (p=0.019)
-10. const `game/src/cheat_codes.rs::_` (p=0.018)
-11. const `crates/osp_sim/src/lib.rs::GPON_ONT` (p=0.018)
+10. const `crates/osp_sim/src/lib.rs::GPON_ONT` (p=0.018)
+11. const `game/src/cheat_codes.rs::_` (p=0.018)
 12. const `crates/osp_sim/src/lib.rs::DEFAULT_TX_DBM` (p=0.017)
 13. enum `game/src/states/mod.rs::GameState` (p=0.014)
 14. enum `crates/osp_sim/src/component.rs::Component` (p=0.014)

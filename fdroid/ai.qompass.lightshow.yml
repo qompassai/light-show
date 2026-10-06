@@ -1,0 +1,34 @@
+Categories:
+  - Puzzle Game
+License: Apache-2.0
+SourceCode: https://github.com/qompassai/light-show
+IssueTracker: https://github.com/qompassai/light-show/issues
+
+RepoType: git
+Repo: https://github.com/qompassai/light-show.git
+
+Builds:
+  - versionName: '0.1.0'
+    versionCode: 16777472
+    commit: 1eeb4b7297cd8472b32d1be3b1a3a5de45460b9b
+    ndk: 30.0.16248370
+    subdir: game
+    sudo:
+      - apt-get update
+      - apt-get install -y curl build-essential
+    init:
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+      - . $HOME/.cargo/env
+      - rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+      - cargo install cargo-apk --version 0.10.0
+    build:
+      - keytool -genkeypair -keystore /tmp/fdroid-ephemeral.jks -alias fdroid -keyalg RSA -keysize 2048 -validity 10950 -storepass fdroid -keypass fdroid -dname "CN=F-Droid Ephemeral"
+      - export CARGO_APK_RELEASE_KEYSTORE=/tmp/fdroid-ephemeral.jks
+      - export CARGO_APK_RELEASE_KEYSTORE_PASSWORD=<redacted>
+      - cargo apk build --release --lib
+    output: target/release/apk/light_show.apk
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '0.1.0'
+CurrentVersionCode: 16777472
