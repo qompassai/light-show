@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791281402
-Git HEAD: 07bcada327de75800e221c29b2cc2cc727cb9acb
+Generated: 1791284991
+Git HEAD: 1a4ecdd9509fc55882d314ac3766cbd7ccce8948
 
 ## Files: 352 total
 
@@ -18,14 +18,14 @@ Git HEAD: 07bcada327de75800e221c29b2cc2cc727cb9acb
 - python: 6 files
 - xml: 5 files
 - kotlin: 4 files
-- lock: 2 files
 - properties: 2 files
+- lock: 2 files
 - uproject: 1 files
 - cff: 1 files
-- css: 1 files
-- bat: 1 files
 - nix: 1 files
 - html: 1 files
+- bat: 1 files
+- css: 1 files
 
 ## Top definitions by probability
 
@@ -37,8 +37,8 @@ Git HEAD: 07bcada327de75800e221c29b2cc2cc727cb9acb
 6. mod `game/src/lib.rs::waifu` (p=0.025)
 7. enum `game/src/waifu/mod.rs::Companion` (p=0.024)
 8. mod `game/src/lib.rs::fonts` (p=0.020)
-9. const `crates/osp_sim/src/lib.rs::GPON_ONT` (p=0.019)
-10. const `game/src/cheat_codes.rs::_` (p=0.019)
+9. const `game/src/cheat_codes.rs::_` (p=0.019)
+10. const `crates/osp_sim/src/lib.rs::GPON_ONT` (p=0.019)
 11. const `crates/osp_sim/src/lib.rs::DEFAULT_TX_DBM` (p=0.018)
 12. enum `game/src/states/mod.rs::GameState` (p=0.015)
 13. const `game/src/level.rs::LEVEL_SOURCES` (p=0.015)
