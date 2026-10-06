@@ -297,14 +297,16 @@ fn show_results(
     // companion, because the select screen is the sole gate into Playing
     // and refuses trackless ones. If that ever breaks, fail loudly in dev
     // and offer no "next level" rather than invent a phantom index.
-    let track_start = selected.0.track_start_index();
+    let track_indices = selected.0.track_indices();
     debug_assert!(
-        track_start.is_some(),
+        !track_indices.is_empty(),
         "{:?} reached Results without a level track",
         selected.0
     );
-    let has_next_level =
-        track_start.is_some_and(|start| index.0 < start + Companion::TRACK_LEN - 1);
+    let has_next_level = track_indices
+        .iter()
+        .position(|&i| i == index.0)
+        .is_some_and(|pos| pos + 1 < track_indices.len());
 
     commands
         .spawn((
@@ -335,6 +337,22 @@ fn show_results(
                         ..default()
                     },
                     ImageNode::new(first_frame),
+                ));
+                // Gold burst particles over the ring: Aseprite-crafted
+                // 6-frame one-shot, slightly smaller and offset for depth.
+                let burst_frames: [Handle<Image>; crate::fx::SuccessBurst::FRAMES] =
+                    std::array::from_fn(|i| {
+                        asset_server.load(format!("sprites/fx/success_burst_{i}.png"))
+                    });
+                let burst_first = burst_frames[0].clone();
+                parent.spawn((
+                    crate::fx::SuccessBurst::new(burst_frames),
+                    Node {
+                        width: Val::Px(192.0),
+                        height: Val::Px(192.0),
+                        ..default()
+                    },
+                    ImageNode::new(burst_first),
                 ));
             }
             {
@@ -518,6 +536,7 @@ fn handle_result_buttons(
     mut index: ResMut<CurrentLevelIndex>,
     mut request: ResMut<TransitionRequest>,
     sfx: Res<crate::audio::Sfx>,
+    selected: Res<SelectedCompanion>,
 ) {
     for (interaction, action) in &interactions {
         if *interaction != Interaction::Pressed {
@@ -526,10 +545,12 @@ fn handle_result_buttons(
         sfx.play(&mut commands, crate::audio::SfxKind::Click);
         match action {
             ResultAction::ContinueNextLevel => {
-                index.0 = index
-                    .0
-                    .saturating_add(1)
-                    .min(level::LEVEL_SOURCES.len() - 1);
+                let indices = selected.0.track_indices();
+                if let Some(pos) = indices.iter().position(|&i| i == index.0) {
+                    if let Some(&next) = indices.get(pos + 1) {
+                        index.0 = next;
+                    }
+                }
                 request.0 = Some(GameState::Playing);
             }
             ResultAction::RetrySameLevel => {

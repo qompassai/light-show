@@ -9,6 +9,9 @@ mod asset_root;
 pub mod audio;
 #[cfg(debug_assertions)]
 mod bench;
+#[cfg(debug_assertions)]
+mod footage;
+mod fx;
 mod board;
 pub mod cheat_codes;
 mod fonts;
@@ -121,6 +124,8 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     let mut app = App::new();
     #[cfg(debug_assertions)]
     let bench_args = bench::BenchArgs::from_args();
+    #[cfg(debug_assertions)]
+    let footage_args = footage::FootageArgs::from_args();
     let plugins = DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
             title: "Light Show".into(),
@@ -150,10 +155,12 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
             states::companion_select::CompanionSelectPlugin,
             states::credits::CreditsPlugin,
             states::playing::PlayingPlugin,
+            states::api_console::ApiConsolePlugin,
             states::outage::OutagePlugin,
             states::results::ResultsPlugin,
             waifu::SeraphinePlugin,
             waifu::dialogue_ui::DialogueUiPlugin,
+            fx::FxPlugin,
             ui::LedgerUiPlugin,
             anim::AnimPlugin,
             audio::MusicPlugin,
@@ -164,6 +171,12 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     #[cfg(debug_assertions)]
     if let Some(frames) = bench_args.frames {
         bench::add_bench_systems(&mut app, frames);
+    }
+    // Footage driver (level select + scripted taps + auto-exit). Not
+    // installed for normal runs: zero overhead when the flag is absent.
+    #[cfg(debug_assertions)]
+    if let Some(ref level_id) = footage_args.level_id {
+        footage::add_footage_systems(&mut app, level_id, footage_args.frames);
     }
     // The render sub-app only exists once `RenderPlugin` has built; without
     // it there is no adapter to log. The system one-shots itself via a

@@ -903,6 +903,7 @@ pub fn handle_pointer_input(
     active_outage: Res<ActiveOutage>,
     mut splice_reactions: MessageWriter<crate::waifu::SpliceReaction>,
     sfx: Res<crate::audio::Sfx>,
+    mut spark_requests: MessageWriter<crate::fx::SpawnConnectSpark>,
 ) {
     let just_pressed = mouse.just_pressed(MouseButton::Left) || touches.any_just_pressed();
     let just_released = mouse.just_released(MouseButton::Left) || touches.any_just_released();
@@ -935,6 +936,14 @@ pub fn handle_pointer_input(
     if just_released {
         if let ReleaseAction::Connect { from, to } = resolve_release(&level, drag.from, pointer.0) {
             sfx.play(&mut commands, crate::audio::SfxKind::Place);
+            // Cyan spark burst at the connection midpoint.
+            if let (Some(from_pos), Some(to_pos)) =
+                (node_world_pos(&level, from), node_world_pos(&level, to))
+            {
+                spark_requests.write(crate::fx::SpawnConnectSpark {
+                    position: from_pos.midpoint(to_pos),
+                });
+            }
             let slot = *placed.0.entry((from, to)).or_insert(0);
             rebuild_live_graph(
                 &level,
@@ -1344,9 +1353,11 @@ mod tests {
             source_node,
             target_node,
             scripted_outage: None,
+            subscribers: vec![],
             on_enter_line: None,
             on_win_line: None,
             on_fail_line: None,
+            api_sequence: None,
         }
     }
 
@@ -1794,6 +1805,7 @@ mod tests {
         });
         world.insert_resource(ActiveOutage::default());
         world.init_resource::<Messages<crate::waifu::SpliceReaction>>();
+        world.init_resource::<Messages<crate::fx::SpawnConnectSpark>>();
         world.insert_resource(crate::audio::Sfx::for_tests());
         world.insert_resource(level);
         world
