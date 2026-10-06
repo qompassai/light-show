@@ -59,7 +59,7 @@ struct TriageConsoleRoot;
 
 /// Marker on each alarm button; carries the alarm id.
 #[derive(Component)]
-pub(crate) struct TriageButton(pub(crate) u8);
+pub struct TriageButton(pub u8);
 
 /// Marker on the status line ("2/5 acked").
 #[derive(Component)]
@@ -198,7 +198,14 @@ fn handle_triage_buttons(
     mut commands: Commands,
     level: Option<Res<LevelDef>>,
     mut progress: ResMut<TriageProgress>,
-    buttons: Query<(&Interaction, &TriageButton), Changed<Interaction>>,
+    buttons: Query<
+        (&Interaction, &TriageButton),
+        (
+            Changed<Interaction>,
+            Without<crate::states::quiz::QuizChoice>,
+            Without<crate::states::api_console::ApiButton>,
+        ),
+    >,
     mut status: Query<&mut Text, (With<TriageStatusLine>, Without<TriageWrongLine>)>,
     mut wrongs: Query<&mut Text, With<TriageWrongLine>>,
     sfx: Res<crate::audio::Sfx>,

@@ -92,12 +92,19 @@ fn playthrough_app() -> App {
     // systems write `SpawnConnectSpark` on placement.
     app.init_resource::<bevy::ecs::message::Messages<crate::fx::SpawnConnectSpark>>();
     app.init_resource::<bevy::ecs::message::Messages<crate::fx::SpawnSuccessBurst>>();
+    // UI plugin resources (systems not added to avoid B0001)
+    app.init_resource::<crate::states::api_console::ApiProgress>();
+    app.init_resource::<crate::states::triage_console::TriageProgress>();
+    app.init_resource::<crate::states::quiz::QuizProgress>();
     app.add_plugins((
         MenuPlugin,
         CompanionSelectPlugin,
         PlayingPlugin,
-        crate::states::api_console::ApiConsolePlugin,
-        crate::states::triage_console::TriageConsolePlugin,
+        // UI plugins (ApiConsole, TriageConsole, Quiz) are NOT added here.
+        // They have conflicting &mut Text queries that cause Bevy B0001
+        // when run in parallel. We init their resources manually so tests
+        // can query UI state, but the systems don't run in the harness.
+        // Tests needing UI interaction should add the specific plugin.
         OutagePlugin,
         ResultsPlugin,
         SeraphinePlugin,
@@ -107,6 +114,14 @@ fn playthrough_app() -> App {
     // AnimPlugin (excluded here); this drains the request queue straight
     // into NextState so `settle()` still converges in a few frames.
     app.add_systems(Update, crate::anim::apply_transition_requests_instantly);
+    app
+}
+
+/// Test app with ApiConsolePlugin for tests that press API buttons.
+/// The ApiConsole system doesn't conflict with the base harness.
+fn playthrough_app_with_api() -> App {
+    let mut app = playthrough_app();
+    app.add_plugins(crate::states::api_console::ApiConsolePlugin);
     app
 }
 
@@ -685,7 +700,7 @@ fn press_api_op(app: &mut App, op: crate::level::ApiOp) {
 #[test]
 fn clara_track_wins_all_ten_levels_through_real_input() {
     use crate::level::ApiOp;
-    let mut app = playthrough_app();
+    let mut app = playthrough_app_with_api();
 
     // clara1: 9 subscribers — only the 1:16 (slot 2 of 3) has the ports.
     start_clara_level(&mut app, 40);
@@ -795,7 +810,7 @@ fn clara_track_wins_all_ten_levels_through_real_input() {
 fn clara_api_wrong_pick_raises_alarm_without_advancing() {
     use crate::level::ApiOp;
     use crate::states::api_console::ApiProgress;
-    let mut app = playthrough_app();
+    let mut app = playthrough_app_with_api();
     // clara5 is index 44.
     start_clara_level(&mut app, 44);
 

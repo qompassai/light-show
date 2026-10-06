@@ -78,7 +78,7 @@ struct QuizRoot;
 
 /// Marker on each choice button (choice index).
 #[derive(Component)]
-struct QuizChoice(pub usize);
+pub struct QuizChoice(pub usize);
 
 /// Marker on the Next/Finish button.
 #[derive(Component)]
@@ -107,7 +107,9 @@ impl Plugin for QuizPlugin {
         app.init_resource::<QuizProgress>()
             .add_systems(
                 Update,
-                (handle_quiz_choices, handle_quiz_next).run_if(in_state(GameState::Playing)),
+                (handle_quiz_choices, handle_quiz_next)
+                    .chain()
+                    .run_if(in_state(GameState::Playing)),
             )
             .add_systems(OnEnter(GameState::Results), cleanup_quiz_ui)
             .add_systems(OnEnter(GameState::MainMenu), cleanup_quiz_ui);
@@ -264,7 +266,14 @@ fn handle_quiz_choices(
     mut commands: Commands,
     level: Res<LevelDef>,
     mut progress: ResMut<QuizProgress>,
-    buttons: Query<(&Interaction, &QuizChoice), Changed<Interaction>>,
+    buttons: Query<
+        (&Interaction, &QuizChoice),
+        (
+            Changed<Interaction>,
+            Without<crate::states::triage_console::TriageButton>,
+            Without<crate::states::api_console::ApiButton>,
+        ),
+    >,
     mut feedback: Query<
         &mut Text,
         (

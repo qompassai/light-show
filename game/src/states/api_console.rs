@@ -58,7 +58,7 @@ struct ApiConsoleRoot;
 
 /// Marker on each op button.
 #[derive(Component)]
-pub(crate) struct ApiButton(pub(crate) ApiOp);
+pub struct ApiButton(pub ApiOp);
 
 /// Marker on the status line ("3/5 calls — next: Show ONT").
 #[derive(Component)]
@@ -199,7 +199,14 @@ fn handle_api_buttons(
     mut commands: Commands,
     level: Res<LevelDef>,
     mut progress: ResMut<ApiProgress>,
-    buttons: Query<(&Interaction, &ApiButton), Changed<Interaction>>,
+    buttons: Query<
+        (&Interaction, &ApiButton),
+        (
+            Changed<Interaction>,
+            Without<crate::states::quiz::QuizChoice>,
+            Without<crate::states::triage_console::TriageButton>,
+        ),
+    >,
     mut status: Query<&mut Text, (With<ApiStatusLine>, Without<ApiAlarmLine>)>,
     mut alarms: Query<&mut Text, With<ApiAlarmLine>>,
     sfx: Res<crate::audio::Sfx>,
