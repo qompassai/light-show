@@ -62,6 +62,10 @@ path = "shader_render.rs"
 name = "android_windows"
 path = "android_windows.rs"
 
+[[test]]
+name = "security"
+path = "security.rs"
+
 [dependencies]
 osp_sim = { path = "../crates/osp_sim" }
 light-show = { path = "../game" }
