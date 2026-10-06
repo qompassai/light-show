@@ -153,6 +153,7 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
             states::outage::OutagePlugin,
             states::results::ResultsPlugin,
             waifu::SeraphinePlugin,
+            waifu::dialogue_ui::DialogueUiPlugin,
             ui::LedgerUiPlugin,
             anim::AnimPlugin,
             audio::MusicPlugin,
