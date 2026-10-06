@@ -1,5 +1,7 @@
 # art/ — TODO
 
+> Tracked on GitHub: [master TODO #2](https://github.com/qompassai/light-show/issues/2) -> [this track](https://github.com/qompassai/light-show/issues/4). Close the sub-issue to check off an item; completed items get a date + what/where below.
+
 ## New characters (each needs)
 Following the existing companion pipeline (see docs/ASSET_PIPELINE.md):
 

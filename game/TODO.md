@@ -1,5 +1,7 @@
 # game/ — TODO
 
+> Tracked on GitHub: [master TODO #2](https://github.com/qompassai/light-show/issues/2) -> [this track](https://github.com/qompassai/light-show/issues/3). Close the sub-issue to check off an item; completed items get a date + what/where below.
+
 Main Bevy game crate.
 
 ## NOC console (Amara track)
