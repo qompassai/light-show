@@ -5,8 +5,11 @@
 use super::GameState;
 use crate::anim::TransitionRequest;
 use crate::board;
+use crate::shaders::{AtmosphereMaterial, AtmosphereSettings};
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_GOLD, NEON_INK};
+use bevy::mesh::Mesh2d;
 use bevy::prelude::*;
+use bevy::sprite_render::MeshMaterial2d;
 
 pub struct MenuPlugin;
 
@@ -51,12 +54,36 @@ const TAGLINE_MAX_W: f32 = 680.0;
 /// buttons) lives in the lower third, over the dark night city.
 const MENU_BOTTOM_PAD: f32 = 72.0;
 
-fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>, cameras: Query<&Camera>) {
+/// Tags the fullscreen atmosphere background quad (2D mesh, behind UI).
+#[derive(Debug, Component)]
+struct AtmosphereBg;
+
+fn setup_menu(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    cameras: Query<&Camera>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: Option<ResMut<Assets<AtmosphereMaterial>>>,
+) {
     // The Credits screen reuses this camera (menu teardown only despawns
     // `MenuRoot`), so only spawn one when none exists — otherwise every
     // return from Credits would stack another camera.
     if cameras.is_empty() {
         commands.spawn(Camera2d);
+    }
+
+    // Animated background: gradient + vignette + scanlines, behind all UI.
+    // Oversized quad (2000px) covers the 720x1280 view at any aspect.
+    // Skipped in headless tests where the material plugin isn't registered.
+    if let Some(mut mats) = materials {
+        commands.spawn((
+            AtmosphereBg,
+            Mesh2d(meshes.add(Rectangle::new(2000.0, 2000.0))),
+            MeshMaterial2d(mats.add(AtmosphereMaterial {
+                settings: AtmosphereSettings::default(),
+            })),
+            Transform::from_xyz(0.0, 0.0, -100.0),
+        ));
     }
 
     commands
@@ -208,8 +235,15 @@ fn handle_credits_button(
     }
 }
 
-fn teardown_menu(mut commands: Commands, query: Query<Entity, With<MenuRoot>>) {
+fn teardown_menu(
+    mut commands: Commands,
+    query: Query<Entity, With<MenuRoot>>,
+    bg: Query<Entity, With<AtmosphereBg>>,
+) {
     for entity in &query {
+        commands.entity(entity).despawn();
+    }
+    for entity in &bg {
         commands.entity(entity).despawn();
     }
 }

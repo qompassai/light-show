@@ -72,6 +72,7 @@ fn playthrough_app() -> App {
     app.init_asset::<bevy::image::TextureAtlasLayout>();
     app.init_asset::<bevy::image::Image>();
     app.init_asset::<bevy::text::Font>();
+    app.init_asset::<bevy::mesh::Mesh>();
     // `draw_board_gizmos` buffers into the `Gizmos` system param, which
     // needs a registered config and its `()`-clear storage. The full
     // `GizmoPlugin` / `init_gizmo_group` also schedule render-coupled mesh

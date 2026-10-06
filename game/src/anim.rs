@@ -11,6 +11,7 @@
 
 use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
+use bevy::ui_render::ui_material::MaterialNode;
 
 use crate::states::GameState;
 
@@ -72,19 +73,31 @@ pub struct TransitionRequest(pub Option<GameState>);
 #[derive(Debug, Component)]
 struct FadeOverlay;
 
-/// Spawns the fullscreen black overlay at startup. It sits above all UI
-/// (`GlobalZIndex(i32::MAX)`) and starts fully transparent.
-fn spawn_fade_overlay(mut commands: Commands) {
+/// Spawns the fullscreen wipe overlay at startup. It sits above all UI
+/// (`GlobalZIndex(i32::MAX)`) and starts fully transparent
+/// (`progress = 0`). The wipe shader sweeps diagonally instead of the
+/// old flat alpha fade.
+fn spawn_fade_overlay(
+    mut commands: Commands,
+    materials: Option<ResMut<Assets<crate::shaders::WipeMaterial>>>,
+) {
+    // Headless tests don't register the UI material plugin; skip the
+    // overlay rather than panicking on the missing resource.
+    let Some(mut materials) = materials else {
+        return;
+    };
     commands.spawn((
         FadeOverlay,
+        MaterialNode(materials.add(crate::shaders::WipeMaterial {
+            settings: crate::shaders::WipeSettings::default(),
+        })),
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
             position_type: PositionType::Absolute,
             ..default()
         },
-        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
-        // Above all UI: the fade must cover every menu, banner, and dialog.
+        // Above all UI: the wipe must cover every menu, banner, and dialog.
         GlobalZIndex(i32::MAX),
     ));
 }
@@ -105,7 +118,8 @@ fn drive_transition_fade(
     mut fade: ResMut<TransitionFade>,
     mut request: ResMut<TransitionRequest>,
     mut next_state: ResMut<NextState<GameState>>,
-    mut overlay: Query<&mut BackgroundColor, With<FadeOverlay>>,
+    overlay: Query<&MaterialNode<crate::shaders::WipeMaterial>, With<FadeOverlay>>,
+    materials: Option<ResMut<Assets<crate::shaders::WipeMaterial>>>,
 ) {
     let delta_secs = time.delta_secs();
     if matches!(fade.phase, FadePhase::Idle) {
@@ -165,8 +179,14 @@ fn drive_transition_fade(
     if let Some(target) = swap_to {
         next_state.set(target);
     }
-    for mut background in &mut overlay {
-        background.0 = Color::srgba(0.0, 0.0, 0.0, alpha);
+    // The wipe progress follows the same 0->1->0 envelope the alpha
+    // fade used: covering during fade-out, revealing during fade-in.
+    if let Some(mut mats) = materials {
+        for node in &overlay {
+            if let Some(mut mat) = mats.get_mut(&node.0) {
+                mat.settings.progress = alpha;
+            }
+        }
     }
 }
 

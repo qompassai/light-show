@@ -16,9 +16,10 @@ mod fonts;
 mod footage;
 mod fx;
 pub mod level;
-pub mod save;
 #[cfg(test)]
 mod playthrough;
+pub mod save;
+pub mod shaders;
 mod states;
 mod ui;
 pub mod waifu;
@@ -162,12 +163,34 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     let footage_skip_ui = footage_args.level_id.as_ref().is_some_and(|id| {
         matches!(
             id.as_str(),
-            "clara3" | "clara4" | "clara5" | "clara6" | "clara7" | "clara8" |
-            "clara9" | "clara10" |
-            "aino1" | "aino2" | "aino3" | "aino4" | "aino5" | "aino6" |
-            "aino7" | "aino8" | "aino9" | "aino10" |
-            "hikari1" | "hikari2" | "hikari3" | "hikari4" | "hikari5" |
-            "hikari6" | "hikari7" | "hikari8" | "hikari9" | "hikari10"
+            "clara3"
+                | "clara4"
+                | "clara5"
+                | "clara6"
+                | "clara7"
+                | "clara8"
+                | "clara9"
+                | "clara10"
+                | "aino1"
+                | "aino2"
+                | "aino3"
+                | "aino4"
+                | "aino5"
+                | "aino6"
+                | "aino7"
+                | "aino8"
+                | "aino9"
+                | "aino10"
+                | "hikari1"
+                | "hikari2"
+                | "hikari3"
+                | "hikari4"
+                | "hikari5"
+                | "hikari6"
+                | "hikari7"
+                | "hikari8"
+                | "hikari9"
+                | "hikari10"
         )
     });
     #[cfg(not(debug_assertions))]
@@ -184,6 +207,7 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     app.add_plugins(states::outage::OutagePlugin)
         .add_plugins(states::results::ResultsPlugin)
         .add_plugins(save::SavePlugin)
+        .add_plugins(shaders::ShaderPlugin)
         .add_plugins(waifu::SeraphinePlugin)
         .add_plugins(waifu::dialogue_ui::DialogueUiPlugin)
         .add_plugins(fx::FxPlugin)

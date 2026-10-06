@@ -57,6 +57,7 @@ impl Plugin for PlayingPlugin {
                     board::animate_pill_pops,
                     board::spawn_signal_pulses,
                     board::move_signal_pulses,
+                    board::sync_fiber_flows,
                     board::update_storm_rain,
                 )
                     .run_if(
@@ -293,6 +294,9 @@ fn check_win_condition(
     sfx: Res<crate::audio::Sfx>,
     api_progress: Res<super::api_console::ApiProgress>,
     triage_progress: Res<super::triage_console::TriageProgress>,
+    board_roots: Query<Entity, With<crate::board::BoardRoot>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut glow_materials: Option<ResMut<Assets<crate::shaders::GlowMaterial>>>,
 ) {
     if level.scripted_outage.is_some() {
         return;
@@ -324,6 +328,27 @@ fn check_win_condition(
     {
         sfx.play(&mut commands, crate::audio::SfxKind::Win);
         outcome.won = true;
+        // Celebratory glow burst at the board center (BoardRoot child
+        // so teardown sweeps it). Visible during the wipe-out.
+        if let (Ok(board_root), Some(mut glow_mats)) =
+            (board_roots.single(), glow_materials.as_mut())
+        {
+            let center = level
+                .nodes
+                .iter()
+                .filter_map(|n| crate::board::node_world_pos(&level, n.id))
+                .fold(Vec2::ZERO, |a, b| a + b)
+                / level.nodes.len().max(1) as f32;
+            let glow = crate::shaders::spawn_glow(
+                &mut commands,
+                &mut meshes,
+                &mut glow_mats,
+                center.extend(1.0),
+                LinearRgba::new(1.0, 0.9, 0.6, 1.0),
+                400.0,
+            );
+            commands.entity(board_root).add_child(glow);
+        }
         // Guarded: this system keeps running during the 0.3s fade-out,
         // and re-popping every frame would restart the animation forever.
         for (entity, mut sprite) in &mut companions {

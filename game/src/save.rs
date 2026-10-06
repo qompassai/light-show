@@ -196,14 +196,22 @@ pub fn load() -> SaveData {
             return SaveData::default();
         }
         Err(e) => {
-            warn!("cannot read save file {} ({}); starting fresh", path.display(), e);
+            warn!(
+                "cannot read save file {} ({}); starting fresh",
+                path.display(),
+                e
+            );
             return SaveData::default();
         }
     };
     let mut data: SaveData = match serde_json::from_str(&text) {
         Ok(d) => d,
         Err(e) => {
-            warn!("corrupt save file {} ({}); starting fresh", path.display(), e);
+            warn!(
+                "corrupt save file {} ({}); starting fresh",
+                path.display(),
+                e
+            );
             return SaveData::default();
         }
     };
@@ -233,12 +241,14 @@ fn validate(data: &mut SaveData) {
         }
     }
     // Level IDs: non-empty, bounded length, deduplicated.
-    data.completed_levels.retain(|id| !id.is_empty() && id.len() <= 128);
+    data.completed_levels
+        .retain(|id| !id.is_empty() && id.len() <= 128);
     data.completed_levels.sort();
     data.completed_levels.dedup();
     // Unknown specialist names are dropped by `unlocked_set`; keep the
     // raw list tidy too.
-    data.unlocked_specialists.retain(|n| !n.is_empty() && n.len() <= 32);
+    data.unlocked_specialists
+        .retain(|n| !n.is_empty() && n.len() <= 32);
     data.unlocked_specialists.sort();
     data.unlocked_specialists.dedup();
 }
@@ -326,10 +336,7 @@ fn sync_progression_to_save(
 
 /// Perform the actual disk write. Errors are logged, never panic —
 /// a failed save must not crash the game.
-fn write_save_on_request(
-    mut reader: MessageReader<SaveRequest>,
-    data: Res<SaveData>,
-) {
+fn write_save_on_request(mut reader: MessageReader<SaveRequest>, data: Res<SaveData>) {
     if reader.read().count() == 0 {
         return;
     }

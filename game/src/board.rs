@@ -21,14 +21,17 @@
 
 use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::{LevelDef, MediumDef};
+use crate::shaders::{PulseMaterial, PulseSettings};
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
 use crate::test_log;
 use crate::ui::LedgerText;
 use bevy::input::touch::Touches;
 use bevy::math::curve::{Curve, EaseFunction};
+use bevy::mesh::Mesh2d;
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
+use bevy::sprite_render::MeshMaterial2d;
 use bevy::window::PrimaryWindow;
 use osp_sim::{Component, Outage, PathGraph};
 use std::collections::HashMap;
@@ -2526,5 +2529,85 @@ mod tests {
         assert!(rect_hits_circle(center, half, Vec2::new(60.0, 0.0), 15.0));
         assert!(!rect_hits_circle(center, half, Vec2::new(200.0, 0.0), 15.0));
         assert!(!rect_hits_circle(center, half, Vec2::new(0.0, 100.0), 15.0));
+    }
+}
+
+/// Tags a continuous pulse-flow quad on a placed edge. The quad's U axis
+/// runs along the fiber; the pulse shader animates light traveling down
+/// it. Complements the discrete `SignalPulse` sprites with smooth flow.
+#[derive(Debug, Component)]
+pub(crate) struct FiberFlow {
+    from_id: u32,
+    to_id: u32,
+}
+
+/// Sync pulse-flow quads with the live graph: one continuous light-flow
+/// quad per placed edge, removed when the edge is removed. Quads are
+/// `BoardRoot` children so level teardown sweeps them.
+pub fn sync_fiber_flows(
+    mut commands: Commands,
+    live_graph: Res<LiveGraph>,
+    level: Res<LevelDef>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    materials: Option<ResMut<Assets<PulseMaterial>>>,
+    flows: Query<(Entity, &FiberFlow)>,
+    board_roots: Query<Entity, With<BoardRoot>>,
+) {
+    let Ok(board_root) = board_roots.single() else {
+        return;
+    };
+    let mut materials = match materials {
+        Some(m) => m,
+        None => return,
+    };
+    // Remove flows whose edge left the graph.
+    for (entity, flow) in &flows {
+        let still_live = live_graph
+            .graph
+            .edges
+            .iter()
+            .any(|e| e.from == flow.from_id && e.to == flow.to_id);
+        if !still_live {
+            commands.entity(entity).despawn();
+        }
+    }
+    // Spawn flows for new edges.
+    for edge in &live_graph.graph.edges {
+        if flows
+            .iter()
+            .any(|(_, f)| f.from_id == edge.from && f.to_id == edge.to)
+        {
+            continue;
+        }
+        let (Some(from), Some(to)) = (
+            node_world_pos(&level, edge.from),
+            node_world_pos(&level, edge.to),
+        ) else {
+            continue;
+        };
+        let delta = to - from;
+        let len = delta.length().max(1.0);
+        let angle = delta.y.atan2(delta.x);
+        let mid = (from + to) / 2.0;
+        commands.entity(board_root).with_children(|parent| {
+            parent.spawn((
+                FiberFlow {
+                    from_id: edge.from,
+                    to_id: edge.to,
+                },
+                Mesh2d(meshes.add(Rectangle::new(len, 10.0))),
+                MeshMaterial2d(materials.add(PulseMaterial {
+                    settings: PulseSettings {
+                        color: Vec4::new(1.0, 0.85, 0.55, 1.0),
+                        ..Default::default()
+                    },
+                })),
+                Transform {
+                    translation: mid.extend(0.5),
+                    rotation: Quat::from_rotation_z(angle),
+                    ..default()
+                },
+            ));
+        });
     }
 }

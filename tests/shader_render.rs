@@ -69,17 +69,61 @@ fn assert_asset(rel: &str) {
 // --- Shader contract: no custom shaders ---------------------------------
 
 #[test]
-fn no_custom_shaders_in_tree() {
-    // The game renders entirely through Bevy's built-in pipelines.
-    // If a .wgsl file ever appears, this test forces a conscious decision
-    // about backend coverage (Vulkan/Metal/D3D12, GLES3 on Android).
+fn custom_shaders_are_expected_and_portable() {
+    // The canary fired 2026-10-06: Matt directed all four WGSL benefit
+    // cases be implemented (glow, pulse, atmosphere, wipe). This test now
+    // asserts the shaders exist AND stay within the portable subset
+    // (Vulkan/Metal/D3D12/GLES3-safe constructs only).
     let mut wgsl = Vec::new();
     collect(&repo_root().join("game"), "wgsl", &mut wgsl);
-    assert!(
-        wgsl.is_empty(),
-        "custom WGSL shaders found — add backend coverage tests: {:?}",
-        wgsl
-    );
+    let names: Vec<String> = wgsl
+        .iter()
+        .filter_map(|p| p.file_name()?.to_str().map(String::from))
+        .collect();
+    for expected in ["glow.wgsl", "pulse.wgsl", "atmosphere.wgsl", "wipe.wgsl"] {
+        assert!(
+            names.iter().any(|n| n == expected),
+            "expected shader {} is missing; found: {:?}",
+            expected,
+            names
+        );
+    }
+    // Portability: no non-portable constructs. GLES3 (Android) is the
+    // most restrictive target; these would break or misbehave there.
+    let banned = [
+        // Dynamic indexing of matrices/arrays is restricted on GLES3.
+        "dynamic",
+        // Compute shaders need explicit backend testing; we use none.
+        "@compute",
+        // 64-bit floats are not portable to mobile GPUs.
+        "f64",
+        // textureSampleLevel with explicit LOD can behave differently;
+        // our shaders don't sample textures at all.
+        "textureSampleLevel",
+    ];
+    for path in &wgsl {
+        let src = std::fs::read_to_string(path).unwrap_or_default();
+        // Strip Bevy #import lines (preprocessor, not WGSL).
+        let body: String = src
+            .lines()
+            .filter(|l| !l.trim_start().starts_with("#import"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        for b in &banned {
+            assert!(
+                !body.contains(b),
+                "{:?} contains non-portable construct {:?}",
+                path,
+                b
+            );
+        }
+        // Every shader must declare its bind group explicitly.
+        assert!(
+            body.contains("@group("),
+            "{:?} has no explicit bind group",
+            path
+        );
+    }
 }
 
 fn collect(dir: &Path, ext: &str, out: &mut Vec<PathBuf>) {
