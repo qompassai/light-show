@@ -1,6 +1,6 @@
 # Calix Provisioning — Mechanics Document
 
-Calista's track. The player stops splicing individual fibers and starts
+Clara's track. The player stops splicing individual fibers and starts
 thinking like a provisioning engineer: service profiles, bulk turn-ups, and
 the constraint that every subscriber on a PON split must fit inside one
 optical budget.

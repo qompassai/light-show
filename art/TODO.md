@@ -5,19 +5,19 @@
 ## New characters (each needs)
 Following the existing companion pipeline (see docs/ASSET_PIPELINE.md):
 
-### Calista
+### Clara
 - [ ] Base portrait → sprite sheet (aseprite/)
 - [ ] Mature variant
 - [ ] 11 expressions × base/mature
 - [ ] Idle animation GIF
 
-### Amara  
+### Aino  
 - [ ] Base portrait → sprite sheet
 - [ ] Mature variant
 - [ ] 11 expressions × base/mature (include Focused, Urgent)
 - [ ] Idle animation GIF
 
-### Terra
+### Hikari
 - [ ] Base portrait → sprite sheet
 - [ ] Mature variant
 - [ ] 11 expressions × base/mature

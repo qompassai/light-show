@@ -4,7 +4,7 @@
 
 Main Bevy game crate.
 
-## NOC console (Amara track)
+## NOC console (Aino track)
 - [ ] Add `GameState::NocConsole` to `src/states/mod.rs`
 - [ ] Create `src/states/noc.rs` (alarm list UI, ack/dispatch/clear)
 - [ ] `AlarmList` Bevy resource (replaces single `ActiveOutage` view)
@@ -13,12 +13,12 @@ Main Bevy game crate.
 
 ## Unlock system
 - [ ] Track completion of Séraphine/Ondine/Linka level sets
-- [ ] Unlock Calista/Amara/Terra in companion select when complete
+- [ ] Unlock Clara/Aino/Hikari in companion select when complete
 - [ ] Locked character UI (silhouette + unlock requirement text)
 
-## Calista (provisioning)
+## Clara (provisioning)
 - [ ] Service profile data model in `level.rs`
 - [ ] Bulk provisioning level mechanics
 
-## Terra (OSP)
+## Hikari (OSP)
 - [ ] MST/tap plan rendering in `board.rs`

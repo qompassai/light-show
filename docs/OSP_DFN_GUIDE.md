@@ -1,6 +1,6 @@
 # OSP / DFN Construction Guide (for level designers)
 
-Terra's track. How to build Outside Plant levels that teach real
+Hikari's track. How to build Outside Plant levels that teach real
 distribution-network design: MSTs, tap plans, and the geometry of getting
 fiber past every home without blowing the loss budget.
 
@@ -56,7 +56,7 @@ vocabulary — an MST is a node, a drop is an edge, the tap plan is metadata.
 - Whether the outage severs a feeder (hard) or degrades one MST's ports
   with water intrusion (diagnostic).
 
-## Checklist before shipping a Terra level
+## Checklist before shipping a Hikari level
 
 - [ ] Exactly one clean solution; near-misses fail by <2 dB.
 - [ ] Every home's path loss is hand-verified against the budget table.

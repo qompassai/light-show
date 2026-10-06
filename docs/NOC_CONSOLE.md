@@ -1,6 +1,6 @@
 # NOC Console — Design Document
 
-Amara's track. The player leaves the single-board puzzle view and runs the
+Aino's track. The player leaves the single-board puzzle view and runs the
 network like a NOC tech: a live alarm list, acknowledge / dispatch / clear
 workflow, and a severity banner that follows them back into the field.
 
@@ -16,7 +16,7 @@ the order, and the order matters.
 
 - `GameState::NocConsole` (new, in `game/src/states/mod.rs`): the console
   screen itself — alarm list, detail pane, ack/dispatch/clear controls.
-- Entry: from the companion picker (Amara's card) and from a hotkey/banner
+- Entry: from the companion picker (Aino's card) and from a hotkey/banner
   tap during `Playing`.
 - Exit: Back returns to the previous state (picker or the paused level).
 
@@ -55,7 +55,7 @@ Severity comes from `osp_sim` and refreshes as the outage ages
 Major; a Major near its complaint timer escalates to Critical. This is the
 core pressure — ignoring the list is a choice with a visible cost.
 
-## Win condition (Amara track)
+## Win condition (Aino track)
 
 Each NOC level ships a scripted alarm cascade (see `scripts/TODO.md`: NOC
 scenario generator). Win = every alarm acked *and* cleared before its
