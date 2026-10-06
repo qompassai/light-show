@@ -23,10 +23,10 @@ leaf issues #8–#37. Closing a leaf issue checks off the item.
   port-count enforcement, Rx window verification); 2 playable levels
   (clara1_provisioning.json, clara2_outage.json); Clara.track_start_index()
   → Some(8). 391 tests passing (+12). Closed #16, #17.
-- **Portraits regenerated**: Clara (younger revision), Aino, Hikari —
-  assets/art/companions/, magenta key, specialty hair accessories
-  (Clara: fiber-connector pin; Aino: waveform clip; Hikari: fiber strand).
-  Uncommitted, Matt reviewing.
+- **Portraits APPROVED and committed** (2026-10-05, commit ef91526):
+  Clara, Aino, Hikari — assets/art/companions/, magenta key, specialty
+  hair accessories (Clara: fiber-connector pin; Aino: waveform clip;
+  Hikari: fiber strand). Matt: "all three look great".
 - bloch memory wired (.ai/memory/, .ai/skills/tiger-style-rust).
 
 ## In progress
@@ -35,7 +35,8 @@ leaf issues #8–#37. Closing a leaf issue checks off the item.
   Hikari MST rendering (#18) — after Clara's track.
 - Art: mature variants, expressions, idle strips for Clara/Aino/Hikari
   (#19–21) — needs portraits approved first.
-- Portraits: Aino/Hikari approved; Clara younger revision pending review.
+- Portraits: all three approved and committed. Next: mature variants,
+  expressions, idle strips (#19-21).
 
 ## Model policy (Matt, 2026-10-05)
 
