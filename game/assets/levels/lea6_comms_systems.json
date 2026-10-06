@@ -1,0 +1,197 @@
+{
+  "id": "lea6",
+  "title": "Comms Systems Boss: Articles 800-830",
+  "world": 8,
+  "briefing": "L\u00e9a's home turf \u2014 NEC Articles 800 through 830, communications systems. Twelve questions, the boss of the study track. 70% to pass.",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -30.0,
+  "window_max_dbm": 0.0,
+  "medium": "Study",
+  "nodes": [],
+  "fixed_edges": [],
+  "available_components": [],
+  "source_node": 0,
+  "target_node": 0,
+  "scripted_outage": null,
+  "subscribers": [],
+  "api_sequence": null,
+  "alarm_triage": null,
+  "quiz": {
+    "questions": [
+      {
+        "id": "lea6-001",
+        "prompt": "For a communications-system installation governed by Chapter 8, which requirements from Chapters 1 through 7 apply?",
+        "choices": [
+          "All requirements in Chapters 1 through 7 apply unless specifically waived",
+          "Only requirements specifically referenced in Chapter 8 apply",
+          "Only the requirements in Chapters 1 and 3 apply",
+          "No requirements in Chapters 1 through 7 can apply"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: Only requirements specifically referenced in Chapter 8 apply. Section 800.3 states that Chapter 8 is not subject to the requirements of Chapters 1 through 7 except where those requirements are specifically referenced in Chapter 8. It also states that definitions in Article 100 apply.",
+        "article_ref": "NEC 800.3",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-002",
+        "prompt": "Communications cables have accumulated above a removable suspended-ceiling panel that provides access to electrical equipment. Which condition complies with the NEC?",
+        "choices": [
+          "The cables may rest on the panel if they are less than 50 volts",
+          "The cables may block removal of the panel if warning labels are installed",
+          "The cables must be arranged so their accumulation does not prevent removal of the access panel",
+          "The cables must be enclosed in rigid metal conduit above every access panel"
+        ],
+        "correct_idx": 2,
+        "explanation": "Correct: The cables must be arranged so their accumulation does not prevent removal of the access panel. Section 800.21 prohibits an accumulation of wires and cables from denying access to electrical equipment by preventing removal of panels, including suspended-ceiling panels, that are designed to provide access.",
+        "article_ref": "NEC 800.21",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-003",
+        "prompt": "Nonmetallic cable ties are used to secure communications cables in a space used for environmental air. What listing characteristic is required for the ties?",
+        "choices": [
+          "Oil resistance and sunlight resistance",
+          "Low smoke and heat release properties",
+          "A 600-volt insulation rating",
+          "Suitability for direct burial"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: Low smoke and heat release properties. Section 800.24(A) requires nonmetallic cable ties and other nonmetallic cable accessories used to secure and support cables in a space used for environmental air to be listed as having low smoke and heat release properties.",
+        "article_ref": "NEC 800.24(A)",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-004",
+        "prompt": "Fill in the blank: An accessible communications cable that is not terminated at equipment and is not identified for future use must be ______.",
+        "choices": [
+          "painted orange",
+          "removed",
+          "bonded at both ends",
+          "placed in metal raceway"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: removed. Section 800.25 requires the accessible portion of abandoned communications cables to be removed. A cable identified for future use may remain, but its tag must be sufficiently durable to withstand the environment involved.",
+        "article_ref": "NEC 800.25",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-005",
+        "prompt": "A communications cable penetrates a fire-resistance-rated floor. What must the installation accomplish at the penetration?",
+        "choices": [
+          "Reduce the floor rating by no more than one hour",
+          "Use an approved firestop method that maintains the fire-resistance rating",
+          "Provide a metal sleeve without any additional sealing",
+          "Terminate the cable within 50 feet of the penetration"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: Use an approved firestop method that maintains the fire-resistance rating. Section 800.26 requires penetrations through fire-resistant-rated walls, partitions, floors, or ceilings to be firestopped using approved methods that maintain the fire-resistance rating.",
+        "article_ref": "NEC 800.26",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-006",
+        "prompt": "Fill in the blank: Unless an applicable exception permits a reduction, an aerial communications cable passing above a roof must have at least ______ of vertical clearance from the roof surface.",
+        "choices": [
+          "4 feet",
+          "6 feet",
+          "8 feet",
+          "10 feet"
+        ],
+        "correct_idx": 2,
+        "explanation": "Correct: 8 feet. Section 800.44(B) requires a vertical clearance of not less than 2.5 m (8 ft) from all points of roofs above which aerial communications cables pass, subject to the stated exceptions.",
+        "article_ref": "NEC 800.44(B)",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-007",
+        "prompt": "An unlisted outside-plant communications cable enters an ordinary building space and terminates in a permitted enclosure or protector. What is the maximum length generally permitted inside the building before termination?",
+        "choices": [
+          "15 feet",
+          "25 feet",
+          "50 feet",
+          "100 feet"
+        ],
+        "correct_idx": 2,
+        "explanation": "Correct: 50 feet. Section 800.48 permits up to 15 m (50 ft) of unlisted outside-plant communications cable inside a building, measured from its point of entrance, where the cable enters from outside and terminates in an enclosure or listed primary protector. This permission does not apply to risers, ducts fabricated for environmental air, or plenums.",
+        "article_ref": "NEC 800.48",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-008",
+        "prompt": "Fill in the blanks: A communications bonding conductor must not be smaller than ______ copper, and it is not required to be larger than ______ copper.",
+        "choices": [
+          "18 AWG; 10 AWG",
+          "14 AWG; 6 AWG",
+          "12 AWG; 4 AWG",
+          "10 AWG; 2 AWG"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: 14 AWG; 6 AWG. Section 800.100(A)(3) requires the bonding conductor to be not smaller than 14 AWG and states that it is not required to be larger than 6 AWG. Its current-carrying capacity must also be approximately equal to that of the grounded metallic members.",
+        "article_ref": "NEC 800.100(A)",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-009",
+        "prompt": "In new construction, what minimum communications-outlet provision is required for a dwelling?",
+        "choices": [
+          "Two outlets in every habitable room, each cabled to the service equipment",
+          "At least one outlet in a readily accessible area, cabled to the service-provider demarcation point",
+          "One wireless access point with no cabling requirement",
+          "One outlet only where the dwelling exceeds 2,000 square feet"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: At least one outlet in a readily accessible area, cabled to the service-provider demarcation point. Section 805.156 requires this minimum provision for new dwelling construction.",
+        "article_ref": "NEC 805.156",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-010",
+        "prompt": "An unshielded communications drop cable runs on a building from its last outdoor support to the primary protector. What minimum separation is required from power conductors that are not in raceway or cable?",
+        "choices": [
+          "2 inches",
+          "4 inches",
+          "12 inches",
+          "24 inches"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: 4 inches. Section 805.50(B) requires the communications wires and cables on buildings to be separated at least 100 mm (4 in.) from power conductors that are not in a raceway or cable, unless a permanent and firmly fixed nonconductor separates them.",
+        "article_ref": "NEC 805.50(B)",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-011",
+        "prompt": "Communications conductors requiring a primary protector enter a building through a bushing or raceway. What arrangement is required to help prevent water from entering?",
+        "choices": [
+          "The raceway or bushing must slope downward from the outside",
+          "The raceway or bushing must slope upward from the outside or the conductors must have drip loops immediately before entry",
+          "The conductors must make a complete loop inside the building",
+          "Only a threaded metal service head may be used"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: The raceway or bushing must slope upward from the outside or the conductors must have drip loops immediately before entry. Section 805.50(C) gives these water-control requirements and also requires an approved service head.",
+        "article_ref": "NEC 805.50(C)",
+        "domain": "CommsSystems"
+      },
+      {
+        "id": "lea6-012",
+        "prompt": "A communications circuit is partly aerial and is not confined within a city block. What primary-protection provision is required?",
+        "choices": [
+          "A listed primary protector must be provided for the circuit",
+          "Only a grounding block is required if the circuit is below 150 volts",
+          "A protector is required only after the first equipment outlet",
+          "No primary protection is required for an aerial circuit"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: A listed primary protector must be provided for the circuit. Section 805.90(A) requires a listed primary protector for each communications circuit that is partly or entirely aerial and is not confined within a block.",
+        "article_ref": "NEC 805.90(A)",
+        "domain": "CommsSystems"
+      }
+    ],
+    "pass_pct": 0.7,
+    "time_limit_s": null
+  },
+  "on_enter_line": null,
+  "on_win_line": null,
+  "on_fail_line": null
+}

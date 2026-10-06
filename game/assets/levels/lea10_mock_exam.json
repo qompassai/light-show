@@ -1,0 +1,309 @@
+{
+  "id": "lea10",
+  "title": "Mock Exam: Final Boss",
+  "world": 8,
+  "briefing": "The full dress rehearsal \u2014 twenty questions drawn from both pretests, covering every domain. This is the exam before the exam. 70% to pass.",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -30.0,
+  "window_max_dbm": 0.0,
+  "medium": "Study",
+  "nodes": [],
+  "fixed_edges": [],
+  "available_components": [],
+  "source_node": 0,
+  "target_node": 0,
+  "scripted_outage": null,
+  "subscribers": [],
+  "api_sequence": null,
+  "alarm_triage": null,
+  "quiz": {
+    "questions": [
+      {
+        "id": "lea10-001",
+        "prompt": "Fill in the blank: The purpose of the Code is the practical safeguarding of ______ from hazards arising from the use of electricity.",
+        "choices": [
+          "persons and property",
+          "utilities and manufacturers",
+          "designers and inspectors",
+          "equipment and energy efficiency"
+        ],
+        "correct_idx": 0,
+        "explanation": "The NEC states that its purpose is the practical safeguarding of persons and property from hazards arising from the use of electricity. Reference: 90.2(A), 2023 NEC.",
+        "article_ref": "NEC 202",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-002",
+        "prompt": "Which words characterize a mandatory Code rule?",
+        "choices": [
+          "shall or shall not",
+          "should or should not",
+          "may or might",
+          "recommended or preferred"
+        ],
+        "correct_idx": 0,
+        "explanation": "Mandatory rules identify required or prohibited actions and are characterized by the terms shall or shall not. Reference: 90.5(A), 2023 NEC.",
+        "article_ref": "NEC 202",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-003",
+        "prompt": "Which choice completes the definition of accessible as applied to equipment?",
+        "choices": [
+          "Capable of being reached for operation, renewal, and inspection",
+          "Capable of being reached only with a portable ladder",
+          "Hidden behind the building finish but shown on drawings",
+          "Restricted to access by the serving utility"
+        ],
+        "correct_idx": 0,
+        "explanation": "Accessible as applied to equipment means capable of being reached for operation, renewal, and inspection. Reference: Article 100, Accessible (as applied to equipment), 2023 NEC.",
+        "article_ref": "NEC 100",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-004",
+        "prompt": "Which description matches the Code definition of a qualified person?",
+        "choices": [
+          "One who has skills and knowledge related to the construction and operation of electrical equipment and installations and has received safety training to recognize and avoid the hazards involved",
+          "Anyone employed by an electrical contractor for at least six months",
+          "Only a person holding an engineering license",
+          "A person who has read the equipment nameplate"
+        ],
+        "correct_idx": 0,
+        "explanation": "This choice follows the Article 100 definition of Qualified Person. Reference: Article 100, Qualified Person, 2023 NEC.",
+        "article_ref": "NEC 100",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-005",
+        "prompt": "Listed or labeled equipment must be installed and used in accordance with what?",
+        "choices": [
+          "Any instructions included in the listing or labeling",
+          "Only the installer\u2019s customary practice",
+          "The lowest-cost available installation method",
+          "Instructions for any similar product"
+        ],
+        "correct_idx": 0,
+        "explanation": "Equipment that is listed, labeled, or identified for a use must be installed and used in accordance with instructions included in the listing, labeling, or identification. Reference: 110.3(B), 2023 NEC.",
+        "article_ref": "NEC 110.3(B)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-006",
+        "prompt": "Why is a grounded electrical system connected to earth?",
+        "choices": [
+          "To limit voltage imposed by lightning, line surges, or unintentional contact with higher-voltage lines and to stabilize voltage to earth during normal operation",
+          "To make earth the normal return path for all load current",
+          "To eliminate the need for overcurrent protection",
+          "To prevent all current from entering the building"
+        ],
+        "correct_idx": 0,
+        "explanation": "The grounding requirement states these voltage-limiting and voltage-stabilizing purposes. Reference: 250.4(A)(1), 2023 NEC.",
+        "article_ref": "NEC 250.4(A)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-007",
+        "prompt": "An effective ground-fault current path must create what kind of circuit?",
+        "choices": [
+          "A low-impedance circuit that facilitates operation of the overcurrent device or ground detector",
+          "A high-impedance path through earth only",
+          "A normal load-current path through exposed metal",
+          "An isolated circuit that prevents an overcurrent device from opening"
+        ],
+        "correct_idx": 0,
+        "explanation": "The effective ground-fault current path must be low impedance and facilitate operation of the protective device. Reference: 250.4(A)(5), 2023 NEC.",
+        "article_ref": "NEC 250.4(A)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-008",
+        "prompt": "What must be done with all qualifying grounding electrodes that are present at a building or structure?",
+        "choices": [
+          "They must be bonded together to form the grounding electrode system",
+          "Only the electrode with the lowest resistance may be connected",
+          "They must remain electrically isolated from one another",
+          "Only a metal water pipe electrode may be used"
+        ],
+        "correct_idx": 0,
+        "explanation": "All grounding electrodes described by the specified electrode list and present at the building or structure must be bonded together. Reference: 250.50, 2023 NEC.",
+        "article_ref": "NEC 250.50",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-009",
+        "prompt": "A cable passes through a bored hole in a wood framing member where nails or screws could penetrate it. How far must the edge of the hole be from the nearest edge of the wood member unless other protection is provided?",
+        "choices": [
+          "Not less than 32 mm (1\u00bc in.)",
+          "Not less than 13 mm (\u00bd in.)",
+          "Not less than 19 mm (\u00be in.)",
+          "Not less than 50 mm (2 in.)"
+        ],
+        "correct_idx": 0,
+        "explanation": "Bored holes must place the cable or raceway at least 32 mm (1\u00bc in.) from the edge unless protected by the permitted steel protection. Reference: 300.4(A)(1), 2023 NEC.",
+        "article_ref": "NEC 300.4(A)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-010",
+        "prompt": "Fill in the blank: At least ______ of free conductor, measured from where it emerges from its raceway or cable sheath, must generally be left at each outlet, junction, and switch point.",
+        "choices": [
+          "150 mm (6 in.)",
+          "75 mm (3 in.)",
+          "200 mm (8 in.)",
+          "300 mm (12 in.)"
+        ],
+        "correct_idx": 0,
+        "explanation": "The general free-conductor length is at least 150 mm (6 in.). Reference: 300.14, 2023 NEC.",
+        "article_ref": "NEC 150",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-011",
+        "prompt": "Which installation is not covered by the Code?",
+        "choices": [
+          "Installations in ships, watercraft other than floating buildings, railway rolling stock, aircraft, or automotive vehicles other than mobile homes and recreational vehicles",
+          "Wiring in a commercial office building",
+          "Electrical conductors connecting equipment to a premises supply",
+          "Communications wiring in a residence"
+        ],
+        "correct_idx": 0,
+        "explanation": "This group of installations is expressly identified as not covered. Reference: 90.2(D)(1), 2023 NEC.",
+        "article_ref": "NEC 202",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-012",
+        "prompt": "Who has responsibility for interpreting Code rules, deciding on approval of equipment and materials, and granting contemplated special permission?",
+        "choices": [
+          "The material supplier",
+          "The authority having jurisdiction",
+          "The equipment owner",
+          "Any apprentice on the project"
+        ],
+        "correct_idx": 1,
+        "explanation": "These responsibilities are assigned to the authority having jurisdiction for Code enforcement. Reference: 90.4(B), 2023 NEC.",
+        "article_ref": "NEC 202",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-013",
+        "prompt": "Fill in the blank: A branch circuit consists of the circuit conductors between the final overcurrent device protecting the circuit and the ______.",
+        "choices": [
+          "service point",
+          "grounding electrode",
+          "outlet(s)",
+          "utility transformer only"
+        ],
+        "correct_idx": 2,
+        "explanation": "The Article 100 definition places the branch-circuit conductors between the final overcurrent device and the outlet or outlets. Reference: Article 100, Branch Circuit, 2023 NEC.",
+        "article_ref": "NEC 100",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-014",
+        "prompt": "Which description is part of the Code definition of listed equipment, materials, or services?",
+        "choices": [
+          "They are selected only because they have the lowest purchase price",
+          "They are included in a list published by an organization acceptable to the authority having jurisdiction and concerned with evaluation of products or services",
+          "They are manufactured outside the jurisdiction and need no inspection",
+          "They are approved solely by the installer without evaluation"
+        ],
+        "correct_idx": 1,
+        "explanation": "This choice states the opening requirement of the Article 100 definition of Listed. Reference: Article 100, Listed, 2023 NEC.",
+        "article_ref": "NEC 100",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-015",
+        "prompt": "Conductors and equipment required or permitted by the Code are acceptable only when what condition is met?",
+        "choices": [
+          "They are installed by the manufacturer",
+          "They are less than one year old",
+          "They are painted with an identifying color",
+          "They are approved"
+        ],
+        "correct_idx": 3,
+        "explanation": "The general approval rule states that required or permitted conductors and equipment are acceptable only if approved. Reference: 110.2, 2023 NEC.",
+        "article_ref": "NEC 110.2",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-016",
+        "prompt": "Which statement correctly describes earth in relation to an effective ground-fault current path?",
+        "choices": [
+          "Earth replaces the equipment grounding conductor in every installation",
+          "Earth is the normal return path for all branch-circuit current",
+          "Earth must not be considered an effective ground-fault current path",
+          "Earth is always the only permitted ground-fault current path"
+        ],
+        "correct_idx": 2,
+        "explanation": "The grounding and bonding performance rule expressly states that earth is not an effective ground-fault current path. Reference: 250.4(A)(5), 2023 NEC.",
+        "article_ref": "NEC 250.4(A)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-017",
+        "prompt": "Fill in the blank: A single rod, pipe, or plate grounding electrode generally requires a supplemental electrode unless its resistance to earth is ______.",
+        "choices": [
+          "50 ohms or less",
+          "25 ohms or less",
+          "Exactly 1 ohm",
+          "10 ohms or more"
+        ],
+        "correct_idx": 1,
+        "explanation": "The supplemental-electrode exception applies where a single rod, pipe, or plate electrode has a resistance to earth of 25 ohms or less. Reference: 250.53(A)(2), Exception, 2023 NEC.",
+        "article_ref": "NEC 250.53(A)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-018",
+        "prompt": "What conductor length and minimum size are required for a copper ground ring encircling a building or structure?",
+        "choices": [
+          "At least 1.8 m (6 ft) of bare copper not smaller than 10 AWG",
+          "At least 15 m (50 ft) of aluminum not smaller than 6 AWG",
+          "At least 6.0 m (20 ft) of bare copper not smaller than 2 AWG",
+          "At least 3.0 m (10 ft) of insulated copper not smaller than 14 AWG"
+        ],
+        "correct_idx": 2,
+        "explanation": "A ground ring consists of at least 6.0 m (20 ft) of bare copper conductor not smaller than 2 AWG in direct contact with earth. Reference: 250.52(A)(4), 2023 NEC.",
+        "article_ref": "NEC 250.52(A)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-019",
+        "prompt": "May cables and raceways above a suspended ceiling be supported by the ceiling grid?",
+        "choices": [
+          "Yes, if the cable is under 50 volts",
+          "No, cables and raceways must not be supported by ceiling grids",
+          "Yes, if plastic cable ties are used",
+          "Yes, in every installation"
+        ],
+        "correct_idx": 1,
+        "explanation": "The general securing-and-supporting rule states that cables and raceways must not be supported by ceiling grids. Reference: 300.11(B), 2023 NEC.",
+        "article_ref": "NEC 300.11(B)",
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea10-020",
+        "prompt": "How must openings around electrical penetrations through fire-resistance-rated walls, partitions, floors, or ceilings be treated?",
+        "choices": [
+          "They need only be covered with ordinary tape",
+          "They may be left open for ventilation",
+          "They must be filled only with wood blocking",
+          "They must be firestopped using approved methods to maintain the fire-resistance rating"
+        ],
+        "correct_idx": 3,
+        "explanation": "The NEC requires approved firestopping methods that maintain the fire-resistance rating. Reference: 300.21, 2023 NEC.",
+        "article_ref": "NEC 300.21",
+        "domain": "GeneralRequirements"
+      }
+    ],
+    "pass_pct": 0.7,
+    "time_limit_s": null
+  },
+  "on_enter_line": null,
+  "on_win_line": null,
+  "on_fail_line": null
+}

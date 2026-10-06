@@ -1,0 +1,169 @@
+{
+  "id": "lea5",
+  "title": "Special Conditions: Articles 705-780",
+  "world": 8,
+  "briefing": "Special occupancies and conditions \u2014 NEC Articles 705 through 780. Ten questions, 70% to pass.",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -30.0,
+  "window_max_dbm": 0.0,
+  "medium": "Study",
+  "nodes": [],
+  "fixed_edges": [],
+  "available_components": [],
+  "source_node": 0,
+  "target_node": 0,
+  "scripted_outage": null,
+  "subscribers": [],
+  "api_sequence": null,
+  "alarm_triage": null,
+  "quiz": {
+    "questions": [
+      {
+        "id": "lea5-001",
+        "prompt": "Equipment is used to interconnect an electric power production source with another power source. What approval does the NEC require for this equipment?",
+        "choices": [
+          "It must be listed for the intended use",
+          "It only needs a field-applied voltage label",
+          "It may be unlisted when installed indoors",
+          "It must be approved only by the serving utility"
+        ],
+        "correct_idx": 0,
+        "explanation": "Equipment used to interconnect electric power production sources must be listed for the intended use.",
+        "article_ref": "NEC 705.6",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-002",
+        "prompt": "An interconnected power production source is provided with a disconnecting means. What must the disconnecting means do when operated?",
+        "choices": [
+          "Simultaneously disconnect all ungrounded conductors of the source",
+          "Disconnect only the grounded conductor",
+          "Disconnect one ungrounded conductor at a time",
+          "Open only the equipment grounding conductor"
+        ],
+        "correct_idx": 0,
+        "explanation": "The source disconnecting means must simultaneously disconnect all ungrounded conductors from all other conductors.",
+        "article_ref": "NEC 705.20",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-003",
+        "prompt": "Where must the disconnecting means for an interconnected electric power production source be located?",
+        "choices": [
+          "In a readily accessible location",
+          "Only on the roof beside the source",
+          "Inside a locked utility transformer enclosure",
+          "Anywhere on the premises if shown on drawings"
+        ],
+        "correct_idx": 0,
+        "explanation": "The source disconnecting means is required to be in a readily accessible location.",
+        "article_ref": "NEC 705.20",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-004",
+        "prompt": "A commercial building installs a stationary energy storage system. What equipment-listing requirement applies to the system?",
+        "choices": [
+          "The energy storage system must be listed",
+          "Only the battery cells must be listed",
+          "Listing is required only when installed outdoors",
+          "No listing is required if the system is field assembled"
+        ],
+        "correct_idx": 0,
+        "explanation": "The NEC requires an energy storage system to be listed.",
+        "article_ref": "NEC 706.5",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-005",
+        "prompt": "A new energy storage system is installed at a commercial telecommunications facility. What must occur when the system is installed?",
+        "choices": [
+          "The system must be commissioned upon installation",
+          "The system must remain de-energized for 30 days",
+          "Only the serving utility may test the system",
+          "Commissioning may be omitted when the system is listed"
+        ],
+        "correct_idx": 0,
+        "explanation": "Energy storage systems within the rule are required to be commissioned upon installation.",
+        "article_ref": "NEC 706.7(A)",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-006",
+        "prompt": "An energy storage system disconnect is installed within sight of the system. What is the greatest permitted distance between the disconnect and the system?",
+        "choices": [
+          "3 m (10 ft)",
+          "1.8 m (6 ft)",
+          "7.5 m (25 ft)",
+          "15 m (50 ft)"
+        ],
+        "correct_idx": 0,
+        "explanation": "A disconnect located within sight of the energy storage system must be no more than 3 m (10 ft) from the system.",
+        "article_ref": "NEC 706.15(B)",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-007",
+        "prompt": "Critical operations power system wiring must be protected against physical damage. Which wiring method is specifically permitted for this protection?",
+        "choices": [
+          "Rigid metal conduit",
+          "Open knob-and-tube wiring",
+          "Flexible cord run openly",
+          "Unsupported nonmetallic cable"
+        ],
+        "correct_idx": 0,
+        "explanation": "Rigid metal conduit is one of the wiring methods specifically permitted for COPS wiring protected against physical damage.",
+        "article_ref": "NEC 708.10(C)(1)",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-008",
+        "prompt": "How must the capacity and rating of a critical operations power system be sized for the loads it serves?",
+        "choices": [
+          "For all loads expected to operate simultaneously",
+          "For only the single largest load",
+          "For 50 percent of the connected load",
+          "For lighting loads only"
+        ],
+        "correct_idx": 0,
+        "explanation": "The COPS must have adequate capacity and rating for all loads expected to operate simultaneously.",
+        "article_ref": "NEC 708.22(A)",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-009",
+        "prompt": "A building is supplied by a stand-alone system. What information must the required plaque or directory provide?",
+        "choices": [
+          "The location of each power-source disconnecting means",
+          "The monthly energy use of every load",
+          "The utility account number",
+          "The conductor color code for every branch circuit"
+        ],
+        "correct_idx": 0,
+        "explanation": "The plaque or directory must denote the location of each power-source disconnecting means for the building or structure.",
+        "article_ref": "NEC 710.10",
+        "domain": "SpecialConditions"
+      },
+      {
+        "id": "lea5-010",
+        "prompt": "How must a stand-alone system be sized for equipment that the user intends to operate at the same time?",
+        "choices": [
+          "Its capacity and rating must be sufficient for all equipment intended to operate simultaneously",
+          "It need only supply the largest individual appliance",
+          "It must be sized at exactly twice the connected load",
+          "Its rating is unrestricted when loads are manually selected"
+        ],
+        "correct_idx": 0,
+        "explanation": "A stand-alone system must have capacity and rating sufficient for all equipment intended to operate simultaneously.",
+        "article_ref": "NEC 710.15(A)",
+        "domain": "SpecialConditions"
+      }
+    ],
+    "pass_pct": 0.7,
+    "time_limit_s": null
+  },
+  "on_enter_line": null,
+  "on_win_line": null,
+  "on_fail_line": null
+}

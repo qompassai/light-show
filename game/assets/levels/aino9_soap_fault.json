@@ -1,0 +1,62 @@
+{
+  "alarm_triage": null,
+  "api_sequence": {
+    "api": "ams",
+    "choices": [
+      "Login",
+      "GetManagedElement",
+      "GetNeStatus",
+      "GetAllManagedElements",
+      "CreateService",
+      "RebootOnt"
+    ],
+    "expected": [
+      "Login",
+      "GetManagedElement",
+      "GetNeStatus"
+    ]
+  },
+  "available_components": [],
+  "briefing": "Your first query faulted: EXCPTENTITYNOTFOUND -- the NE record isn't where you looked. Recover like a pro: log in, pull the right managed element, read its status. The distractors are real fault codes; don't click the fault, fix it.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 0.1,
+          "plant": "Buried"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "id": "aino9",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "NOC Console"
+    },
+    {
+      "grid_x": 4.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "AMS Server"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [],
+  "target_node": 1,
+  "title": "SOAP Fault",
+  "tx_dbm": -12.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 6
+}

@@ -1,0 +1,169 @@
+{
+  "id": "lea7",
+  "title": "Theory Workshop",
+  "world": 8,
+  "briefing": "The math behind the plant \u2014 Ohm's law, power, dB calculations. Ten theory questions. 70% to pass.",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -30.0,
+  "window_max_dbm": 0.0,
+  "medium": "Study",
+  "nodes": [],
+  "fixed_edges": [],
+  "available_components": [],
+  "source_node": 0,
+  "target_node": 0,
+  "scripted_outage": null,
+  "subscribers": [],
+  "api_sequence": null,
+  "alarm_triage": null,
+  "quiz": {
+    "questions": [
+      {
+        "id": "lea7-001",
+        "prompt": "What is the voltage across a 24-ohm resistor with 5 A of current flowing through it?",
+        "choices": [
+          "96 V",
+          "120 V",
+          "144 V",
+          "60 V"
+        ],
+        "correct_idx": 1,
+        "explanation": "Ohm's Law: V = I \u00d7 R = 5 A \u00d7 24 \u03a9 = 120 V.",
+        "article_ref": "NEC 120",
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-002",
+        "prompt": "A circuit has 120 V applied and 8 A of current flowing. What is the resistance?",
+        "choices": [
+          "12 \u03a9",
+          "15 \u03a9",
+          "960 \u03a9",
+          "8 \u03a9"
+        ],
+        "correct_idx": 1,
+        "explanation": "Ohm's Law: R = V / I = 120 V / 8 A = 15 \u03a9.",
+        "article_ref": "NEC 120",
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-003",
+        "prompt": "A purely resistive AC load has a power factor of 1.0. What does this indicate about the relationship between voltage and current?",
+        "choices": [
+          "Current lags voltage by 90\u00b0",
+          "Current leads voltage by 90\u00b0",
+          "Voltage and current are perfectly in phase",
+          "Voltage and current are 180\u00b0 out of phase"
+        ],
+        "correct_idx": 2,
+        "explanation": "A power factor of 1.0 indicates a purely resistive load where voltage and current waveforms are perfectly in phase \u2014 General Theory (Power Factor).",
+        "article_ref": null,
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-004",
+        "prompt": "A transformer has 400 turns on the primary and 1,600 turns on the secondary. What type of transformer is this?",
+        "choices": [
+          "Step-down transformer",
+          "Step-up transformer",
+          "Isolation transformer with 1:1 ratio",
+          "Autotransformer"
+        ],
+        "correct_idx": 1,
+        "explanation": "When the secondary (Ns) has more turns than the primary (Np), the transformer steps voltage up \u2014 General Theory (Transformers).",
+        "article_ref": "NEC 400",
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-005",
+        "prompt": "A transformer has a 240 V primary, 200 primary turns, and 50 secondary turns. What is the secondary voltage?",
+        "choices": [
+          "960 V",
+          "60 V",
+          "120 V",
+          "48 V"
+        ],
+        "correct_idx": 1,
+        "explanation": "Turns ratio: Vs = Vp \u00d7 (Ns/Np) = 240 \u00d7 (50/200) = 60 V \u2014 General Theory (Transformers).",
+        "article_ref": "NEC 240",
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-006",
+        "prompt": "What is the frequency of standard US AC power?",
+        "choices": [
+          "50 Hz",
+          "60 Hz",
+          "400 Hz",
+          "25 Hz"
+        ],
+        "correct_idx": 1,
+        "explanation": "The US AC grid operates at 60 Hz \u2014 General Theory (AC Fundamentals).",
+        "article_ref": null,
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-007",
+        "prompt": "An AC waveform has a peak voltage of 170 V. What is the approximate Root Mean Square (RMS) voltage?",
+        "choices": [
+          "85 V",
+          "120 V",
+          "240 V",
+          "170 V"
+        ],
+        "correct_idx": 1,
+        "explanation": "Vrms = Vpeak \u00d7 0.707 = 170 \u00d7 0.707 \u2248 120 V \u2014 General Theory (AC Waveforms).",
+        "article_ref": "NEC 707",
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-008",
+        "prompt": "What happens to capacitive reactance (Xc) as frequency increases?",
+        "choices": [
+          "Xc increases proportionally",
+          "Xc decreases",
+          "Xc remains constant",
+          "Xc doubles with each octave increase"
+        ],
+        "correct_idx": 1,
+        "explanation": "Xc = 1/(2\u03c0fC): as frequency (f) increases, Xc decreases \u2014 General Theory (Reactance).",
+        "article_ref": null,
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-009",
+        "prompt": "What happens to inductive reactance (XL) as frequency increases?",
+        "choices": [
+          "XL decreases",
+          "XL remains constant",
+          "XL increases",
+          "XL becomes purely resistive"
+        ],
+        "correct_idx": 2,
+        "explanation": "XL = 2\u03c0fL: as frequency (f) increases, XL increases \u2014 General Theory (Reactance).",
+        "article_ref": null,
+        "domain": "Theory"
+      },
+      {
+        "id": "lea7-010",
+        "prompt": "A clamp-on ammeter measures current by sensing which of the following?",
+        "choices": [
+          "Voltage drop across the conductor",
+          "The magnetic field surrounding the conductor",
+          "Resistance of the wire insulation",
+          "Electrostatic charge on the wire"
+        ],
+        "correct_idx": 1,
+        "explanation": "A clamp-on ammeter uses electromagnetic induction, sensing the magnetic field around the conductor without interrupting the circuit \u2014 General Theory (Test Equipment).",
+        "article_ref": null,
+        "domain": "Theory"
+      }
+    ],
+    "pass_pct": 0.7,
+    "time_limit_s": null
+  },
+  "on_enter_line": null,
+  "on_win_line": null,
+  "on_fail_line": null
+}

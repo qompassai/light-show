@@ -1,0 +1,169 @@
+{
+  "id": "lea4",
+  "title": "Hazardous Locations: Articles 500-516",
+  "world": 8,
+  "briefing": "Classified locations \u2014 NEC Articles 500 through 516. Where the wrong fitting isn't just a fail, it's a hazard. Ten questions, 70% to pass.",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -30.0,
+  "window_max_dbm": 0.0,
+  "medium": "Study",
+  "nodes": [],
+  "fixed_edges": [],
+  "available_components": [],
+  "source_node": 0,
+  "target_node": 0,
+  "scripted_outage": null,
+  "subscribers": [],
+  "api_sequence": null,
+  "alarm_triage": null,
+  "quiz": {
+    "questions": [
+      {
+        "id": "lea4-001",
+        "prompt": "An area is designated as hazardous (classified) or determined to be unclassified. What documentation is required?",
+        "choices": [
+          "Only a verbal determination by the facility owner",
+          "An area-classification drawing and associated documentation available to the authority having jurisdiction and authorized personnel",
+          "A manufacturer\u2019s equipment catalog kept at the service equipment",
+          "A one-line diagram filed only with the electric utility"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: An area-classification drawing and associated documentation available to the authority having jurisdiction and authorized personnel. Section 500.4 requires the classification to be documented on an area-classification drawing and other associated documentation and made available to the AHJ and persons authorized to design, install, inspect, maintain, or operate the electrical equipment.",
+        "article_ref": "NEC 500.4",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-002",
+        "prompt": "Ignitible concentrations of flammable gas can exist under normal operating conditions in a process area. How is the location classified under the Division system?",
+        "choices": [
+          "Class I, Division 1",
+          "Class I, Division 2",
+          "Class II, Division 1",
+          "Class III, Division 1"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: Class I, Division 1. Section 500.5(B)(1)(1) includes a location in which ignitible concentrations of flammable gases, flammable liquid-produced vapors, or combustible liquid-produced vapors can exist under normal operating conditions.",
+        "article_ref": "NEC 500.5(B)",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-003",
+        "prompt": "Flammable gas is normally confined within a closed system and can escape only through accidental rupture, system breakdown, or abnormal equipment operation. How is the location classified under the Division system?",
+        "choices": [
+          "Class I, Division 1",
+          "Class I, Division 2",
+          "Class II, Division 2",
+          "Class III, Division 2"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: Class I, Division 2. Section 500.5(B)(2)(1) describes a location where flammable liquids, vapors, or gases are normally confined within closed containers or systems and can escape only because of accidental rupture, breakdown, or abnormal operation.",
+        "article_ref": "NEC 500.5(B)",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-004",
+        "prompt": "Combustible dust is present in the air under normal operating conditions in quantities sufficient to produce an ignitible mixture. How is the location classified?",
+        "choices": [
+          "Class I, Division 2",
+          "Class II, Division 1",
+          "Class II, Division 2",
+          "Class III, Division 1"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: Class II, Division 1. Section 500.5(C)(1)(1) applies where combustible dust is in the air under normal operating conditions in quantities sufficient to produce explosive or ignitible mixtures.",
+        "article_ref": "NEC 500.5(C)",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-005",
+        "prompt": "Ignitible fibers or flyings are stored or handled in an area, but the activity is not part of the manufacturing process. How is the area classified?",
+        "choices": [
+          "Class II, Division 1",
+          "Class II, Division 2",
+          "Class III, Division 1",
+          "Class III, Division 2"
+        ],
+        "correct_idx": 3,
+        "explanation": "Correct: Class III, Division 2. Section 500.5(D)(2)(b) classifies locations where ignitible fibers or flyings are stored or handled, other than in the process of manufacture, as Class III, Division 2.",
+        "article_ref": "NEC 500.5(D)",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-006",
+        "prompt": "Which Class I material group applies to an acetylene atmosphere?",
+        "choices": [
+          "Group A",
+          "Group B",
+          "Group C",
+          "Group D"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: Group A. Section 500.6(A)(1) identifies acetylene as Class I, Group A.",
+        "article_ref": "NEC 500.6(A)",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-007",
+        "prompt": "An atmosphere contains combustible aluminum or magnesium dust. Which Class II material group applies?",
+        "choices": [
+          "Group E",
+          "Group F",
+          "Group G",
+          "Group D"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: Group E. Section 500.6(B)(1) assigns atmospheres containing combustible metal dusts, including aluminum, magnesium, and their commercial alloys, to Group E.",
+        "article_ref": "NEC 500.6(B)",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-008",
+        "prompt": "Fill in the blank: Equipment marked with temperature code T4 has a maximum surface temperature of ______.",
+        "choices": [
+          "100\u00b0C",
+          "120\u00b0C",
+          "135\u00b0C",
+          "165\u00b0C"
+        ],
+        "correct_idx": 2,
+        "explanation": "Correct: 135\u00b0C. Table 500.8(C)(4) assigns temperature code T4 to a maximum surface temperature of 135\u00b0C (275\u00b0F).",
+        "article_ref": "NEC 135",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-009",
+        "prompt": "Equipment evaluated under the Division system is designed for an ambient-temperature range that requires no ambient-temperature marking. Which range is it?",
+        "choices": [
+          "\u221240\u00b0C to +40\u00b0C",
+          "\u221225\u00b0C to +40\u00b0C",
+          "\u221220\u00b0C to +50\u00b0C",
+          "0\u00b0C to +40\u00b0C"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: \u221225\u00b0C to +40\u00b0C. Section 500.8(C)(5) states that electrical equipment designed for use from \u221225\u00b0C to +40\u00b0C requires no ambient-temperature marking. Equipment intended for another range must be marked with the special range and the symbol Ta or Tamb.",
+        "article_ref": "NEC 500.8(C)",
+        "domain": "HazardousLocations"
+      },
+      {
+        "id": "lea4-010",
+        "prompt": "Fill in the blank: An NPT-threaded entry into explosionproof equipment must generally have at least ______ threads fully engaged.",
+        "choices": [
+          "three",
+          "four",
+          "five",
+          "seven"
+        ],
+        "correct_idx": 2,
+        "explanation": "Correct: five. Section 500.8(E)(1) requires NPT-threaded entries into explosionproof equipment to have at least five threads fully engaged. The listed factory-threaded exception permits at least four and one-half fully engaged threads.",
+        "article_ref": "NEC 500.8(E)",
+        "domain": "HazardousLocations"
+      }
+    ],
+    "pass_pct": 0.7,
+    "time_limit_s": null
+  },
+  "on_enter_line": null,
+  "on_win_line": null,
+  "on_fail_line": null
+}

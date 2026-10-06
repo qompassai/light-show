@@ -1,0 +1,169 @@
+{
+  "id": "lea8",
+  "title": "Washington Law: RCW 19.28",
+  "world": 8,
+  "briefing": "Washington State electrical law \u2014 RCW 19.28. Separately scored on the real exam, so it gets its own level here. Ten questions, 70% to pass.",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -30.0,
+  "window_max_dbm": 0.0,
+  "medium": "Study",
+  "nodes": [],
+  "fixed_edges": [],
+  "available_components": [],
+  "source_node": 0,
+  "target_node": 0,
+  "scripted_outage": null,
+  "subscribers": [],
+  "api_sequence": null,
+  "alarm_triage": null,
+  "quiz": {
+    "questions": [
+      {
+        "id": "lea8-001",
+        "prompt": "Under RCW 19.28.006, how is 'Basic electrical work Class A' defined?",
+        "choices": [
+          "Electrical wiring of residential structures not exceeding three stories and including not more than four dwelling units, or agricultural buildings",
+          "Electrical wiring of residential structures not exceeding two stories and including not more than four dwelling units",
+          "Electrical wiring of residential structures not exceeding three stories and including not more than two dwelling units",
+          "Electrical wiring of any residential structure regardless of stories or number of dwelling units"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.006: 'Basic electrical work Class A' means electrical wiring of residential structures not exceeding three stories in height and including not more than four dwelling units, or agricultural buildings.",
+        "article_ref": "NEC 006",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-002",
+        "prompt": "Under RCW 19.28.006, what distinguishes 'Basic electrical work Class B' from Class A?",
+        "choices": [
+          "Class B covers structures with not more than one dwelling unit; Class A covers up to four dwelling units",
+          "Class B covers structures with not more than two dwelling units; Class A covers up to four dwelling units",
+          "Class B covers agricultural buildings only; Class A covers residential structures",
+          "Class B covers structures not exceeding two stories; Class A covers structures not exceeding three stories"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.006: 'Basic electrical work Class B' means electrical wiring of residential structures not exceeding three stories in height and including not more than one dwelling unit, whereas Class A allows up to four dwelling units.",
+        "article_ref": "NEC 006",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-003",
+        "prompt": "According to RCW 19.28.006, the term 'Administrator' refers to which of the following?",
+        "choices": [
+          "A person who qualifies for a contractor's license by passing the required exams",
+          "The Director of the Department of Labor and Industries",
+          "A member of the Washington State electrical board",
+          "A person who supervises trainee electricians on a job site"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.006: 'Administrator' means the person who qualifies for a contractor's license by passing the required examinations.",
+        "article_ref": "NEC 006",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-004",
+        "prompt": "Under RCW 19.28.006, which body is defined as the 'Board'?",
+        "choices": [
+          "Washington State electrical board",
+          "Washington State Department of Labor and Industries",
+          "Washington State Building Code Council",
+          "The Governor's Office of Regulatory Compliance"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.006: 'Board' means the Washington State electrical board established under this chapter.",
+        "article_ref": "NEC 006",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-005",
+        "prompt": "How does RCW 19.28.006 define 'like-in-kind' replacement?",
+        "choices": [
+          "Replacement of existing equipment with equipment of the same type and rating",
+          "Replacement of existing equipment with equipment of higher capacity and updated code compliance",
+          "Installation of any new equipment in place of removed outdated equipment",
+          "Repair of existing equipment without substitution of any components"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.006: 'Like-in-kind' means replacement of existing equipment with equipment of the same type and rating.",
+        "article_ref": "NEC 006",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-006",
+        "prompt": "Under RCW 19.28.041, how long does an electrical contractor license remain valid after issuance?",
+        "choices": [
+          "24 calendar months",
+          "12 calendar months",
+          "36 calendar months",
+          "18 calendar months"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.041: Electrical contractor licenses expire 24 calendar months after the date of issuance.",
+        "article_ref": "NEC 041",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-007",
+        "prompt": "What is the required bond amount for an electrical contractor license under RCW 19.28.041 and RCW 19.28.071?",
+        "choices": [
+          "$4,000",
+          "$6,000",
+          "$2,000",
+          "$10,000"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.041 and RCW 19.28.071: The required bond is $4,000 with the state of Washington as obligee, or a cash deposit of $4,000 as an alternative.",
+        "article_ref": "NEC 041",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-008",
+        "prompt": "Under RCW 19.28.041, which of the following is NOT listed as a required application element for an electrical contractor license?",
+        "choices": [
+          "A copy of the applicant's journey level electrician certificate",
+          "UBI number",
+          "Workers' compensation account number",
+          "Excise tax registration number"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.041: Required application elements include UBI number, workers' compensation account number, employment security account number, and excise tax registration number. A journey level certificate is not listed as a contractor license application requirement.",
+        "article_ref": "NEC 041",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-009",
+        "prompt": "According to RCW 19.28.041, who must be designated to qualify an electrical contractor license?",
+        "choices": [
+          "A master electrician or administrator",
+          "A journey level electrician or specialty electrician",
+          "A state-licensed inspector or department employee",
+          "A board-approved safety officer"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.041: An electrical contractor license must designate a master electrician or administrator to qualify the license.",
+        "article_ref": "NEC 041",
+        "domain": "WashingtonLaw"
+      },
+      {
+        "id": "lea8-010",
+        "prompt": "Under RCW 19.28.091, a homeowner is exempt from electrical contractor licensing requirements when performing electrical work on their own single-family dwelling, provided the home is NOT offered for sale within how many months of the work?",
+        "choices": [
+          "12 months",
+          "6 months",
+          "24 months",
+          "18 months"
+        ],
+        "correct_idx": 0,
+        "explanation": "RCW 19.28.091: The owner of a single-family dwelling may perform their own electrical work without a contractor license, provided the work is not for hire and the property is not offered for sale within 12 months of the work being completed.",
+        "article_ref": "NEC 091",
+        "domain": "WashingtonLaw"
+      }
+    ],
+    "pass_pct": 0.7,
+    "time_limit_s": null
+  },
+  "on_enter_line": null,
+  "on_win_line": null,
+  "on_fail_line": null
+}

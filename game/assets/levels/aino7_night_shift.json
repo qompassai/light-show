@@ -1,0 +1,100 @@
+{
+  "alarm_triage": {
+    "alarms": [
+      {
+        "id": 0,
+        "severity": "Critical",
+        "summary": "Fiber cut: edge 12-3"
+      },
+      {
+        "id": 1,
+        "severity": "Major",
+        "summary": "Aerial damage: storm branch"
+      },
+      {
+        "id": 2,
+        "severity": "Major",
+        "summary": "LOS: ONT-8821"
+      },
+      {
+        "id": 3,
+        "severity": "Minor",
+        "summary": "Water intrusion: closure 7"
+      },
+      {
+        "id": 4,
+        "severity": "Minor",
+        "summary": "High temp: NE-12"
+      },
+      {
+        "id": 5,
+        "severity": "Warning",
+        "summary": "Info: nightly backup started"
+      },
+      {
+        "id": 6,
+        "severity": "Warning",
+        "summary": "Info: firmware check OK"
+      },
+      {
+        "id": 7,
+        "severity": "Minor",
+        "summary": "Syslog: flap on NE-3"
+      }
+    ],
+    "expected_order": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      7,
+      5,
+      6
+    ]
+  },
+  "api_sequence": null,
+  "available_components": [],
+  "briefing": "02:00 and the board won't stop. Eight alarms -- but two are just informational Warnings. Ack the real problems first (Critical, Major, Minor), leave the info noise for last. Triage is telling signal from noise.",
+  "fixed_edges": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 0.1,
+          "plant": "Buried"
+        }
+      },
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "id": "aino7",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "NOC Console"
+    },
+    {
+      "grid_x": 4.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Core Router"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [],
+  "target_node": 1,
+  "title": "Night Shift",
+  "tx_dbm": -12.0,
+  "wavelength": "Nm1490",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 6
+}

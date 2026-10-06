@@ -1,0 +1,78 @@
+{
+  "alarm_triage": null,
+  "api_sequence": {
+    "api": "ams",
+    "choices": [
+      "StopSupervision",
+      "ExecuteNeAction",
+      "StartSupervision",
+      "Login",
+      "GetNeStatus",
+      "RebootOnt"
+    ],
+    "expected": [
+      "StopSupervision",
+      "ExecuteNeAction",
+      "StartSupervision"
+    ]
+  },
+  "available_components": [
+    {
+      "component": {
+        "Span": {
+          "length_km": 1.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 0,
+      "to": 1
+    },
+    {
+      "component": {
+        "Span": {
+          "length_km": 1.0,
+          "plant": "Buried"
+        }
+      },
+      "from": 1,
+      "to": 2
+    }
+  ],
+  "briefing": "NE-12 needs a card swap. Stop supervision first (never work on a supervised NE), run the test action, then start supervision again. And the backup path needs a span placed -- route it.",
+  "fixed_edges": [],
+  "id": "aino6",
+  "medium": "Fiber",
+  "nodes": [
+    {
+      "grid_x": 0.0,
+      "grid_y": 0.0,
+      "id": 0,
+      "label": "NOC Console"
+    },
+    {
+      "grid_x": 2.0,
+      "grid_y": 0.0,
+      "id": 1,
+      "label": "Junction"
+    },
+    {
+      "grid_x": 4.0,
+      "grid_y": 0.0,
+      "id": 2,
+      "label": "NE-12"
+    }
+  ],
+  "on_enter_line": null,
+  "on_fail_line": null,
+  "on_win_line": null,
+  "scripted_outage": null,
+  "source_node": 0,
+  "subscribers": [],
+  "target_node": 2,
+  "title": "Supervision",
+  "tx_dbm": 3.0,
+  "wavelength": "Nm1310",
+  "window_max_dbm": -8.0,
+  "window_min_dbm": -27.0,
+  "world": 6
+}

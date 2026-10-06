@@ -1,0 +1,169 @@
+{
+  "id": "lea1",
+  "title": "Study Hall Warm-Up",
+  "world": 8,
+  "briefing": "L\u00e9a's study hall is open. Ten questions on NEC Articles 90, 100, and 110 \u2014 the general requirements every telecom tech needs cold. Score 70% to move on.",
+  "tx_dbm": 0.0,
+  "wavelength": "Nm1490",
+  "window_min_dbm": -30.0,
+  "window_max_dbm": 0.0,
+  "medium": "Study",
+  "nodes": [],
+  "fixed_edges": [],
+  "available_components": [],
+  "source_node": 0,
+  "target_node": 0,
+  "scripted_outage": null,
+  "subscribers": [],
+  "api_sequence": null,
+  "alarm_triage": null,
+  "quiz": {
+    "questions": [
+      {
+        "id": "lea1-001",
+        "prompt": "What is the primary purpose of the Code?",
+        "choices": [
+          "To provide a complete design specification for every electrical installation",
+          "The practical safeguarding of persons and property from hazards arising from the use of electricity",
+          "To serve as an instruction manual for untrained persons",
+          "To ensure that every installation is efficient and adequate for future expansion"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: The practical safeguarding of persons and property from hazards arising from the use of electricity. Section 90.2(A) states this purpose and also states that the Code is not intended as a design specification or an instruction manual for untrained persons.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-002",
+        "prompt": "What does compliance with the Code and proper maintenance provide?",
+        "choices": [
+          "An installation that is essentially free from hazard but not necessarily efficient, convenient, or adequate for good service or future expansion",
+          "An installation guaranteed to remain adequate for all future electrical loads",
+          "An installation that requires no further inspection or maintenance",
+          "An installation optimized for the lowest construction cost"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: An installation that is essentially free from hazard but not necessarily efficient, convenient, or adequate for good service or future expansion. This is the adequacy statement in 90.2(B).",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-003",
+        "prompt": "Which communications installation is outside the coverage of the Code?",
+        "choices": [
+          "Customer-owned communications equipment installed in ordinary office space",
+          "Communications equipment under the exclusive control of a communications utility and located outdoors or in building spaces used exclusively for that installation",
+          "Communications cabling installed in a dwelling by the property owner",
+          "A premises network powered from customer-owned electrical equipment"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: Communications equipment under the exclusive control of a communications utility and located outdoors or in building spaces used exclusively for that installation. Section 90.2(D)(4) identifies this installation as not covered.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-004",
+        "prompt": "Which statement correctly describes the general arrangement of the Code?",
+        "choices": [
+          "Chapters 1 through 4 apply generally, while Chapters 5 through 7 address special occupancies, equipment, or conditions and may supplement or modify earlier requirements",
+          "Each chapter applies independently and can never modify another chapter",
+          "Only Chapters 1 and 2 apply generally; every later chapter is informational",
+          "Chapters 5 through 7 replace all requirements in Chapters 1 through 4"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: Chapters 1 through 4 apply generally, while Chapters 5 through 7 address special occupancies, equipment, or conditions and may supplement or modify earlier requirements. Section 90.3 describes this arrangement.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-005",
+        "prompt": "How do the requirements for communications systems relate to the requirements in Chapters 1 through 7?",
+        "choices": [
+          "All requirements in Chapters 1 through 7 apply automatically",
+          "They are not subject to Chapters 1 through 7 except where a requirement is specifically referenced",
+          "Only Chapters 1 and 3 apply",
+          "Requirements in Chapters 1 through 7 can never apply"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: They are not subject to Chapters 1 through 7 except where a requirement is specifically referenced. Section 90.3 states this rule for Chapter 8 communications systems.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-006",
+        "prompt": "Which statement correctly describes the status of the tables and informative annexes?",
+        "choices": [
+          "The tables apply as referenced; informative annexes are included for information and are not Code requirements",
+          "All tables and informative annexes are mandatory in every installation",
+          "Tables are informational only, but informative annexes are enforceable",
+          "Neither the tables nor the informative annexes may be used"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: The tables apply as referenced; informative annexes are included for information and are not Code requirements. Section 90.3 establishes the status of Chapter 9 tables and informative annexes.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-007",
+        "prompt": "Who has responsibility for interpreting the rules, deciding whether equipment and materials are approved, and granting special permission where contemplated?",
+        "choices": [
+          "The equipment manufacturer",
+          "The serving electric utility in every case",
+          "The authority having jurisdiction",
+          "The installer who obtained the permit"
+        ],
+        "correct_idx": 2,
+        "explanation": "Correct: The authority having jurisdiction. Section 90.4(B) assigns the enforcing authority responsibility for interpretations, approval decisions, and special permission contemplated by the rules.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-008",
+        "prompt": "When may a specific requirement be waived or an alternative method be permitted by special permission?",
+        "choices": [
+          "Whenever the alternative costs less",
+          "When equivalent objectives can be achieved by establishing and maintaining effective safety",
+          "Whenever the installer has used the method before",
+          "Only when the serving utility requests the change"
+        ],
+        "correct_idx": 1,
+        "explanation": "Correct: When equivalent objectives can be achieved by establishing and maintaining effective safety. Section 90.4(C) permits the authority having jurisdiction to waive specific requirements or permit alternative methods under that condition.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-009",
+        "prompt": "Which words characterize a mandatory rule?",
+        "choices": [
+          "Should or should not",
+          "May or may not",
+          "Shall or shall not",
+          "Can or cannot"
+        ],
+        "correct_idx": 2,
+        "explanation": "Correct: Shall or shall not. Section 90.5(A) states that mandatory rules identify actions specifically required or prohibited and are characterized by these terms.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      },
+      {
+        "id": "lea1-010",
+        "prompt": "Which wording characterizes a permissive rule?",
+        "choices": [
+          "Shall be permitted or shall not be required",
+          "Shall or shall not",
+          "Should be considered",
+          "Is recommended or is discouraged"
+        ],
+        "correct_idx": 0,
+        "explanation": "Correct: Shall be permitted or shall not be required. Section 90.5(B) uses these terms for actions that are allowed but not required, normally describing options or alternative methods.",
+        "article_ref": null,
+        "domain": "GeneralRequirements"
+      }
+    ],
+    "pass_pct": 0.7,
+    "time_limit_s": null
+  },
+  "on_enter_line": null,
+  "on_win_line": null,
+  "on_fail_line": null
+}
