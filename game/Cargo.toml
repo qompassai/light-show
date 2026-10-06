@@ -53,6 +53,7 @@ bevy = { version = "0.19", default-features = false, features = [
     "mp3",
     "wav",
     "png",
+    "jpeg",
     "x11",
     "multi_threaded",
 ] }
@@ -78,6 +79,7 @@ bevy = { version = "0.19", default-features = false, features = [
     "mp3",
     "wav",
     "png",
+    "jpeg",
     "android-native-activity",
     "multi_threaded",
 ] }
