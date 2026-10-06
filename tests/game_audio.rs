@@ -39,7 +39,7 @@ const WAV_CHUNKS_MAX: usize = 64;
 /// Non-audio files allowed to live beside the audio (attribution docs).
 const DOC_EXTENSIONS: [&str; 2] = ["md", "txt"];
 
-const SFX_KINDS: [SfxKind; 8] = [
+const SFX_KINDS: [SfxKind; 17] = [
     SfxKind::Click,
     SfxKind::Pick,
     SfxKind::Place,
@@ -48,6 +48,15 @@ const SFX_KINDS: [SfxKind; 8] = [
     SfxKind::Win,
     SfxKind::Lose,
     SfxKind::Dialogue,
+    SfxKind::Fanfare,
+    SfxKind::Hover,
+    SfxKind::Error,
+    SfxKind::Zap,
+    SfxKind::AlarmUrgent,
+    SfxKind::AlarmSoft,
+    SfxKind::MenuOpen,
+    SfxKind::MenuClose,
+    SfxKind::TabSwitch,
 ];
 
 /// Container formats the game can ship.
@@ -453,6 +462,28 @@ fn scan_shipped() -> ScanReport {
 fn referenced_audio_paths() -> BTreeSet<&'static str> {
     let mut paths: BTreeSet<&str> = SFX_KINDS.iter().map(|k| sfx_path(*k)).collect();
     paths.extend([menu_track(), results_track(true), results_track(false)]);
+    // Companion ambience hums.
+    paths.extend([
+        "music/ambience/seraphine_hum.ogg",
+        "music/ambience/ondine_hum.ogg",
+        "music/ambience/linka_hum.ogg",
+        "music/ambience/lattice_hum.ogg",
+        "music/ambience/clara_hum.ogg",
+        "music/ambience/aino_hum.ogg",
+        "music/ambience/hikari_hum.ogg",
+        "music/ambience/lea_hum.ogg",
+    ]);
+    // Character themes.
+    paths.extend([
+        "music/themes/seraphine.ogg",
+        "music/themes/ondine.ogg",
+        "music/themes/linka.ogg",
+        "music/themes/lattice.ogg",
+        "music/themes/clara.ogg",
+        "music/themes/aino.ogg",
+        "music/themes/hikari.ogg",
+        "music/themes/lea.ogg",
+    ]);
     for world in 0..=5 {
         for level_index in 0..2 {
             paths.insert(playing_track(level_index, world));

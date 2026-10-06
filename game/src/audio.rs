@@ -20,6 +20,7 @@ use std::path::{Path, PathBuf};
 
 use crate::level::{load_level, CurrentLevelIndex};
 use crate::states::{GameState, LevelOutcome};
+use crate::waifu::{Companion, SelectedCompanion};
 use bevy::prelude::*;
 
 pub struct MusicPlugin;
@@ -40,7 +41,17 @@ impl Plugin for MusicPlugin {
             // back — the same spawn-on-enter/despawn-on-exit contract as
             // every other state above.
             .add_systems(OnEnter(GameState::Credits), play_menu_track)
-            .add_systems(OnExit(GameState::Credits), stop_music);
+            .add_systems(OnExit(GameState::Credits), stop_music)
+            // Companion select plays the selected companion's theme; the
+            // OnExit stops it via the shared MusicTrack marker, same as
+            // every other state above.
+            .add_systems(OnEnter(GameState::CompanionSelect), play_companion_theme)
+            .add_systems(OnExit(GameState::CompanionSelect), stop_music)
+            // In-level ambience hums under the tier music; it stops on
+            // Playing exit (including the hop to OutageActive, where the
+            // boss track takes over) and restarts when play resumes.
+            .add_systems(OnEnter(GameState::Playing), play_ambience)
+            .add_systems(OnExit(GameState::Playing), stop_ambience);
     }
 }
 
@@ -151,7 +162,11 @@ fn audio_file_decodable(asset_root: &Path, path: &str) -> bool {
     {
         Ok(_) => true,
         Err(e) => {
-            bevy::log::error!("Music track failed to decode: {} ({:?})", full_path.display(), e);
+            bevy::log::error!(
+                "Music track failed to decode: {} ({:?})",
+                full_path.display(),
+                e
+            );
             false
         }
     }
@@ -192,7 +207,13 @@ fn play_menu_track(
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
 ) {
-    spawn_track(&mut commands, &asset_server, &asset_root, menu_track(), true);
+    spawn_track(
+        &mut commands,
+        &asset_server,
+        &asset_root,
+        menu_track(),
+        true,
+    );
 }
 
 fn play_level_track(
@@ -253,11 +274,119 @@ fn stop_music(mut commands: Commands, tracks: Query<Entity, With<MusicTrack>>) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Per-companion audio: theme loops for the companion-select screen and
+// ambient hums layered under in-level music. All files are generated
+// from scratch by `tools/gen_audio_pack.py` (chiptune themes via the
+// NES-2A03 engine in `tools/gen_chiptune_music.py`) — no licensed
+// samples, so no attribution burden.
+// ---------------------------------------------------------------------------
+
+/// Marks the currently-playing ambience hum so `stop_ambience` can find
+/// and despawn it. Separate from `MusicTrack` so the hum layers under
+/// the tier music instead of replacing it.
+#[derive(Component)]
+struct AmbienceTrack;
+
+/// Ambience bus level: the hum sits well under the music, felt more
+/// than heard.
+pub const AMBIENCE_VOLUME: f32 = 0.30;
+
+/// Per-companion theme loop for the companion-select screen, relative
+/// to `game/assets/`. Pure and unit-tested like the music manager.
+pub fn companion_theme(companion: Companion) -> &'static str {
+    match companion {
+        Companion::Fiber => "music/themes/seraphine.ogg",
+        Companion::Coax => "music/themes/ondine.ogg",
+        Companion::Mobile => "music/themes/linka.ogg",
+        Companion::Ethernet => "music/themes/lattice.ogg",
+        Companion::Clara => "music/themes/clara.ogg",
+        Companion::Aino => "music/themes/aino.ogg",
+        Companion::Hikari => "music/themes/hikari.ogg",
+        Companion::Lea => "music/themes/lea.ogg",
+    }
+}
+
+/// Per-companion ambient hum looped quietly under in-level music,
+/// relative to `game/assets/`. Pure and unit-tested.
+pub fn companion_ambience(companion: Companion) -> &'static str {
+    match companion {
+        Companion::Fiber => "music/ambience/seraphine_hum.ogg",
+        Companion::Coax => "music/ambience/ondine_hum.ogg",
+        Companion::Mobile => "music/ambience/linka_hum.ogg",
+        Companion::Ethernet => "music/ambience/lattice_hum.ogg",
+        Companion::Clara => "music/ambience/clara_hum.ogg",
+        Companion::Aino => "music/ambience/aino_hum.ogg",
+        Companion::Hikari => "music/ambience/hikari_hum.ogg",
+        Companion::Lea => "music/ambience/lea_hum.ogg",
+    }
+}
+
+/// Dialogue blip playback speed per companion — the Mega Man Battle
+/// Network trick of pitch-shifting one blip sample per character
+/// instead of shipping eight near-identical files. 1.0 is the raw
+/// `dialogue.wav`.
+pub fn dialogue_blip_speed(companion: Companion) -> f32 {
+    match companion {
+        Companion::Fiber => 1.00,
+        Companion::Coax => 1.12,
+        Companion::Mobile => 0.90,
+        Companion::Ethernet => 1.06,
+        Companion::Clara => 1.18,
+        Companion::Aino => 0.85,
+        Companion::Hikari => 1.25,
+        Companion::Lea => 1.10,
+    }
+}
+
+fn play_companion_theme(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    asset_root: Res<AssetRootDir>,
+    selected: Res<SelectedCompanion>,
+) {
+    spawn_track(
+        &mut commands,
+        &asset_server,
+        &asset_root,
+        companion_theme(selected.0),
+        true,
+    );
+}
+
+fn play_ambience(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    asset_root: Res<AssetRootDir>,
+    selected: Res<SelectedCompanion>,
+) {
+    let path = companion_ambience(selected.0);
+    // Same curative guard as `spawn_track`: validate on the main thread
+    // before handing the asset to bevy_audio.
+    if !audio_file_decodable(&asset_root.0, path) {
+        return;
+    }
+    commands.spawn((
+        AmbienceTrack,
+        AudioPlayer::<AudioSource>(asset_server.load(path.to_string())),
+        PlaybackSettings {
+            mode: bevy::audio::PlaybackMode::Loop,
+            volume: bevy::audio::Volume::Linear(AMBIENCE_VOLUME),
+            ..default()
+        },
+    ));
+}
+
+fn stop_ambience(mut commands: Commands, tracks: Query<Entity, With<AmbienceTrack>>) {
+    for entity in &tracks {
+        commands.entity(entity).despawn();
+    }
+}
 
 // ---------------------------------------------------------------------------
-// SFX: one-shot chiptune sound effects for game events. The eight WAVs
-// under `game/assets/sfx/` are synthesized from scratch (square waves,
-// see `tools/gen_sfx.py` provenance in the file header there) — no
+// SFX: one-shot chiptune sound effects for game events. The seventeen WAVs
+// under `game/assets/sfx/` are synthesized from scratch (numpy envelopes
+// over square/sine oscillators, see `tools/gen_audio_pack.py`) — no
 // licensed samples, so no attribution burden unlike the music tracks.
 //
 // Contract: `SfxPlugin` preloads every handle once via `FromWorld` (the
@@ -294,6 +423,24 @@ pub enum SfxKind {
     Lose,
     /// Companion mood/dialogue reaction blip.
     Dialogue,
+    /// Track-complete fanfare (bigger than the per-level Win sting).
+    Fanfare,
+    /// Button hover tick.
+    Hover,
+    /// Invalid-action buzz.
+    Error,
+    /// Link-connection zap sweep.
+    Zap,
+    /// Escalated klaxon (faster than Alarm).
+    AlarmUrgent,
+    /// Gentle non-critical warning chime.
+    AlarmSoft,
+    /// Panel-open whoosh.
+    MenuOpen,
+    /// Panel-close whoosh.
+    MenuClose,
+    /// Tab-switch click-slide.
+    TabSwitch,
 }
 
 /// Maps a kind to its asset path, relative to `game/assets/`. Pure so
@@ -308,14 +455,23 @@ pub fn sfx_path(kind: SfxKind) -> &'static str {
         SfxKind::Win => "sfx/win.wav",
         SfxKind::Lose => "sfx/lose.wav",
         SfxKind::Dialogue => "sfx/dialogue.wav",
+        SfxKind::Fanfare => "sfx/fanfare.wav",
+        SfxKind::Hover => "sfx/hover.wav",
+        SfxKind::Error => "sfx/error.wav",
+        SfxKind::Zap => "sfx/zap.wav",
+        SfxKind::AlarmUrgent => "sfx/alarm_urgent.wav",
+        SfxKind::AlarmSoft => "sfx/alarm_soft.wav",
+        SfxKind::MenuOpen => "sfx/menu_open.wav",
+        SfxKind::MenuClose => "sfx/menu_close.wav",
+        SfxKind::TabSwitch => "sfx/tab_switch.wav",
     }
 }
 
-/// All eight SFX kinds in one place so the on-disk test can't drift
+/// All seventeen SFX kinds in one place so the on-disk test can't drift
 /// out of sync with the enum when a kind is added. Test-only: the
 /// loader above names each handle explicitly.
 #[cfg(test)]
-const ALL_SFX_KINDS: [SfxKind; 8] = [
+const ALL_SFX_KINDS: [SfxKind; 17] = [
     SfxKind::Click,
     SfxKind::Pick,
     SfxKind::Place,
@@ -324,6 +480,15 @@ const ALL_SFX_KINDS: [SfxKind; 8] = [
     SfxKind::Win,
     SfxKind::Lose,
     SfxKind::Dialogue,
+    SfxKind::Fanfare,
+    SfxKind::Hover,
+    SfxKind::Error,
+    SfxKind::Zap,
+    SfxKind::AlarmUrgent,
+    SfxKind::AlarmSoft,
+    SfxKind::MenuOpen,
+    SfxKind::MenuClose,
+    SfxKind::TabSwitch,
 ];
 
 /// Preloaded one-shot SFX handles. See the section header for the
@@ -338,6 +503,15 @@ pub struct Sfx {
     win: Handle<AudioSource>,
     lose: Handle<AudioSource>,
     dialogue: Handle<AudioSource>,
+    fanfare: Handle<AudioSource>,
+    hover: Handle<AudioSource>,
+    error: Handle<AudioSource>,
+    zap: Handle<AudioSource>,
+    alarm_urgent: Handle<AudioSource>,
+    alarm_soft: Handle<AudioSource>,
+    menu_open: Handle<AudioSource>,
+    menu_close: Handle<AudioSource>,
+    tab_switch: Handle<AudioSource>,
 }
 
 impl FromWorld for Sfx {
@@ -352,6 +526,15 @@ impl FromWorld for Sfx {
             win: server.load(sfx_path(SfxKind::Win)),
             lose: server.load(sfx_path(SfxKind::Lose)),
             dialogue: server.load(sfx_path(SfxKind::Dialogue)),
+            fanfare: server.load(sfx_path(SfxKind::Fanfare)),
+            hover: server.load(sfx_path(SfxKind::Hover)),
+            error: server.load(sfx_path(SfxKind::Error)),
+            zap: server.load(sfx_path(SfxKind::Zap)),
+            alarm_urgent: server.load(sfx_path(SfxKind::AlarmUrgent)),
+            alarm_soft: server.load(sfx_path(SfxKind::AlarmSoft)),
+            menu_open: server.load(sfx_path(SfxKind::MenuOpen)),
+            menu_close: server.load(sfx_path(SfxKind::MenuClose)),
+            tab_switch: server.load(sfx_path(SfxKind::TabSwitch)),
         }
     }
 }
@@ -367,17 +550,35 @@ impl Sfx {
             SfxKind::Win => &self.win,
             SfxKind::Lose => &self.lose,
             SfxKind::Dialogue => &self.dialogue,
+            SfxKind::Fanfare => &self.fanfare,
+            SfxKind::Hover => &self.hover,
+            SfxKind::Error => &self.error,
+            SfxKind::Zap => &self.zap,
+            SfxKind::AlarmUrgent => &self.alarm_urgent,
+            SfxKind::AlarmSoft => &self.alarm_soft,
+            SfxKind::MenuOpen => &self.menu_open,
+            SfxKind::MenuClose => &self.menu_close,
+            SfxKind::TabSwitch => &self.tab_switch,
         }
     }
 
     /// Spawn a one-shot playback of `kind` at [`SFX_VOLUME`].
     /// `PlaybackMode::Despawn` removes the entity when the sample ends.
     pub fn play(&self, commands: &mut Commands, kind: SfxKind) {
+        self.play_with_speed(commands, kind, 1.0);
+    }
+
+    /// Spawn a one-shot playback of `kind` at [`SFX_VOLUME`] with a
+    /// playback-speed multiplier (pitch-shifts the sample; the
+    /// per-companion dialogue blip uses this instead of shipping eight
+    /// near-identical files).
+    pub fn play_with_speed(&self, commands: &mut Commands, kind: SfxKind, speed: f32) {
         commands.spawn((
             AudioPlayer(self.handle(kind).clone()),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
                 volume: bevy::audio::Volume::Linear(SFX_VOLUME),
+                speed,
                 ..default()
             },
         ));
@@ -397,6 +598,15 @@ impl Sfx {
             win: Handle::default(),
             lose: Handle::default(),
             dialogue: Handle::default(),
+            fanfare: Handle::default(),
+            hover: Handle::default(),
+            error: Handle::default(),
+            zap: Handle::default(),
+            alarm_urgent: Handle::default(),
+            alarm_soft: Handle::default(),
+            menu_open: Handle::default(),
+            menu_close: Handle::default(),
+            tab_switch: Handle::default(),
         }
     }
 }
@@ -544,7 +754,7 @@ mod tests {
     fn every_referenced_sfx_exists_on_disk() {
         assert_eq!(
             ALL_SFX_KINDS.len(),
-            8,
+            17,
             "SfxKind gained a variant; extend ALL_SFX_KINDS"
         );
         let mut seen = std::collections::HashSet::new();
@@ -567,6 +777,73 @@ mod tests {
         assert!(SFX_VOLUME < 1.0, "SFX_VOLUME must sit below the music bus");
     }
 
+    /// Every companion theme and ambience hum must exist on disk and
+    /// decode with the compiled-in rodio decoders — same rationale as
+    /// the SFX/track tests: a missing loop would otherwise surface as
+    /// silence at playtest, never a build error.
+    #[test]
+    fn companion_audio_exists_and_decodes() {
+        let asset_root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assets"));
+        let companions = [
+            Companion::Fiber,
+            Companion::Coax,
+            Companion::Mobile,
+            Companion::Ethernet,
+            Companion::Clara,
+            Companion::Aino,
+            Companion::Hikari,
+            Companion::Lea,
+        ];
+        let mut seen = std::collections::HashSet::new();
+        for companion in companions {
+            for path in [companion_theme(companion), companion_ambience(companion)] {
+                assert!(seen.insert(path), "duplicate companion audio path {path}");
+                let on_disk = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string() + path;
+                assert!(
+                    std::path::Path::new(&on_disk).is_file(),
+                    "{on_disk} referenced by audio but missing on disk"
+                );
+                assert!(
+                    audio_file_decodable(asset_root, path),
+                    "{path} does not decode with the compiled-in rodio decoders"
+                );
+            }
+        }
+    }
+
+    /// Blip speeds must stay in a sane audible band: too slow sounds
+    /// broken, too fast aliases into a click.
+    #[test]
+    fn dialogue_blip_speeds_are_sane() {
+        let companions = [
+            Companion::Fiber,
+            Companion::Coax,
+            Companion::Mobile,
+            Companion::Ethernet,
+            Companion::Clara,
+            Companion::Aino,
+            Companion::Hikari,
+            Companion::Lea,
+        ];
+        for companion in companions {
+            let speed = dialogue_blip_speed(companion);
+            assert!(
+                (0.7..=1.5).contains(&speed),
+                "{companion:?} blip speed {speed} out of the audible band"
+            );
+        }
+    }
+
+    /// Ambience must sit under the music, never over it.
+    #[test]
+    fn ambience_volume_is_quiet() {
+        assert!(AMBIENCE_VOLUME > 0.0, "AMBIENCE_VOLUME must be audible");
+        assert!(
+            AMBIENCE_VOLUME < SFX_VOLUME,
+            "AMBIENCE_VOLUME must sit below the SFX bus"
+        );
+    }
+
     /// `Sfx::play` spawns exactly one audio entity per call (no leaks,
     /// no bookkeeping for callers to get wrong). `AudioPlayer` is the
     /// queryable component marking a spawned playback entity.
@@ -583,4 +860,3 @@ mod tests {
         });
     }
 }
-
