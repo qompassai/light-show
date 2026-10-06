@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791289009
-Git HEAD: b1cf034790a1fb41462f15060242a9333a29c1ec
+Generated: 1791289033
+Git HEAD: c66ff0d39f0d5a3385c1a90d02d482253479a455
 
 ## Files: 355 total
 
@@ -21,12 +21,12 @@ Git HEAD: b1cf034790a1fb41462f15060242a9333a29c1ec
 - lock: 2 files
 - properties: 2 files
 - nix: 1 files
-- css: 1 files
-- uproject: 1 files
 - html: 1 files
 - cff: 1 files
-- yaml: 1 files
 - bat: 1 files
+- uproject: 1 files
+- css: 1 files
+- yaml: 1 files
 
 ## Top definitions by probability
 
@@ -45,8 +45,8 @@ Git HEAD: b1cf034790a1fb41462f15060242a9333a29c1ec
 13. enum `game/src/states/mod.rs::GameState` (p=0.014)
 14. enum `crates/osp_sim/src/component.rs::Component` (p=0.014)
 15. struct `game/src/anim.rs::TransitionRequest` (p=0.013)
-16. fn `game/src/level.rs::load_level` (p=0.013)
-17. mod `game/src/lib.rs::level` (p=0.013)
+16. mod `game/src/lib.rs::level` (p=0.013)
+17. fn `game/src/level.rs::load_level` (p=0.013)
 18. struct `crates/osp_sim/src/graph.rs::PathGraph` (p=0.012)
 19. mod `crates/osp_sim/src/lib.rs::component` (p=0.011)
 20. struct `game/src/audio.rs::Sfx` (p=0.011)

@@ -164,3 +164,42 @@ uncommitted and unpushed; no commit/push without fresh authorization.
 Secrets inventory (names only):
 `~/workspace/release-scripts/docs/secrets-inventory.md` — Matt handles
 all keys; agents never generate or touch them.
+
+## October 2026 completions
+
+### 2026-10-05: 80 levels complete (10/companion)
+- All 8 companions × 10 levels: Séraphine (fiber), Ondine (coax), Linka (wireless), Lattice (ethernet), Clara (provisioning/API), Aino (triage/NOC), Hikari (field/BxE), Léa (quiz).
+- 80 level JSON files validated. Pushed `a8c6ed7`.
+
+### 2026-10-06: Playthrough harness B0001 fixed
+- 14 playthrough tests failed with Bevy B0001 after 80-level expansion.
+- Root cause: Quiz/TriageConsole/ApiConsole systems had overlapping mutable Text/Interaction queries.
+- Fix: base `playthrough_app()` initializes UI resources without installing UI systems; new `playthrough_app_with_api()` for Clara tests; quiz handlers chained sequentially; button markers made public with disjoint Without filters.
+- Result: 15/15 playthrough tests pass. Pushed `158178c`.
+
+### 2026-10-06: SCIP index added
+- Generated via `rust-analyzer scip .` → `index.scip` (3.5 MB).
+- Pushed `a2d50ab`.
+
+### 2026-10-06: 20 edge case tests added
+- New `tests/edge_cases.rs`: data validation, registry integrity, boundaries, stress, unicode, numeric extremes.
+- Found: Léa uses world 8 (test assumed 0-7) — fixed test.
+- Total: 458 tests passing, 0 failing. Pushed `aa8d7e0`.
+
+### 2026-10-06: Test footage 79/80 levels
+- 79 MP4 clips (H.264, 720x1280, 7-20s) in `game/assets/footage/`.
+- Missing: c1l8 (build timeout).
+- Critical fix: dialogue_ui.rs and quiz.rs had conflicting &mut Text queries causing B0001 on startup. Fixed with markers and disjoint filters.
+- Pushed `1eeb4b7`.
+
+### 2026-10-06: F-Droid metadata reference
+- Created `fdroid/ai.qompass.lightshow.yml` (validated YAML, commit SHA, version 0.1.0/16777472).
+- For submission to fdroiddata repo. Pushed `5c364ef`.
+
+### 2026-10-06: TESTING.md documentation
+- New `docs/TESTING.md`: 458-test breakdown, recent fixes, conventions.
+
+## Remaining (Matt-only)
+- ★ Play Store: generate signing key (`scripts/publish/tbr-keystore.sh`), sign AAB, Play Console setup, upload.
+- ★ F-Droid: submit MR to fdroiddata GitLab (after full `fdroid build` verification).
+- c1l8 footage (1 clip missing).
