@@ -2,7 +2,7 @@
   "id": "c1l9",
   "title": "Precision Run",
   "world": 6,
-  "briefing": "Expert cascade. A full kilometer of plant plus a 10 dB tap, headend at +58. The [3, 9] window gives you no slack — 17 dB overshoots, 22 dB is absurd. Calculate the exact gain or go home.",
+  "briefing": "Expert cascade. A full kilometer of plant plus a 10 dB tap, distribution point at +58. The [3, 9] window gives you no slack — 17 dB overshoots, 22 dB is absurd. Calculate the exact gain or go home. Service acceptance for this G.fast drop: the carrier must land in the window with CNR at or above 25 dB against the −35 dBmV noise floor.",
   "medium": "Coax",
   "wavelength": "Nm1490",
   "tx_dbm": 58.0,
@@ -151,5 +151,7 @@
       ],
       "ends": 2,
       "workmanship_loss_db": 4.0
-  }
+  },
+  "coax_noise_floor_dbmv": -35.0,
+  "min_carrier_to_noise_db": 25.0
 }

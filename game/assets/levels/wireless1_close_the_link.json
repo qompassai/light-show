@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "Linka's rule: distance is the enemy, and amplifiers can't beat geometry. Two 400 m hops at 2.4 GHz stand between the sites \u2014 about 92 dB of free-space loss per hop. An amplifier just shouts the wreckage louder. Place the regenerative repeater that hands the far site a fresh signal inside the [-75, -40] dBm window.",
+  "briefing": "Linka's rule: distance is the enemy, and amplifiers can't beat geometry. Two 400 m hops at 2.4 GHz stand between the sites — about 92 dB of free-space loss per hop. An amplifier just shouts the wreckage louder. Place the regenerative repeater that hands the far site a fresh signal inside the [-75, -40] dBm window. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -90,5 +90,6 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -40.0,
   "window_min_dbm": -75.0,
-  "world": 3
+  "world": 3,
+  "min_snr_db": 10.0
 }

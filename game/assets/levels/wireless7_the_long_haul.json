@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "800 meters per hop. At 2.4 GHz that's 98 dB of free-space loss each \u2014 the edge of what this hardware can close. The window is tight because there's nowhere to hide: too little and the far site hears static, too much and you cook the receiver. Calculate, don't guess.",
+  "briefing": "800 meters per hop. At 2.4 GHz that's 98 dB of free-space loss each — the edge of what this hardware can close. The window is tight because there's nowhere to hide: too little and the far site hears static, too much and you cook the receiver. Calculate, don't guess. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -138,5 +138,6 @@
           "2001:4860:4860::8888",
           "2001:db8:40:1::1"
       ]
-  }
+  },
+  "min_snr_db": 10.0
 }

@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "The 2.4 GHz band here is noisy \u2014 interference comes and goes, and every decibel of fade eats your margin. Linka's rule: in a noisy band, land HIGH in the window, not in the middle. High enough to survive a fade, low enough to stay legal. Find the repeater that does both.",
+  "briefing": "The 2.4 GHz band here is noisy — interference comes and goes, and every decibel of fade eats your margin. Linka's rule: in a noisy band, land HIGH in the window, not in the middle. High enough to survive a fade, low enough to stay legal. Find the repeater that does both. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -102,5 +102,6 @@
               "historical_rssi_dbm": -77.5
           }
       ]
-  }
+  },
+  "min_snr_db": 10.0
 }

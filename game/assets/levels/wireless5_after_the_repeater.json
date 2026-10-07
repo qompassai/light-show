@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "A short 200 m hop feeds the relay, then a long 400 m hop to the far site. Linka drills this into every tech: a regenerative repeater erases everything before it. That first hop is irrelevant \u2014 size the repeater for the 400 m hop AFTER it. That's the only math that matters.",
+  "briefing": "A short 200 m hop feeds the relay, then a long 400 m hop to the far site. Linka drills this into every tech: a regenerative repeater erases everything before it. That first hop is irrelevant — size the repeater for the 400 m hop AFTER it. That's the only math that matters. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -140,5 +140,6 @@
           "8.8.8.8",
           "192.168.40.1"
       ]
-  }
+  },
+  "min_snr_db": 10.0
 }

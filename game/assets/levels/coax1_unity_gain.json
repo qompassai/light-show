@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "Ondine's first rule of coax: a cascade is a balancing act. The headend launches at +35 dBmV, and your plant eats 34.95 dB before the customer's tap. Pick the line amplifier whose gain lands the carrier inside the [0, 15] dBmV window \u2014 too cold and the picture snows, too hot and it distorts.",
+  "briefing": "Ondine's first rule of coax: a cascade is a balancing act. The distribution point launches at +35 dBmV, and your plant eats 34.95 dB before the customer's tap. Pick the line amplifier whose gain lands the carrier inside the [0, 15] dBmV window — too cold and the picture snows, too hot and it distorts. Service acceptance for this G.fast drop: the carrier must land in the window with CNR at or above 25 dB against the −35 dBmV noise floor.",
   "fixed_edges": [
     {
       "component": {
@@ -122,5 +122,12 @@
               "mapper_id": "ID-9"
           }
       ]
-  }
+  },
+  "optional_objective":   {
+      "description": "Disconnect nothing that is not the work order run \u2014 zero neighbor disruptions",
+      "cores": 5,
+      "kind": "ZeroNeighborDisruptions"
+  },
+  "coax_noise_floor_dbmv": -35.0,
+  "min_carrier_to_noise_db": 25.0
 }

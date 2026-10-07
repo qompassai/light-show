@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "The link is up on the 20 dBm repeater, but a storm front is dragging interference across the band \u2014 the floor rises about a decibel every ten seconds. Ride it out: when your signal sinks toward the bottom of the [-75, -65] dBm window, hot-swap to the 30 dBm repeater before the clock runs out. Too much too soon cooks the receiver; too little too late loses the link.",
+  "briefing": "The link is up on the 20 dBm repeater, but a storm front is dragging interference across the band — the floor rises about a decibel every ten seconds. Ride it out: when your signal sinks toward the bottom of the [-75, -65] dBm window, hot-swap to the 30 dBm repeater before the clock runs out. Too much too soon cooks the receiver; too little too late loses the link. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -118,5 +118,11 @@
           "correct": 1,
           "trap_option": 3
       }
-  }
+  },
+  "optional_objective":   {
+      "description": "Name the true cause \u2014 commit the correct diagnosis",
+      "cores": 5,
+      "kind": "ZeroWrongSelections"
+  },
+  "min_snr_db": 10.0
 }

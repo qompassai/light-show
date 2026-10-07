@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "The final exam. Two 600 m hops at 5.8 GHz \u2014 over 103 dB of loss per hop, the hardest path in the track. The window is 5 dB wide. An amplifier is on the bench to tempt you, and it will fail exactly the way amplifiers always fail on long hops. Combine everything: frequency math, tight windows, repeater discipline. Close the link.",
+  "briefing": "The final exam. Two 600 m hops at 5.8 GHz — over 103 dB of loss per hop, the hardest path in the track. The window is 5 dB wide. An amplifier is on the bench to tempt you, and it will fail exactly the way amplifiers always fail on long hops. Combine everything: frequency math, tight windows, repeater discipline. Close the link. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -90,5 +90,142 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -75.0,
   "window_min_dbm": -80.0,
-  "world": 5
+  "world": 5,
+  "survey":   {
+      "required_for_win": true,
+      "points": [
+          {
+              "id": "desk",
+              "label": "Site B Desk",
+              "node": 3,
+              "extra_loss_db": 0.0,
+              "required_rssi_dbm": -80.0,
+              "historical_rssi_dbm": -84.0,
+              "historical_snr_db": 9.0
+          },
+          {
+              "id": "corner",
+              "label": "Far Corner Office",
+              "node": 3,
+              "extra_loss_db": 1.5,
+              "required_rssi_dbm": -81.0,
+              "historical_rssi_dbm": -85.5,
+              "historical_snr_db": 9.0
+          }
+      ],
+      "diagnosis": {
+          "options": [
+              "New obstruction on the path",
+              "A noise-limited path \u2014 level was never the problem",
+              "Wrong band selection",
+              "Antenna misalignment"
+          ],
+          "correct": 1,
+          "trap_option": 2
+      }
+  },
+  "static_config_v4":   {
+      "family": "V4",
+      "device_label": "Office printer",
+      "worksheet_address": "192.168.50.20",
+      "worksheet_prefix_len": 24,
+      "worksheet_gateway": "192.168.50.1",
+      "worksheet_dns": "192.168.50.53",
+      "dhcp_pool": [
+          "192.168.50.100",
+          "192.168.50.199"
+      ],
+      "allocations": [
+          {
+              "address": "192.168.50.20",
+              "holder": "Office printer"
+          },
+          {
+              "address": "192.168.50.105",
+              "holder": "Office PC"
+          },
+          {
+              "address": "192.168.50.25",
+              "holder": "Label printer"
+          }
+      ],
+      "initial_address": "192.168.50.20",
+      "initial_prefix_len": 24,
+      "initial_gateway": "192.168.50.254",
+      "initial_dns": "192.168.50.53",
+      "address_candidates": [
+          "192.168.50.20",
+          "192.168.50.105",
+          "192.168.50.25",
+          "192.168.50.1"
+      ],
+      "prefix_candidates": [
+          24,
+          25
+      ],
+      "gateway_candidates": [
+          "192.168.50.1",
+          "192.168.50.254",
+          "192.168.1.1"
+      ],
+      "dns_candidates": [
+          "192.168.50.53",
+          "8.8.8.8",
+          "192.168.50.1"
+      ]
+  },
+  "static_config_v6":   {
+      "family": "V6",
+      "device_label": "Office printer",
+      "worksheet_address": "2001:db8:50:1::20",
+      "worksheet_prefix_len": 64,
+      "worksheet_gateway": "fe80::1",
+      "worksheet_gateway_interface": "business-lan",
+      "worksheet_dns": "2001:db8:50:1::53",
+      "interfaces": [
+          "business-lan",
+          "management",
+          "guest-wifi"
+      ],
+      "allocations": [
+          {
+              "address": "2001:db8:50:1::20",
+              "holder": "Office printer"
+          },
+          {
+              "address": "2001:db8:50:1::25",
+              "holder": "Label printer"
+          }
+      ],
+      "initial_address": "2001:db8:50:1::20",
+      "initial_prefix_len": 64,
+      "initial_gateway": "fe80::1",
+      "initial_gateway_interface": "management",
+      "initial_dns": "2001:db8:50:1::53",
+      "address_candidates": [
+          "2001:db8:50:1::20",
+          "2001:db8:50:1::25",
+          "2001:db8:50:1::105"
+      ],
+      "prefix_candidates": [
+          64,
+          48
+      ],
+      "gateway_candidates": [
+          "fe80::1",
+          "2001:db8:50:1::1",
+          "fe80::2"
+      ],
+      "dns_candidates": [
+          "2001:db8:50:1::53",
+          "2001:4860:4860::8888",
+          "2001:db8:50:1::1"
+      ]
+  },
+  "optional_objective":   {
+      "description": "Name the true cause \u2014 commit the correct diagnosis",
+      "cores": 10,
+      "kind": "ZeroWrongSelections"
+  },
+  "min_snr_db": 10.0
 }

@@ -379,3 +379,472 @@ fn watch_attempt(
         telemetry.verified_after_final_change = true;
     }
 }
+
+// ---------------------------------------------------------------------------
+// §2g: badges, optional objectives, closeout. Badges pay nothing and
+// are never awarded on a failed level; optional objectives pay flat
+// Cores (unmultiplied, like salvage). Everything below is a pure
+// function of the attempt record — the same inputs always produce
+// the same verdict, so results and tests agree by construction.
+// ---------------------------------------------------------------------------
+
+/// Badge bit: the fault was diagnosed from evidence.
+pub const BADGE_DIAGNOSIS: u8 = 0b001;
+/// Badge bit: clean workmanship (bench) or configuration (forms).
+pub const BADGE_WORKMANSHIP: u8 = 0b010;
+/// Badge bit: the fix was re-verified after the final change.
+pub const BADGE_VERIFICATION: u8 = 0b100;
+
+/// Display names for earned badge bits, in bit order.
+pub fn badge_names(mask: u8) -> Vec<&'static str> {
+    let mut names = Vec::new();
+    if mask & BADGE_DIAGNOSIS != 0 {
+        names.push("Diagnosis");
+    }
+    if mask & BADGE_WORKMANSHIP != 0 {
+        names.push("Workmanship / Configuration");
+    }
+    if mask & BADGE_VERIFICATION != 0 {
+        names.push("Verification");
+    }
+    names
+}
+
+/// Evaluate the attempt's badges. Rules (each is evidence-specific;
+/// there is no participation badge):
+/// - Diagnosis: the survey diagnosis pick is correct (and not the
+///   trap); OR the intermittent fault was repaired (not rerouted);
+///   OR the service failure was observed *before* the jumper swap
+///   and the swap was made (evidence-led substitution); OR the
+///   identification was completed with zero wrong selections.
+/// - Workmanship / Configuration: a workbench level finished with
+///   zero wasted connectors and no rebuild needed; OR a config
+///   level where every family passed with zero rejected applies;
+///   OR (levels with neither) no placed part was ever replaced.
+/// - Verification: a passing evaluation was observed after the
+///   final placement change (`verified_after_final_change`).
+/// A failed level earns nothing, by construction.
+pub fn evaluate_badges(
+    level: &LevelDef,
+    won: bool,
+    telemetry: Option<&AttemptTelemetry>,
+    progress: &AstraProgress,
+) -> u8 {
+    if !won {
+        return 0;
+    }
+    let mut mask = 0u8;
+    // Diagnosis.
+    let mut diagnosis = false;
+    if let (Some(survey), Some(sp)) = (&level.survey, progress.survey()) {
+        if let Some(def) = &survey.diagnosis {
+            diagnosis |= sp.diagnosis_correct(def) && !sp.trap_picked(def);
+        }
+    }
+    if let Some(intermittent) = progress.intermittent() {
+        diagnosis |= level.intermittent.is_some() && intermittent.repair_path_complete();
+    }
+    if let Some(t) = telemetry {
+        diagnosis |= level.defective_edge.is_some()
+            && t.observed_service_fail_before_swap
+            && progress.jumper().is_some_and(|j| j.swapped);
+    }
+    if let (Some(def), Some(ident)) = (&level.identification, progress.ident()) {
+        diagnosis |= level.intermittent.is_none()
+            && ident.identity_passed(def)
+            && ident.wrong_selections == 0;
+    }
+    if diagnosis {
+        mask |= BADGE_DIAGNOSIS;
+    }
+    // Workmanship / Configuration.
+    let mut workmanship = false;
+    if let (Some(def), Some(wb)) = (&level.workbench, progress.workbench()) {
+        workmanship |=
+            wb.complete() && wb.wasted_connectors == 0 && wb.ends_completed == u32::from(def.ends);
+    }
+    let has_config = level.static_config_v4.is_some() || level.static_config_v6.is_some();
+    if has_config {
+        if let Some(config) = progress.config() {
+            let families: Vec<&crate::states::config_console::FamilyProgress> = [
+                config.family(crate::level::ConfigFamily::V4),
+                config.family(crate::level::ConfigFamily::V6),
+            ]
+            .into_iter()
+            .flatten()
+            .collect();
+            workmanship |= !families.is_empty()
+                && families.iter().all(|f| f.passed && f.rejected_applies == 0);
+        }
+    }
+    if level.workbench.is_none() && !has_config {
+        if let Some(t) = telemetry {
+            workmanship |= t.working_parts_replaced == 0;
+        }
+    }
+    if workmanship {
+        mask |= BADGE_WORKMANSHIP;
+    }
+    // Verification.
+    if telemetry.is_some_and(|t| t.verified_after_final_change) {
+        mask |= BADGE_VERIFICATION;
+    }
+    mask
+}
+
+/// Whether the level's optional objective was met this attempt
+/// (evaluated on a win by the results screen; pays flat Cores).
+pub fn objective_met(level: &LevelDef, progress: &AstraProgress) -> bool {
+    let Some(objective) = &level.optional_objective else {
+        return false;
+    };
+    match objective.kind {
+        crate::level::ObjectiveKind::ZeroNeighborDisruptions => progress
+            .ident()
+            .is_some_and(|i| i.neighbor_disruptions == 0),
+        crate::level::ObjectiveKind::ZeroWastedConnectors => progress
+            .workbench()
+            .is_some_and(|w| w.complete() && w.wasted_connectors == 0),
+        crate::level::ObjectiveKind::RepairNotReroute => progress
+            .intermittent()
+            .is_some_and(|i| i.repair_path_complete()),
+        crate::level::ObjectiveKind::ZeroWrongSelections => {
+            let ident_ok = progress.ident().is_some_and(|i| i.wrong_selections == 0);
+            let diagnosis_ok = match (&level.survey, progress.survey()) {
+                (Some(survey), Some(sp)) => match &survey.diagnosis {
+                    Some(def) => sp.diagnosis_correct(def) && !sp.trap_picked(def),
+                    None => true,
+                },
+                _ => true,
+            };
+            ident_ok && diagnosis_ok
+        }
+    }
+}
+
+/// The dual-stack acceptance line (§2f/§2g): one clause per family,
+/// each family's own verdict — IPv4 passing never verifies IPv6.
+/// The mixed case is the spec's exact sentence.
+pub fn dual_stack_line(level: &LevelDef, config: Option<&ConfigProgress>) -> Option<String> {
+    if level.static_config_v4.is_none() || level.static_config_v6.is_none() {
+        return None;
+    }
+    let passed =
+        |family: crate::level::ConfigFamily| config.is_some_and(|c| c.family_passed(family));
+    let v4 = passed(crate::level::ConfigFamily::V4);
+    let v6 = passed(crate::level::ConfigFamily::V6);
+    Some(match (v4, v6) {
+        (true, true) => "IPv4 passes; IPv6 passes — dual-stack verified.".to_string(),
+        (true, false) => "IPv4 passes; IPv6 has not yet been verified".to_string(),
+        (false, true) => "IPv4 has not yet been verified; IPv6 passes".to_string(),
+        (false, false) => {
+            "IPv4 has not yet been verified; IPv6 has not yet been verified".to_string()
+        }
+    })
+}
+
+/// The auto-filled closeout (§2g): complaint, initial observations,
+/// diagnosed fault with its evidence, changes made, and the final
+/// verification. The player confirms it on the results screen; the
+/// Documentation state passes only when every field is on record.
+#[derive(Debug, Clone, Default)]
+pub struct Closeout {
+    pub complaint: String,
+    pub initial_observations: String,
+    pub diagnosed_fault: String,
+    pub changes_made: String,
+    pub final_verification: String,
+}
+
+impl Closeout {
+    /// Every field on record (final verification excluded — it is
+    /// rendered from the results screen's own state vector).
+    pub fn documentation_ready(&self) -> bool {
+        !self.complaint.is_empty()
+            && !self.initial_observations.is_empty()
+            && !self.diagnosed_fault.is_empty()
+            && !self.changes_made.is_empty()
+    }
+
+    /// The rendered closeout block for the results screen.
+    pub fn render(&self) -> String {
+        format!(
+            "Closeout — complaint: {}\nInitial observations: {}\nDiagnosed fault: {}\n\
+             Changes made: {}\nFinal verification: {}",
+            self.complaint,
+            self.initial_observations,
+            self.diagnosed_fault,
+            self.changes_made,
+            self.final_verification
+        )
+    }
+}
+
+/// Assemble the closeout from the attempt record. Fields with no
+/// evidence stay empty — the Documentation state then honestly
+/// stays Pending instead of inventing a record.
+pub fn assemble_closeout(
+    level: &LevelDef,
+    telemetry: Option<&AttemptTelemetry>,
+    progress: &AstraProgress,
+) -> Closeout {
+    let mut out = Closeout {
+        complaint: format!("{} ({})", level.title, level.id),
+        ..Default::default()
+    };
+    let Some(t) = telemetry else {
+        return out;
+    };
+    out.initial_observations = if t.first_states_failures.is_empty() {
+        t.first_states_summary.clone().unwrap_or_default()
+    } else {
+        t.first_states_failures.join("; ")
+    };
+    // Diagnosed fault: the strongest evidence the attempt produced.
+    out.diagnosed_fault = if level.defective_edge.is_some()
+        && progress.jumper().is_some_and(|j| j.swapped)
+    {
+        "Degraded jumper in the plant — service noise floor raised; substituted with the \
+         bench-tested spare."
+            .to_string()
+    } else if level.intermittent.is_some() && progress.intermittent().is_some_and(|i| i.repaired) {
+        "Loose fitting on the primary run — tightened to the card and re-verified under \
+         disturbance."
+            .to_string()
+    } else if let (Some(survey), Some(sp)) = (&level.survey, progress.survey()) {
+        match &survey.diagnosis {
+            Some(def) if sp.diagnosis_correct(def) => {
+                format!(
+                    "Diagnosed from the survey history: {}",
+                    def.options[def.correct]
+                )
+            }
+            _ => String::new(),
+        }
+    } else if level.workbench.is_some()
+        && progress.workbench().is_some_and(|w| w.ends_completed > 0)
+    {
+        "Termination workmanship verified at the bench (inspection record on file).".to_string()
+    } else if level.static_config_v4.is_some() || level.static_config_v6.is_some() {
+        "Static configuration corrected to the assigned worksheet.".to_string()
+    } else {
+        String::new()
+    };
+    // Changes made: the attempt's action record.
+    let mut changes: Vec<String> = Vec::new();
+    if t.placement_revisions > 0 {
+        changes.push(format!("{} placement revision(s)", t.placement_revisions));
+    }
+    if progress.jumper().is_some_and(|j| j.swapped) {
+        changes.push("jumper substituted".to_string());
+    }
+    if let Some(wb) = progress.workbench() {
+        if wb.ends_completed > 0 {
+            changes.push(format!("{} bench end(s) terminated", wb.ends_completed));
+        }
+        if wb.wasted_connectors > 0 {
+            changes.push(format!("{} connector(s) wasted", wb.wasted_connectors));
+        }
+    }
+    if let Some(config) = progress.config() {
+        let applies: u32 = [
+            config.family(crate::level::ConfigFamily::V4),
+            config.family(crate::level::ConfigFamily::V6),
+        ]
+        .into_iter()
+        .flatten()
+        .map(|f| f.applies)
+        .sum();
+        if applies > 0 {
+            changes.push(format!("{applies} configuration apply(ies)"));
+        }
+    }
+    if progress.intermittent().is_some_and(|i| i.repaired) {
+        changes.push("loose fitting tightened".to_string());
+    }
+    out.changes_made = changes.join("; ");
+    out.final_verification = if t.verified_after_final_change {
+        "Passing evaluation observed after the final change.".to_string()
+    } else {
+        "No post-change verification observed.".to_string()
+    };
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::level::LEVEL_SOURCES;
+
+    fn load(id: &str) -> LevelDef {
+        LEVEL_SOURCES
+            .iter()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .find(|l: &LevelDef| l.id == id)
+            .unwrap()
+    }
+
+    #[derive(Resource, Default)]
+    struct BadgeResult(u8);
+
+    #[derive(Resource)]
+    struct WonFlag(bool);
+
+    fn eval_badges_system(
+        level: Res<LevelDef>,
+        won: Res<WonFlag>,
+        telemetry: Option<Res<AttemptTelemetry>>,
+        progress: AstraProgress,
+        mut out: ResMut<BadgeResult>,
+    ) {
+        out.0 = evaluate_badges(&level, won.0, telemetry.as_deref(), &progress);
+    }
+
+    fn badge_app(level_id: &str, won: bool) -> App {
+        let mut app = App::new();
+        app.insert_resource(load(level_id));
+        app.insert_resource(WonFlag(won));
+        app.init_resource::<BadgeResult>();
+        app.add_systems(Update, eval_badges_system);
+        app
+    }
+
+    #[test]
+    fn badges_never_award_on_a_failed_level() {
+        // Adversarial: a perfect evidence record on a loss earns
+        // nothing — the won=false arm is unconditional.
+        let mut app = badge_app("c1l5", false);
+        app.insert_resource(AttemptTelemetry {
+            observed_service_fail_before_swap: true,
+            verified_after_final_change: true,
+            ..Default::default()
+        });
+        app.insert_resource(crate::states::jumper::JumperProgress {
+            swapped: true,
+            compared: true,
+            swap_attempts: 1,
+        });
+        app.update();
+        assert_eq!(app.world().resource::<BadgeResult>().0, 0);
+    }
+
+    #[test]
+    fn evidence_led_swap_earns_diagnosis_and_verification() {
+        let mut app = badge_app("c1l5", true);
+        app.insert_resource(AttemptTelemetry {
+            observed_service_fail_before_swap: true,
+            verified_after_final_change: true,
+            ..Default::default()
+        });
+        app.insert_resource(crate::states::jumper::JumperProgress {
+            swapped: true,
+            compared: true,
+            swap_attempts: 1,
+        });
+        app.update();
+        let mask = app.world().resource::<BadgeResult>().0;
+        assert!(mask & BADGE_DIAGNOSIS != 0, "{mask:03b}");
+        assert!(mask & BADGE_VERIFICATION != 0, "{mask:03b}");
+    }
+
+    #[test]
+    fn swap_without_observed_failure_earns_no_diagnosis() {
+        // Swapping blind (no C3 moment observed first) is a guess,
+        // not a diagnosis.
+        let mut app = badge_app("c1l5", true);
+        app.insert_resource(AttemptTelemetry::default());
+        app.insert_resource(crate::states::jumper::JumperProgress {
+            swapped: true,
+            compared: false,
+            swap_attempts: 1,
+        });
+        app.update();
+        let mask = app.world().resource::<BadgeResult>().0;
+        assert_eq!(mask & BADGE_DIAGNOSIS, 0, "{mask:03b}");
+    }
+
+    #[test]
+    fn survey_diagnosis_pick_earns_diagnosis_but_the_trap_does_not() {
+        let level = load("m1l2");
+        let def = level.survey.as_ref().unwrap().diagnosis.as_ref().unwrap();
+        let mut app = badge_app("m1l2", true);
+        let mut survey = crate::states::survey::SurveyProgress::default();
+        assert!(survey.pick_diagnosis(def, def.correct));
+        app.insert_resource(survey);
+        app.insert_resource(AttemptTelemetry::default());
+        app.update();
+        assert!(app.world().resource::<BadgeResult>().0 & BADGE_DIAGNOSIS != 0);
+
+        let mut app = badge_app("m1l2", true);
+        let mut survey = crate::states::survey::SurveyProgress::default();
+        assert!(survey.pick_diagnosis(def, def.trap_option.unwrap()));
+        app.insert_resource(survey);
+        app.insert_resource(AttemptTelemetry::default());
+        app.update();
+        assert_eq!(app.world().resource::<BadgeResult>().0 & BADGE_DIAGNOSIS, 0);
+    }
+
+    #[test]
+    fn dual_stack_line_names_each_family_verdict() {
+        let level = load("m1l10");
+        assert!(level.static_config_v4.is_some() && level.static_config_v6.is_some());
+        // Nothing applied yet.
+        let progress = ConfigProgress::default();
+        assert_eq!(
+            dual_stack_line(&level, Some(&progress)).as_deref(),
+            Some("IPv4 has not yet been verified; IPv6 has not yet been verified")
+        );
+        // V4 passed only: the spec's exact sentence.
+        let mut seeded = ConfigProgress::default();
+        seeded.seed(&level);
+        let def = level.static_config_v4.as_ref().unwrap().clone();
+        let mut form = seeded.v4.take().unwrap();
+        form.address = def.worksheet_address.clone();
+        form.prefix_len = def.worksheet_prefix_len;
+        form.gateway = def.worksheet_gateway.clone();
+        form.dns = def.worksheet_dns.clone();
+        assert!(form.apply(&def).is_ok());
+        seeded.v4 = Some(form);
+        assert_eq!(
+            dual_stack_line(&level, Some(&seeded)).as_deref(),
+            Some("IPv4 passes; IPv6 has not yet been verified")
+        );
+        // Single-family levels have no dual-stack line.
+        let v4_only = load("m1l5");
+        assert_eq!(dual_stack_line(&v4_only, Some(&seeded)), None);
+    }
+
+    #[derive(Resource, Default)]
+    struct CloseoutResult(Option<Closeout>);
+
+    fn assemble_system(
+        level: Res<LevelDef>,
+        telemetry: Option<Res<AttemptTelemetry>>,
+        progress: AstraProgress,
+        mut out: ResMut<CloseoutResult>,
+    ) {
+        out.0 = Some(assemble_closeout(&level, telemetry.as_deref(), &progress));
+    }
+
+    #[test]
+    fn closeout_stays_unready_without_telemetry() {
+        // Fail-closed documentation: no attempt record, no
+        // Documentation pass — the evidence fields stay empty.
+        let mut app = App::new();
+        app.insert_resource(load("c1l1"));
+        app.init_resource::<CloseoutResult>();
+        app.add_systems(Update, assemble_system);
+        app.update();
+        let closeout = app
+            .world()
+            .resource::<CloseoutResult>()
+            .0
+            .clone()
+            .expect("assembled");
+        assert!(!closeout.documentation_ready());
+        assert!(
+            !closeout.complaint.is_empty(),
+            "the work order always names the job"
+        );
+    }
+}

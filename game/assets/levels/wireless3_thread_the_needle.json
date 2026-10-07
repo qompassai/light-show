@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "Linka's lesson: sometimes the window is all you've got. This link has no fade margin \u2014 the receive window is just 4 dB wide. Run the path loss for the 300 m hops at 2.4 GHz and pick the repeater that lands dead center. Close doesn't count.",
+  "briefing": "Linka's lesson: sometimes the window is all you've got. This link has no fade margin — the receive window is just 4 dB wide. Run the path loss for the 300 m hops at 2.4 GHz and pick the repeater that lands dead center. Close doesn't count. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -90,5 +90,6 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -68.0,
   "window_min_dbm": -72.0,
-  "world": 3
+  "world": 3,
+  "min_snr_db": 10.0
 }

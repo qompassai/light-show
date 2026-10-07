@@ -2,7 +2,7 @@
   "id": "c1l5",
   "title": "Ingress Returns",
   "world": 2,
-  "briefing": "Different night, same cracked shield. 500 meters of plant, 10 dB tap, headend at +38. The 5 dB amp starts you in window — but the noise floor is climbing a decibel every ten seconds. Watch the ledger and swap in more gain before it buries you.",
+  "briefing": "Different night, same cracked shield. 500 meters of plant, 10 dB tap, distribution point at +38. The 5 dB amp starts you in window — but the noise floor is climbing a decibel every ten seconds. Watch the ledger and swap in more gain before it buries you. Service acceptance for this G.fast drop: the carrier must land in the window with CNR at or above 25 dB against the −35 dBmV noise floor.",
   "medium": "Coax",
   "wavelength": "Nm1490",
   "tx_dbm": 38.0,
@@ -39,5 +39,7 @@
       "to": 2,
       "floor_penalty_dbmv": 36.0,
       "spare_label": "Bench-tested jumper J-5"
-  }
+  },
+  "coax_noise_floor_dbmv": -35.0,
+  "min_carrier_to_noise_db": 25.0
 }

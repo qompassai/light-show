@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "Night shift. The plant was balanced at dusk, but ingress noise is seeping in through a cracked shield \u2014 the noise floor is rising under your signal about a decibel every ten seconds. It starts in window on the 3 dB amp. Watch the ledger: when the floor climbs past your signal, swap in more gain before the timer runs out.",
+  "briefing": "Night shift. The plant was balanced at dusk, but ingress noise is seeping in through a cracked shield — the noise floor is rising under your signal about a decibel every ten seconds. It starts in window on the 3 dB amp. Watch the ledger: when the floor climbs past your signal, swap in more gain before the timer runs out. Service acceptance for this G.fast drop: the carrier must land in the window with CNR at or above 25 dB against the −35 dBmV noise floor.",
   "fixed_edges": [
     {
       "component": {
@@ -93,5 +93,7 @@
   "wavelength": "Nm1490",
   "window_max_dbm": 15.0,
   "window_min_dbm": 0.0,
-  "world": 2
+  "world": 2,
+  "coax_noise_floor_dbmv": -35.0,
+  "min_carrier_to_noise_db": 25.0
 }

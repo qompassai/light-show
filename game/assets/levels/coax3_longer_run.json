@@ -2,7 +2,7 @@
   "id": "c1l3",
   "title": "Longer Run",
   "world": 2,
-  "briefing": "800 meters of RG-6 between the headend and the tap — that's 44 dB of cable loss before the 8 dB tap even enters the picture. The headend is pushing +50 dBmV. Size the line amp so the customer lands in the [5, 12] window.",
+  "briefing": "800 meters of RG-6 between the distribution point and the tap — that's 44 dB of cable loss before the 8 dB tap even enters the picture. The distribution point is pushing +50 dBmV. Size the line amp so the customer lands in the [5, 12] window. Service acceptance for this G.fast drop: the carrier must land in the window with CNR at or above 25 dB against the −35 dBmV noise floor.",
   "medium": "Coax",
   "wavelength": "Nm1490",
   "tx_dbm": 50.0,
@@ -151,5 +151,7 @@
       ],
       "ends": 2,
       "workmanship_loss_db": 3.0
-  }
+  },
+  "coax_noise_floor_dbmv": -35.0,
+  "min_carrier_to_noise_db": 25.0
 }

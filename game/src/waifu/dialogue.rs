@@ -370,9 +370,21 @@ impl DialogueBank {
                 ],
             ),
             (
+                "tutorial_handoff_closeout",
+                &[
+                    "Last tech on site owns the story: verify the handoff at the demarc with the customer watching the same readings you are, then close the ticket out loud — complaint, what you found, what you changed, what you re-tested. A job isn't done when it works. It's done when the record proves it works.",
+                ],
+            ),
+            (
                 "tutorial_identification",
                 &[
                     "New bench rule: identify before you amplify. Attach the remote at the drop, test every candidate in the closet, and let the mapper — not a handwritten label — tell you which run is ours.",
+                ],
+            ),
+            (
+                "tutorial_service_vs_continuity",
+                &[
+                    "See it? Continuity's green, the level's in window — and service is failing anyway. Continuity is not service. A carrier can be loud and still drown in noise: read the CNR line on its own, not just the level line.",
                 ],
             ),
         ])
@@ -543,6 +555,12 @@ impl DialogueBank {
                 "tutorial_static_ipv6",
                 &[
                     "IPv6 adds one trap: a link-local gateway, fe80::, is only meaningful scoped to its interface. Right address, wrong interface, no route — the apply will tell you exactly that, in exactly those words.",
+                ],
+            ),
+            (
+                "tutorial_dual_stack",
+                &[
+                    "Dual-stack means two verdicts, always: IPv4 passing tells you nothing about IPv6. Run both families against their own worksheets, read both acceptance lines, and don't let a green v4 talk you out of checking v6.",
                 ],
             ),
             (

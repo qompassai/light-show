@@ -3140,6 +3140,156 @@ mod tests {
     }
 
     #[test]
+    fn astra_registry_card_data_matches_shipped_json() {
+        // §3.1 registry: across all 20 mapped coax/wireless levels,
+        // the acceptance fields are explicit in the JSON (never
+        // silently defaulted), the briefing states the acceptance
+        // numbers, and no briefing keeps CATV plant vocabulary
+        // (G.fast ruling: distribution point, not headend).
+        let raws: Vec<serde_json::Value> = LEVEL_SOURCES
+            .iter()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .collect();
+        let defs: Vec<LevelDef> = LEVEL_SOURCES
+            .iter()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .collect();
+        let mut coax = 0;
+        let mut wireless = 0;
+        for (raw, def) in raws.iter().zip(&defs) {
+            let is_coax = def.id.starts_with("c1l");
+            let is_wireless = def.id.starts_with("m1l");
+            if !is_coax && !is_wireless {
+                continue;
+            }
+            assert!(
+                !def.briefing.contains("headend") && !def.briefing.contains("Headend"),
+                "{} briefing keeps CATV vocabulary",
+                def.id
+            );
+            if is_coax {
+                coax += 1;
+                assert_eq!(
+                    raw["coax_noise_floor_dbmv"].as_f64(),
+                    Some(-35.0),
+                    "{}",
+                    def.id
+                );
+                assert_eq!(
+                    raw["min_carrier_to_noise_db"].as_f64(),
+                    Some(25.0),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    def.briefing.contains("25 dB"),
+                    "{} briefing must state CNR",
+                    def.id
+                );
+                assert!(
+                    def.briefing.contains("35 dBmV"),
+                    "{} briefing must state the floor",
+                    def.id
+                );
+            } else {
+                wireless += 1;
+                assert_eq!(raw["min_snr_db"].as_f64(), Some(10.0), "{}", def.id);
+                assert!(
+                    def.briefing.contains("10 dB"),
+                    "{} briefing must state SNR",
+                    def.id
+                );
+            }
+            // Card == JSON: every authored block is well-formed
+            // against the shipped data itself.
+            if let Some(ident) = &def.identification {
+                assert!(identification_is_well_formed(ident), "{}", def.id);
+            }
+            if let Some(inter) = &def.intermittent {
+                assert!(intermittent_is_well_formed(inter), "{}", def.id);
+            }
+            if let Some(wb) = &def.workbench {
+                assert!(!wb.card_title.is_empty(), "{}", def.id);
+                assert!(!wb.card_lines.is_empty(), "{}", def.id);
+                assert_eq!(wb.steps.len(), 10, "{}", def.id);
+                for step in &wb.steps {
+                    assert!(step.correct < step.options.len(), "{}", def.id);
+                }
+            }
+            for cfg in [&def.static_config_v4, &def.static_config_v6]
+                .into_iter()
+                .flatten()
+            {
+                assert!(
+                    cfg.address_candidates.contains(&cfg.worksheet_address),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    cfg.gateway_candidates.contains(&cfg.worksheet_gateway),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    cfg.dns_candidates.contains(&cfg.worksheet_dns),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    address_availability(cfg, &cfg.worksheet_address).is_ok(),
+                    "{} worksheet address must be available to its own device",
+                    def.id
+                );
+            }
+            if let Some(survey) = &def.survey {
+                assert!(!survey.points.is_empty(), "{}", def.id);
+                if let Some(d) = &survey.diagnosis {
+                    assert!(d.correct < d.options.len(), "{}", def.id);
+                }
+            }
+        }
+        assert_eq!(coax, 10);
+        assert_eq!(wireless, 10);
+    }
+
+    #[test]
+    fn m1l10_capstone_survey_gates_on_the_measured_winner() {
+        // Measured on the shipped data: the 25 dBm repeater reads
+        // -78.28 dBm / SNR 16.72 at Site B and passes every point;
+        // the amplifier trap fails the survey outright.
+        let level: LevelDef = LEVEL_SOURCES
+            .iter()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .find(|l: &LevelDef| l.id == "m1l10")
+            .unwrap();
+        assert!(level.handoff_required == false);
+        let winner = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 25.0))
+            .unwrap();
+        let graph = graph_with_single_placement(&level, winner);
+        assert!(crate::astra::survey_gate_pass(
+            &level,
+            &graph,
+            level.tx_dbm,
+            None
+        ));
+        let trap = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { .. }))
+            .unwrap();
+        let graph = graph_with_single_placement(&level, trap);
+        assert!(!crate::astra::survey_gate_pass(
+            &level,
+            &graph,
+            level.tx_dbm,
+            None
+        ));
+    }
+
+    #[test]
     fn verification_states_merge_mechanic_lines_in_fixed_order() {
         let level = load_level(10);
         let amp = level

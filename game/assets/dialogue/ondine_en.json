@@ -93,5 +93,11 @@
   ],
   "tutorial_intermittent": [
     "A drop that blinks when the cabinet's disturbed isn't a signal problem — it's a connection moving. Don't chase gain. Reproduce it, inspect the run, tighten the loose one to the card, then disturb it again and make it prove it holds. Rerouting around a loose fitting just schedules the callback."
+  ],
+  "tutorial_handoff_closeout": [
+    "Last tech on site owns the story: verify the handoff at the demarc with the customer watching the same readings you are, then close the ticket out loud — complaint, what you found, what you changed, what you re-tested. A job isn't done when it works. It's done when the record proves it works."
+  ],
+  "tutorial_service_vs_continuity": [
+    "See it? Continuity's green, the level's in window — and service is failing anyway. Continuity is not service. A carrier can be loud and still drown in noise: read the CNR line on its own, not just the level line."
   ]
 }

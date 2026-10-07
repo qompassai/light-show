@@ -24,13 +24,28 @@ use bevy::prelude::*;
 pub struct ResultsPersistence<'w> {
     pub save: Option<ResMut<'w, crate::save::SaveData>>,
     pub loadout: Option<Res<'w, crate::warehouse::Loadout>>,
+    pub closeout: Option<ResMut<'w, CloseoutConfirmed>>,
+    /// Attempt telemetry rides here, not in `AstraProgress`: the
+    /// astra watcher holds it mutably, and a bundle read would
+    /// conflict (B0002).
+    pub telemetry: Option<Res<'w, crate::astra::AttemptTelemetry>>,
 }
+
+/// Astra §2g: the player has confirmed the auto-filled closeout.
+/// Reset by `show_results` on every results screen.
+#[derive(Resource, Default)]
+pub(crate) struct CloseoutConfirmed(pub bool);
+
+/// Marker for the closeout confirmation status text.
+#[derive(Component)]
+struct CloseoutStatusText;
 
 pub struct ResultsPlugin;
 
 impl Plugin for ResultsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(WinRingTimer::default());
+        app.init_resource::<CloseoutConfirmed>();
         app.add_systems(
             OnEnter(GameState::Results),
             (board::teardown_board, show_results),
@@ -41,6 +56,7 @@ impl Plugin for ResultsPlugin {
                 handle_result_buttons,
                 animate_win_ring,
                 animate_result_entrances,
+                refresh_closeout_status,
             )
                 .run_if(in_state(GameState::Results)),
         )
@@ -57,6 +73,8 @@ pub(crate) enum ResultAction {
     ContinueNextLevel,
     RetrySameLevel,
     ReturnToMenu,
+    /// Confirm the auto-filled closeout block (Astra §2g).
+    ConfirmCloseout,
     /// At the end of a companion's track: back to the discipline picker
     /// so the player can start another medium's track.
     ReturnToSelect,
@@ -288,19 +306,49 @@ fn show_results(
     // clear adds `FIRST_CLEAR_CORES`, and the Loadout's `cores_mult`
     // (golden crimper) scales the whole award.
     const CORES_PER_WIN: u32 = 10;
+    // Astra §2g: a fresh results screen starts with an unconfirmed
+    // closeout.
+    if let Some(mut closeout_flag) = persistence.closeout {
+        closeout_flag.0 = false;
+    }
+    let mut badge_line: Option<String> = None;
+    let mut objective_line: Option<String> = None;
     if outcome.won {
         // Persist progression: a win records the level; cores syncs to
         // the save via SavePlugin's change-detected system.
         let mut first_clear = false;
+        // Badges are evaluated from the attempt record (never on a
+        // loss — this block only runs on a win) and merged into the
+        // save through the same first-clear SaveRequest path.
+        let earned =
+            crate::astra::evaluate_badges(&level, true, persistence.telemetry.as_deref(), &astra);
         if let (Some(mut save), Some(mut writer)) = (persistence.save, save_writer) {
             first_clear = save.complete_level(&level.id);
-            if first_clear {
+            let badges_changed = save.record_badges(&level.id, earned);
+            if first_clear || badges_changed {
                 writer.write(crate::save::SaveRequest);
             }
+        }
+        if earned != 0 {
+            badge_line = Some(format!(
+                "Badges earned: {}",
+                crate::astra::badge_names(earned).join(" · ")
+            ));
         }
         let cores_mult = persistence.loadout.map_or(1.0, |l| l.cores_mult);
         let award = crate::warehouse::win_cores(CORES_PER_WIN, first_clear, cores_mult);
         cores.0 = cores.0.saturating_add(award);
+        // Optional objectives pay flat Cores — unmultiplied, like
+        // salvage (the Loadout multiplier never touches them).
+        if let Some(objective) = &level.optional_objective {
+            if crate::astra::objective_met(&level, &astra) {
+                cores.0 = cores.0.saturating_add(objective.cores);
+                objective_line = Some(format!(
+                    "Optional objective complete: {} (+{} cores)",
+                    objective.description, objective.cores
+                ));
+            }
+        }
     }
 
     let ledger_text = level.signal_ledger(
@@ -313,7 +361,23 @@ fn show_results(
     // Astra §2a: the results screen renders the same verification
     // vector as the live ledger — per-state verdicts plus each
     // failing state's own feedback line.
-    let mechanics = crate::astra::mechanic_states(&level, &astra);
+    let mut mechanics = crate::astra::mechanic_states(&level, &astra);
+    // Astra §2g: the closeout is assembled from the attempt record;
+    // its Documentation state joins the same vector. It passes only
+    // on a win with every field on record (fail-closed otherwise).
+    let mut closeout =
+        crate::astra::assemble_closeout(&level, persistence.telemetry.as_deref(), &astra);
+    if outcome.won && closeout.documentation_ready() {
+        mechanics.documentation = Some((
+            crate::level::StateStatus::Pass,
+            "Documentation passes — the closeout is complete and ready to confirm.".to_string(),
+        ));
+    } else {
+        mechanics.documentation = Some((
+            crate::level::StateStatus::Pending,
+            "Documentation pending — the closeout is incomplete.".to_string(),
+        ));
+    }
     let state_lines = level.verification_states(
         &live.graph,
         live.tx_dbm,
@@ -325,6 +389,27 @@ fn show_results(
     for failure in crate::level::states_failures(&state_lines) {
         states_text.push_str(&format!("\n{failure}"));
     }
+    closeout.final_verification = format!(
+        "{} Re-tested after the final change: {}.",
+        crate::level::states_summary(&state_lines),
+        if persistence
+            .telemetry
+            .as_deref()
+            .is_some_and(|t| t.verified_after_final_change)
+        {
+            "yes"
+        } else {
+            "no"
+        }
+    );
+    let closeout_text = if outcome.won {
+        Some(closeout.render())
+    } else {
+        None
+    };
+    // Astra §2f: on dual-stack levels the acceptance line names
+    // each family's own verdict.
+    let dual_stack_text = crate::astra::dual_stack_line(&level, astra.config());
 
     let (banner_text, banner_color) = if outcome.won {
         ("SERVICE RESTORED", Color::srgb(0.4, 0.9, 0.5))
@@ -544,6 +629,58 @@ fn show_results(
                     TextLayout::justify(Justify::Center),
                 ));
             }
+            // Astra §2g lines: badges, the optional objective, the
+            // per-family acceptance line, and the closeout block.
+            for line in [&badge_line, &objective_line, &dual_stack_text]
+                .into_iter()
+                .flatten()
+            {
+                let color = Color::srgb(0.85, 0.8, 0.55);
+                parent.spawn((
+                    ResultEntrance {
+                        delay_secs: ENTRANCE_LEDGER_DELAY,
+                        elapsed_secs: 0.0,
+                        kind: EntranceKind::FadeIn { original: color },
+                    },
+                    Text::new(line.clone()),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::BODY).into(),
+                        font_size: FontSize::Px(16.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(color.with_alpha(0.0)),
+                    TextLayout::justify(Justify::Center),
+                ));
+            }
+            if let Some(text) = &closeout_text {
+                let color = Color::srgb(0.62, 0.68, 0.78);
+                parent.spawn((
+                    ResultEntrance {
+                        delay_secs: ENTRANCE_LEDGER_DELAY,
+                        elapsed_secs: 0.0,
+                        kind: EntranceKind::FadeIn { original: color },
+                    },
+                    Text::new(text.clone()),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::BODY).into(),
+                        font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(color.with_alpha(0.0)),
+                    TextLayout::justify(Justify::Center),
+                ));
+                parent.spawn((
+                    CloseoutStatusText,
+                    Text::new("Closeout: awaiting your confirmation."),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::BODY).into(),
+                        font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.85, 0.8, 0.55)),
+                    TextLayout::justify(Justify::Center),
+                ));
+            }
 
             {
                 // The row starts 20px lower (via top margin) with transparent
@@ -569,6 +706,11 @@ fn show_results(
                         button_fades.push((entity, color));
                     };
                     if outcome.won {
+                        push_button(
+                            ResultAction::ConfirmCloseout,
+                            "Confirm Closeout",
+                            Color::srgb(0.2, 0.45, 0.3),
+                        );
                         if has_next_level {
                             push_button(
                                 ResultAction::ContinueNextLevel,
@@ -648,6 +790,7 @@ fn handle_result_buttons(
     mut request: ResMut<TransitionRequest>,
     sfx: Res<crate::audio::Sfx>,
     selected: Res<SelectedCompanion>,
+    mut closeout: Option<ResMut<CloseoutConfirmed>>,
 ) {
     for (interaction, action) in &interactions {
         if *interaction != Interaction::Pressed {
@@ -655,6 +798,11 @@ fn handle_result_buttons(
         }
         sfx.play(&mut commands, crate::audio::SfxKind::Click);
         match action {
+            ResultAction::ConfirmCloseout => {
+                if let Some(flag) = closeout.as_deref_mut() {
+                    flag.0 = true;
+                }
+            }
             ResultAction::ContinueNextLevel => {
                 let indices = selected.0.track_indices();
                 if let Some(pos) = indices.iter().position(|&i| i == index.0) {
@@ -674,6 +822,24 @@ fn handle_result_buttons(
             ResultAction::ReturnToSelect => {
                 request.0 = Some(GameState::CompanionSelect);
             }
+        }
+    }
+}
+
+/// Reflect the closeout confirmation in its status line.
+fn refresh_closeout_status(
+    closeout: Option<Res<CloseoutConfirmed>>,
+    mut query: Query<&mut Text, With<CloseoutStatusText>>,
+) {
+    let confirmed = closeout.is_some_and(|c| c.0);
+    for mut text in &mut query {
+        let want = if confirmed {
+            "Closeout: CONFIRMED — good work. The next tech inherits a record, not a rumor."
+        } else {
+            "Closeout: awaiting your confirmation."
+        };
+        if text.0 != want {
+            text.0 = want.to_string();
         }
     }
 }
