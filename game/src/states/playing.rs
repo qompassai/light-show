@@ -12,7 +12,7 @@ use crate::test_log;
 use crate::waifu::trigger_mood_pop;
 use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
+use bevy::window::{PrimaryWindow, WindowResized};
 use osp_sim::{Outage, PathGraph, Wavelength};
 
 pub struct PlayingPlugin;
@@ -62,6 +62,7 @@ impl Plugin for PlayingPlugin {
                     board::move_signal_pulses,
                     board::sync_fiber_flows,
                     board::update_storm_rain,
+                    refit_framing_on_resize,
                 )
                     .run_if(
                         in_state(GameState::Playing).or_else(in_state(GameState::OutageActive)),
@@ -194,6 +195,75 @@ fn restore_home_framing(
     }
 }
 
+/// Starts (or retargets) the camera glide to `framing` from the
+/// camera's current pose. Shared by level entry (`setup_level`) and
+/// mid-level window resizes (`refit_framing_on_resize`) so both
+/// ease identically.
+fn glide_camera_to(
+    commands: &mut Commands,
+    entity: Entity,
+    transform: &Transform,
+    projection: &Projection,
+    framing: board::BoardFraming,
+) {
+    let from_scale = match projection {
+        Projection::Orthographic(ortho) => ortho.scale,
+        _ => 1.0,
+    };
+    commands.entity(entity).insert(CameraLerp {
+        from: transform.translation,
+        to: Vec3::new(framing.center.x, framing.center.y, 0.0),
+        from_scale,
+        to_scale: framing.scale,
+        elapsed_secs: 0.0,
+    });
+}
+
+/// Re-frames the board when the window is resized mid-level (or the
+/// phone rotates): `setup_level` framed for the window at entry,
+/// and without this the board would keep that framing — nodes
+/// sliding off a shrunken window, or a board stranded small in a
+/// grown one. Only the latest event of a drag-resize stream
+/// matters; the recompute is skipped when the level's fit framing
+/// for the new size is the framing already in effect.
+fn refit_framing_on_resize(
+    mut commands: Commands,
+    // `Option`: headless harnesses build `PlayingPlugin` without
+    // the window plugin that initializes this message; there are
+    // no resizes to react to there, so the system stands down
+    // instead of panicking on an uninitialized message.
+    mut resized: Option<MessageReader<WindowResized>>,
+    windows: Query<Entity, With<PrimaryWindow>>,
+    cameras: Query<(Entity, &Transform, &Projection), With<Camera>>,
+    index: Res<CurrentLevelIndex>,
+) {
+    let Some(resized) = resized.as_mut() else {
+        return;
+    };
+    let Some(event) = resized.read().last() else {
+        return;
+    };
+    if windows.single().ok() != Some(event.window) {
+        return;
+    }
+    let Ok((entity, transform, projection)) = cameras.single() else {
+        return;
+    };
+    let level_def = level::load_level(index.0);
+    let framing = board::board_framing(&level_def, Vec2::new(event.width, event.height));
+    let current_scale = match projection {
+        Projection::Orthographic(ortho) => ortho.scale,
+        _ => 1.0,
+    };
+    let target = Vec3::new(framing.center.x, framing.center.y, 0.0);
+    if (framing.scale - current_scale).abs() <= 0.001
+        && transform.translation.distance_squared(target) <= 1.0
+    {
+        return;
+    }
+    glide_camera_to(&mut commands, entity, transform, projection, framing);
+}
+
 #[allow(clippy::too_many_arguments)]
 fn setup_level(
     mut commands: Commands,
@@ -230,17 +300,7 @@ fn setup_level(
     // framing (now the level's fit framing: center + zoom).
     match cameras.single() {
         Ok((entity, transform, projection)) => {
-            let from_scale = match projection {
-                Projection::Orthographic(ortho) => ortho.scale,
-                _ => 1.0,
-            };
-            commands.entity(entity).insert(CameraLerp {
-                from: transform.translation,
-                to: cam_target,
-                from_scale,
-                to_scale: framing.scale,
-                elapsed_secs: 0.0,
-            });
+            glide_camera_to(&mut commands, entity, transform, projection, framing);
         }
         Err(_) => {
             // Defensive: no camera exists (the menu always spawns one, so

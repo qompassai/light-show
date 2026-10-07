@@ -14,9 +14,10 @@ use super::GameState;
 use crate::anim::TransitionRequest;
 use crate::audio::SfxKind;
 use crate::fonts::{BODY, BODY_MEDIUM, DISPLAY_BOLD, FONT_SIZE_ADJUST};
+use crate::responsive::ArtBackdrop;
 use crate::save::SaveData;
-use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD, NEON_INK};
-use crate::ui::{styled_button, ButtonPalette, BUTTON_BORDER};
+use crate::ui::neon::{NEON_CYAN, NEON_DIM, NEON_GOLD, NEON_INK, NeonText, spawn_neon_text};
+use crate::ui::{BUTTON_BORDER, ButtonPalette, styled_button};
 use crate::waifu::Cores;
 use crate::warehouse::{self as wh, HostId, Loadout, PurchaseError, QuizQuestion, QuizReward};
 use bevy::prelude::*;
@@ -477,7 +478,13 @@ fn rebuild_screen(
                     height: Val::Percent(100.0),
                     ..default()
                 },
-                ImageNode::new(asset_server.load(backdrop_path)),
+                // Cover-fitted by the responsive system: the pool
+                // art is landscape (2096x1184) and the design window
+                // is portrait, so the default contain fit used to
+                // paint it as a band across the middle of the
+                // screen with flat color above and below.
+                ImageNode::new(asset_server.load(backdrop_path)).with_mode(NodeImageMode::Stretch),
+                ArtBackdrop::fixed(),
             ));
             root.spawn((
                 Node {

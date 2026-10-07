@@ -16,6 +16,7 @@ use super::GameState;
 use crate::anim::TransitionRequest;
 use crate::board;
 use crate::cheat_codes::UnlockedSpecialists;
+use crate::responsive::ArtBackdrop;
 use crate::save::SaveData;
 use crate::shaders::{AtmosphereMaterial, AtmosphereSettings};
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
@@ -312,8 +313,11 @@ fn setup_menu(
             // flow), so it paints behind everything below. It carries the
             // "LIGHT SHOW" title baked into its center, which is why the
             // old Aseprite title logo is gone — showing both would double
-            // the title. The art is used exactly as shipped: no crop, no
-            // recomposition (Matt's art decision, 2026-10-06).
+            // the title. The art file itself is used exactly as
+            // shipped — no recomposition (Matt's art decision,
+            // 2026-10-06); `ArtBackdrop` cover-fits its node to the
+            // real window (and swaps in the landscape variant on
+            // wide windows), which is a display fit, not an edit.
             parent.spawn((
                 Node {
                     position_type: PositionType::Absolute,
@@ -321,7 +325,9 @@ fn setup_menu(
                     height: Val::Percent(100.0),
                     ..default()
                 },
-                ImageNode::new(asset_server.load("sprites/ui/title_artwork.png")),
+                ImageNode::new(asset_server.load("sprites/ui/title_artwork.png"))
+                    .with_mode(NodeImageMode::Stretch),
+                ArtBackdrop::title(),
             ));
             // Dim/vignette layer over the artwork (the art itself is not
             // edited): enough darkening for the item column to read at a

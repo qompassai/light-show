@@ -12,13 +12,16 @@ mod bench;
 mod board;
 pub mod cheat_codes;
 mod fonts;
-mod salvage;
 #[cfg(debug_assertions)]
 mod footage;
 mod fx;
 pub mod level;
 #[cfg(test)]
 mod playthrough;
+#[cfg(debug_assertions)]
+mod rendercheck;
+mod responsive;
+mod salvage;
 pub mod save;
 pub mod shaders;
 mod states;
@@ -122,6 +125,20 @@ fn log_render_backend_once(
     }
 }
 
+/// The window size requested at creation, by platform family:
+/// phones present portrait, desktops landscape. This is only the
+/// creation request — Android replaces it with the device surface,
+/// a desktop user can resize freely, and every screen re-fits to
+/// the real window (see `responsive`), so nothing downstream may
+/// assume this size.
+fn initial_window_resolution() -> (u32, u32) {
+    if cfg!(target_os = "android") {
+        (720, 1280)
+    } else {
+        (1280, 720)
+    }
+}
+
 /// `asset_root` is the absolute directory assets load from; on desktop it
 /// replaces Bevy's exe-relative default so an installed binary finds them.
 fn build_app(asset_root: std::path::PathBuf) -> App {
@@ -130,12 +147,22 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     let bench_args = bench::BenchArgs::from_args();
     #[cfg(debug_assertions)]
     let footage_args = footage::FootageArgs::from_args();
+    #[cfg(debug_assertions)]
+    let rendercheck_args = rendercheck::RenderCheckArgs::from_args();
+    // `--render-size` (debug render-check harness only) overrides the
+    // creation size so rendered-frame checks can run at the dimension
+    // matrix; normal runs get the platform-family size.
+    let mut primary_window = Window {
+        title: "Light Show".into(),
+        resolution: initial_window_resolution().into(),
+        ..default()
+    };
+    #[cfg(debug_assertions)]
+    if let Some((render_w, render_h)) = rendercheck_args.size {
+        primary_window.resolution = (render_w, render_h).into();
+    }
     let plugins = DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            title: "Light Show".into(),
-            resolution: (720, 1280).into(),
-            ..default()
-        }),
+        primary_window: Some(primary_window),
         ..default()
     });
     // An absolute `file_path` replaces Bevy's base path when joined.
@@ -187,7 +214,8 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
         .add_plugins(ui::ButtonStylePlugin)
         .add_plugins(anim::AnimPlugin)
         .add_plugins(audio::MusicPlugin)
-        .add_plugins(audio::SfxPlugin);
+        .add_plugins(audio::SfxPlugin)
+        .add_plugins(responsive::ResponsivePlugin);
     // Bench driver (synthetic input + frame timing + auto-exit). Not
     // installed for normal runs: zero overhead when the flag is absent.
     #[cfg(debug_assertions)]
@@ -199,6 +227,13 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     #[cfg(debug_assertions)]
     if let Some(ref level_id) = footage_args.level_id {
         footage::add_footage_systems(&mut app, level_id, footage_args.frames);
+    }
+    // Render-check driver (screenshot capture at a forced window
+    // size). Not installed for normal runs: zero overhead when the
+    // flag is absent.
+    #[cfg(debug_assertions)]
+    if rendercheck_args.target.is_some() {
+        rendercheck::add_rendercheck_systems(&mut app, &rendercheck_args);
     }
     // The render sub-app only exists once `RenderPlugin` has built; without
     // it there is no adapter to log. The system one-shots itself via a

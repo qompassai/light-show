@@ -8,12 +8,13 @@
 use super::GameState;
 use crate::anim::TransitionRequest;
 use crate::cheat_codes::{
-    code_word_to_companion, CodeWordBuffer, KonamiState, UnlockedSpecialists,
+    CodeWordBuffer, KonamiState, UnlockedSpecialists, code_word_to_companion,
 };
 use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::CurrentLevelIndex;
-use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
-use crate::ui::{styled_button, ButtonPalette, BUTTON_BORDER};
+use crate::responsive::ArtBackdrop;
+use crate::ui::neon::{NEON_CYAN, NEON_DIM, NEON_GOLD, NeonText, spawn_neon_text};
+use crate::ui::{BUTTON_BORDER, ButtonPalette, styled_button};
 use crate::waifu::{Companion, SelectedCompanion};
 use bevy::prelude::*;
 
@@ -213,7 +214,9 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
         .with_children(|parent| {
             // Keeper title artwork as a dimmed backdrop: same title card,
             // one step deeper. Absolutely positioned out of the flex flow
-            // so it paints behind the cards.
+            // so it paints behind the cards. `ArtBackdrop` cover-fits it
+            // to the real window (the default contain fit is what left
+            // the flat "black corners" at non-design aspects).
             parent.spawn((
                 Node {
                     position_type: PositionType::Absolute,
@@ -221,7 +224,9 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
                     height: Val::Percent(100.0),
                     ..default()
                 },
-                ImageNode::new(asset_server.load("sprites/ui/title_artwork.png")),
+                ImageNode::new(asset_server.load("sprites/ui/title_artwork.png"))
+                    .with_mode(NodeImageMode::Stretch),
+                ArtBackdrop::title(),
             ));
             // Darkens the artwork so the cards pop; translucent so the
             // night city still reads through. Dark enough that the
@@ -312,6 +317,9 @@ fn spawn_companion_card(
             Button,
             Node {
                 width: Val::Px(620.0),
+                // On windows narrower than the design width the card
+                // yields to the window instead of clipping off-screen.
+                max_width: Val::Percent(92.0),
                 padding: UiRect::axes(Val::Px(20.0), Val::Px(12.0)),
                 flex_direction: FlexDirection::Row,
                 align_items: AlignItems::Center,
