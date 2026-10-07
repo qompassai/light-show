@@ -102,6 +102,7 @@ fn playthrough_app() -> App {
     app.init_resource::<crate::states::survey::SurveyProgress>();
     app.init_resource::<crate::states::workbench::WorkbenchProgress>();
     app.init_resource::<crate::states::workbench::HandoffProgress>();
+    app.init_resource::<crate::states::config_console::ConfigProgress>();
     app.init_resource::<crate::astra::AttemptTelemetry>();
     app.add_plugins((
         MenuPlugin,
@@ -905,6 +906,7 @@ fn playthrough_app_with_full_ui() -> App {
         crate::states::jumper::JumperConsolePlugin,
         crate::states::survey::SurveyConsolePlugin,
         crate::states::workbench::WorkbenchConsolePlugin,
+        crate::states::config_console::ConfigConsolePlugin,
         crate::astra::AstraPlugin,
         crate::waifu::dialogue_ui::DialogueUiPlugin,
     ));

@@ -90,5 +90,53 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -75.0,
   "window_min_dbm": -80.0,
-  "world": 4
+  "world": 4,
+  "static_config_v6":   {
+      "family": "V6",
+      "device_label": "Office printer",
+      "worksheet_address": "2001:db8:40:1::20",
+      "worksheet_prefix_len": 64,
+      "worksheet_gateway": "fe80::1",
+      "worksheet_gateway_interface": "business-lan",
+      "worksheet_dns": "2001:db8:40:1::53",
+      "interfaces": [
+          "business-lan",
+          "management",
+          "guest-wifi"
+      ],
+      "allocations": [
+          {
+              "address": "2001:db8:40:1::20",
+              "holder": "Office printer"
+          },
+          {
+              "address": "2001:db8:40:1::25",
+              "holder": "Label printer"
+          }
+      ],
+      "initial_address": "2001:db8:40:1::20",
+      "initial_prefix_len": 64,
+      "initial_gateway": "fe80::1",
+      "initial_gateway_interface": "management",
+      "initial_dns": "2001:db8:40:1::53",
+      "address_candidates": [
+          "2001:db8:40:1::20",
+          "2001:db8:40:1::25",
+          "2001:db8:40:1::105"
+      ],
+      "prefix_candidates": [
+          64,
+          48
+      ],
+      "gateway_candidates": [
+          "fe80::1",
+          "2001:db8:40:1::1",
+          "fe80::2"
+      ],
+      "dns_candidates": [
+          "2001:db8:40:1::53",
+          "2001:4860:4860::8888",
+          "2001:db8:40:1::1"
+      ]
+  }
 }

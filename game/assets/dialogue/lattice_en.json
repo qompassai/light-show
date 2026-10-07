@@ -81,5 +81,8 @@
   ],
   "workmanship_defect": [
     "That termination failed inspection. A bad crimp passes a tug and fails a certifier — rebuild it and certify it."
+  ],
+  "config_mismatch": [
+    "Rejected at apply. Check the inventory before the pool, and the worksheet before both — that's the order the network believes."
   ]
 }

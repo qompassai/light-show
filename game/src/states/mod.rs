@@ -3,6 +3,7 @@
 
 pub mod api_console;
 pub mod companion_select;
+pub mod config_console;
 pub mod credits;
 pub mod identification;
 pub mod jumper;

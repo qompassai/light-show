@@ -87,5 +87,14 @@
   ],
   "workmanship_defect": [
     "A defect went live in that termination. In RF that's a return-loss story — rebuild it and re-measure; hope isn't a test set."
+  ],
+  "config_mismatch": [
+    "Rejected. Read the verdict, not your hopes: one field disagrees with the worksheet. Availability comes from the inventory — the DHCP pool is a rumor, not a rule."
+  ],
+  "tutorial_static_ipv4": [
+    "Static IPv4, worksheet discipline: the assigned address is the one in the inventory under the printer's name. In the DHCP pool doesn't mean available, and out of the pool doesn't mean free — the inventory is the only truth. Gateway and DNS come off the same sheet."
+  ],
+  "tutorial_static_ipv6": [
+    "IPv6 adds one trap: a link-local gateway, fe80::, is only meaningful scoped to its interface. Right address, wrong interface, no route — the apply will tell you exactly that, in exactly those words."
   ]
 }

@@ -81,5 +81,8 @@
   ],
   "workmanship_defect": [
     "The inspection found a defect in the finished end. Precision is the job — rebuild it to the card, not to memory."
+  ],
+  "config_mismatch": [
+    "Apply rejected. A configuration is a budget like any other: every field accounted, or it doesn't close."
   ]
 }

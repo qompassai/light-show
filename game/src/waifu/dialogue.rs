@@ -196,6 +196,12 @@ impl DialogueBank {
                     "The inspection found a defect in the finished end. Precision is the job — rebuild it to the card, not to memory.",
                 ],
             ),
+            (
+                "config_mismatch",
+                &[
+                    "Apply rejected. A configuration is a budget like any other: every field accounted, or it doesn't close.",
+                ],
+            ),
         ])
     }
 
@@ -343,6 +349,12 @@ impl DialogueBank {
                 "workmanship_defect",
                 &[
                     "Inspection caught what your eyes waved through. A defect you ship is a callback you schedule — rebuild the end and test it like you mean it.",
+                ],
+            ),
+            (
+                "config_mismatch",
+                &[
+                    "Rejected at apply. Out here the worksheet is the tone sheet — the value on paper is the value that ships, not the one that looks close.",
                 ],
             ),
             (
@@ -510,6 +522,24 @@ impl DialogueBank {
                 ],
             ),
             (
+                "config_mismatch",
+                &[
+                    "Rejected. Read the verdict, not your hopes: one field disagrees with the worksheet. Availability comes from the inventory — the DHCP pool is a rumor, not a rule.",
+                ],
+            ),
+            (
+                "tutorial_static_ipv4",
+                &[
+                    "Static IPv4, worksheet discipline: the assigned address is the one in the inventory under the printer's name. In the DHCP pool doesn't mean available, and out of the pool doesn't mean free — the inventory is the only truth. Gateway and DNS come off the same sheet.",
+                ],
+            ),
+            (
+                "tutorial_static_ipv6",
+                &[
+                    "IPv6 adds one trap: a link-local gateway, fe80::, is only meaningful scoped to its interface. Right address, wrong interface, no route — the apply will tell you exactly that, in exactly those words.",
+                ],
+            ),
+            (
                 "tutorial_history_diagnosis",
                 &[
                     "Read the history like a tech, not a fortune-teller: same RSSI then and now, SNR down — the signal didn't move, the noise did. That's interference, every time.",
@@ -668,6 +698,12 @@ impl DialogueBank {
                 "workmanship_defect",
                 &[
                     "That termination failed inspection. A bad crimp passes a tug and fails a certifier — rebuild it and certify it.",
+                ],
+            ),
+            (
+                "config_mismatch",
+                &[
+                    "Rejected at apply. Check the inventory before the pool, and the worksheet before both — that's the order the network believes.",
                 ],
             ),
         ])

@@ -178,10 +178,13 @@ pub enum ReactionTrigger {
     /// An uncaught workbench defect went live (Astra §2e). Fired by
     /// the workbench console when the defective end completes.
     WorkmanshipDefect,
+    /// A static-config Apply was rejected (Astra §2f). Fires only
+    /// on Linka's track.
+    ConfigMismatch,
 }
 
 impl ReactionTrigger {
-    pub const ALL: [ReactionTrigger; 13] = [
+    pub const ALL: [ReactionTrigger; 14] = [
         ReactionTrigger::FirstPlacement,
         ReactionTrigger::SegmentComplete,
         ReactionTrigger::TooHot,
@@ -195,6 +198,7 @@ impl ReactionTrigger {
         ReactionTrigger::SurveyPointFail,
         ReactionTrigger::DiagnosisWrong,
         ReactionTrigger::WorkmanshipDefect,
+        ReactionTrigger::ConfigMismatch,
     ];
 }
 
@@ -216,6 +220,7 @@ pub fn trigger_spec(trigger: ReactionTrigger) -> (&'static str, Emotion) {
         ReactionTrigger::SurveyPointFail => ("survey_point_fail", Emotion::Worried),
         ReactionTrigger::DiagnosisWrong => ("diagnosis_wrong", Emotion::Annoyed),
         ReactionTrigger::WorkmanshipDefect => ("workmanship_defect", Emotion::Annoyed),
+        ReactionTrigger::ConfigMismatch => ("config_mismatch", Emotion::Annoyed),
     }
 }
 

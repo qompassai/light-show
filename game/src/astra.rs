@@ -16,6 +16,7 @@ use osp_sim::Component;
 
 use crate::board::PlacedChoices;
 use crate::level::{state_line, LevelDef, MechanicStates, StateId, StateStatus};
+use crate::states::config_console::ConfigProgress;
 use crate::states::identification::{identity_state, IdentificationProgress};
 use crate::states::jumper::JumperProgress;
 use crate::states::outage::ActiveOutage;
@@ -37,6 +38,7 @@ pub struct AstraProgress<'w> {
     pub survey: Option<Res<'w, SurveyProgress>>,
     pub workbench: Option<Res<'w, WorkbenchProgress>>,
     pub handoff: Option<Res<'w, HandoffProgress>>,
+    pub config: Option<Res<'w, ConfigProgress>>,
 }
 
 impl AstraProgress<'_> {
@@ -63,6 +65,11 @@ impl AstraProgress<'_> {
     /// The handoff progress, when the resource exists.
     pub fn handoff(&self) -> Option<&HandoffProgress> {
         self.handoff.as_deref()
+    }
+
+    /// The static-config progress, when the resource exists.
+    pub fn config(&self) -> Option<&ConfigProgress> {
+        self.config.as_deref()
     }
 }
 
@@ -120,6 +127,19 @@ pub fn astra_gates_pass(level: &LevelDef, progress: &AstraProgress) -> bool {
             _ => return false,
         }
     }
+    // §2f: each authored config family must be applied and passed —
+    // per family, never a shared verdict (dual-stack rule).
+    for (block, family) in [
+        (&level.static_config_v4, crate::level::ConfigFamily::V4),
+        (&level.static_config_v6, crate::level::ConfigFamily::V6),
+    ] {
+        if block.is_some() {
+            match progress.config() {
+                Some(config) if config.family_passed(family) => {}
+                _ => return false,
+            }
+        }
+    }
     true
 }
 
@@ -146,6 +166,41 @@ pub fn mechanic_states(level: &LevelDef, progress: &AstraProgress) -> MechanicSt
     if level.handoff_required {
         if let Some(handoff) = progress.handoff() {
             mechanics.handoff = Some(handoff.handoff_state());
+        }
+    }
+    if let Some(config) = progress.config() {
+        if let (Some(def), Some(form)) = (
+            &level.static_config_v4,
+            config.family(crate::level::ConfigFamily::V4),
+        ) {
+            mechanics.ipv4 = Some(form.state(def));
+        }
+        if let (Some(def), Some(form)) = (
+            &level.static_config_v6,
+            config.family(crate::level::ConfigFamily::V6),
+        ) {
+            mechanics.ipv6 = Some(form.state(def));
+        }
+        // The DNS line follows the families: it passes only when
+        // every authored family has been accepted with its
+        // worksheet DNS (each family's verdict checks its own).
+        let any_block = level.static_config_v4.is_some() || level.static_config_v6.is_some();
+        if any_block {
+            let all_passed = [&level.static_config_v4, &level.static_config_v6]
+                .into_iter()
+                .flatten()
+                .all(|def| config.family_passed(def.family));
+            mechanics.dns = Some(if all_passed {
+                (
+                    StateStatus::Pass,
+                    "DNS resolves to the worksheet server on every configured family.".to_string(),
+                )
+            } else {
+                (
+                    StateStatus::Pending,
+                    "DNS not yet verified on every configured family.".to_string(),
+                )
+            });
         }
     }
     mechanics

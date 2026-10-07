@@ -87,5 +87,8 @@
   ],
   "tutorial_workbench": [
     "The bench is a state machine, not a vibe: strip to the card, fold the braid back, seat it flush, compress once. A mistake the card catches costs a connector. A mistake it can't — shielding, seating, the short test — ships. Work the card, in order, every end."
+  ],
+  "config_mismatch": [
+    "Rejected at apply. Out here the worksheet is the tone sheet — the value on paper is the value that ships, not the one that looks close."
   ]
 }
