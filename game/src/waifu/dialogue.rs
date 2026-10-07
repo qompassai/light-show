@@ -330,7 +330,7 @@ impl DialogueBank {
             (
                 "survey_point_fail",
                 &[
-                    "One point's under its line. Out here that's the far tap on the run — passing at the amp isn't passing at the TV.",
+                    "One point's under its line. Out here that's the far end of the drop — passing at the distribution point isn't passing at the modem.",
                 ],
             ),
             (

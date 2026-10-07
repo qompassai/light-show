@@ -140,7 +140,7 @@
           {
               "prompt": "Label and dress.",
               "options": [
-                  "Label the headend end only",
+                  "Label the distribution-point end only",
                   "Dress it tight \u2014 slack is sloppy",
                   "Label both ends and dress the run with slack"
               ],
