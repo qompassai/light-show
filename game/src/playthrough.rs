@@ -103,6 +103,7 @@ fn playthrough_app() -> App {
     app.init_resource::<crate::states::workbench::WorkbenchProgress>();
     app.init_resource::<crate::states::workbench::HandoffProgress>();
     app.init_resource::<crate::states::config_console::ConfigProgress>();
+    app.init_resource::<crate::states::intermittent::IntermittentProgress>();
     app.init_resource::<crate::astra::AttemptTelemetry>();
     app.add_plugins((
         MenuPlugin,
@@ -907,6 +908,7 @@ fn playthrough_app_with_full_ui() -> App {
         crate::states::survey::SurveyConsolePlugin,
         crate::states::workbench::WorkbenchConsolePlugin,
         crate::states::config_console::ConfigConsolePlugin,
+        crate::states::intermittent::IntermittentConsolePlugin,
         crate::astra::AstraPlugin,
         crate::waifu::dialogue_ui::DialogueUiPlugin,
     ));
@@ -1014,6 +1016,20 @@ fn production_plugin_set_no_b0001_on_level_load() {
     assert!(
         entity_count::<crate::states::survey::SurveyButton>(&mut survey_app) > 0,
         "the survey console must spawn its diagnosis buttons on m1l2"
+    );
+
+    // Ondine's c1l6 composes the intermittent console (§2e), and
+    // the identification console is narrowed away there.
+    let mut inter_app = playthrough_app_with_full_ui();
+    jump_to_level(&mut inter_app, Companion::Coax, level_index_for_id("c1l6"));
+    assert!(
+        entity_count::<crate::states::intermittent::IntermittentButton>(&mut inter_app) > 0,
+        "the intermittent console must spawn its buttons on c1l6"
+    );
+    assert_eq!(
+        entity_count::<crate::states::identification::IdentificationButton>(&mut inter_app),
+        0,
+        "identification is narrowed to connections on c1l6 — no mapper console"
     );
 }
 

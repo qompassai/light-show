@@ -226,6 +226,12 @@ pub(crate) fn setup_identification_console(
     asset_server: Res<AssetServer>,
 ) {
     progress.reset();
+    // §2e composition: on the intermittent level the identification
+    // mechanic is narrowed to the connections — the intermittent
+    // console owns the level, and this console does not spawn.
+    if level.intermittent.is_some() {
+        return;
+    }
     let Some(def) = &level.identification else {
         return;
     };

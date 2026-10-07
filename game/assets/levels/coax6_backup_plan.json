@@ -2,7 +2,7 @@
   "id": "c1l6",
   "title": "Backup Plan",
   "world": 2,
-  "briefing": "The primary line amp is running hot and maintenance says it will fail within the minute. A backup tap sits closer to the headend on only 100 meters of plant — but closer means hotter, so it needs a SMALLER amp. Build the backup path with the right gain before the primary dies.",
+  "briefing": "The drop on the primary run keeps blinking out — G.fast sync gone for a heartbeat, back before anyone can catch it, and always when the street cabinet gets knocked. A blink is a connection moving, not a signal problem. Work it like a tech: disturb the cabinet and reproduce the drop, inspect the primary run connections, tighten the loose one to the card, then disturb the cabinet again and make it hold. Once the knock comes you are on the outage clock. The backup pair still works if you would rather reroute — but a reroute fixes nothing, and the Diagnosis badge knows the difference.",
   "medium": "Coax",
   "wavelength": "Nm1490",
   "tx_dbm": 25.0,
@@ -62,6 +62,30 @@
               "is_service_run": false,
               "mapper_id": "ID-8"
           }
+      ]
+  },
+  "intermittent":   {
+      "connections": [
+          {
+              "id": "dpu-feed",
+              "label": "DPU feed pair, cabinet block",
+              "is_loose": false
+          },
+          {
+              "id": "primary-jumper",
+              "label": "Primary run jumper, cabinet block",
+              "is_loose": true
+          },
+          {
+              "id": "drop-terminal",
+              "label": "Drop terminal at the far end",
+              "is_loose": false
+          }
+      ],
+      "repair_reference": "Tighten to the card: seat the connector fully, a quarter turn past finger-tight, then a firm tug \u2014 no movement, no blink.",
+      "backup_edge": [
+          2,
+          3
       ]
   }
 }

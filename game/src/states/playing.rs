@@ -40,6 +40,7 @@ impl Plugin for PlayingPlugin {
                     super::survey::setup_survey_console,
                     super::workbench::setup_workbench_console,
                     super::config_console::setup_config_console,
+                    super::intermittent::setup_intermittent_console,
                     super::quiz::setup_quiz_ui,
                 )
                     .chain(),

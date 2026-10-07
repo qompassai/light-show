@@ -364,6 +364,12 @@ impl DialogueBank {
                 ],
             ),
             (
+                "tutorial_intermittent",
+                &[
+                    "A drop that blinks when the cabinet's disturbed isn't a signal problem — it's a connection moving. Don't chase gain. Reproduce it, inspect the run, tighten the loose one to the card, then disturb it again and make it prove it holds. Rerouting around a loose fitting just schedules the callback.",
+                ],
+            ),
+            (
                 "tutorial_identification",
                 &[
                     "New bench rule: identify before you amplify. Attach the remote at the drop, test every candidate in the closet, and let the mapper — not a handwritten label — tell you which run is ours.",

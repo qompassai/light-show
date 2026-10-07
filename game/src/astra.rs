@@ -18,6 +18,7 @@ use crate::board::PlacedChoices;
 use crate::level::{state_line, LevelDef, MechanicStates, StateId, StateStatus};
 use crate::states::config_console::ConfigProgress;
 use crate::states::identification::{identity_state, IdentificationProgress};
+use crate::states::intermittent::IntermittentProgress;
 use crate::states::jumper::JumperProgress;
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
@@ -39,6 +40,7 @@ pub struct AstraProgress<'w> {
     pub workbench: Option<Res<'w, WorkbenchProgress>>,
     pub handoff: Option<Res<'w, HandoffProgress>>,
     pub config: Option<Res<'w, ConfigProgress>>,
+    pub intermittent: Option<Res<'w, IntermittentProgress>>,
 }
 
 impl AstraProgress<'_> {
@@ -70,6 +72,11 @@ impl AstraProgress<'_> {
     /// The static-config progress, when the resource exists.
     pub fn config(&self) -> Option<&ConfigProgress> {
         self.config.as_deref()
+    }
+
+    /// The intermittent progress, when the resource exists.
+    pub fn intermittent(&self) -> Option<&IntermittentProgress> {
+        self.intermittent.as_deref()
     }
 }
 
