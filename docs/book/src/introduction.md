@@ -29,7 +29,7 @@ You place components by **dragging from one node to another**. Where
 several component types could fill the same gap, the game offers you a row
 of *pills* — tap one to pick that variant explicitly. A live ledger at the
 top of the board shows the running total: loss in dB, received power in
-dBm, whether you're in window, and how many favor points you've earned.
+dBm, whether you're in window, and how many cores you've earned.
 The whole time, a companion sprite watches from the bottom of the screen
 and reacts to your splices, outages, and results in her own voice.
 

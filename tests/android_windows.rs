@@ -131,7 +131,10 @@ fn walk_audio(dir: &std::path::Path, f: &mut impl FnMut(&PathBuf)) {
         let p = entry.path();
         if p.is_dir() {
             walk_audio(&p, f);
-        } else if ["music", "sfx"].iter().any(|d| p.to_string_lossy().contains(d)) {
+        } else if ["music", "sfx"]
+            .iter()
+            .any(|d| p.to_string_lossy().contains(d))
+        {
             f(&p);
         }
     }

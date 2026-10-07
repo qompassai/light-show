@@ -55,14 +55,14 @@ fn save_level_progress_survives_reload() {
 }
 
 #[test]
-fn save_favor_and_settings_survive_reload() {
-    with_save_dir("favor", |_| {
+fn save_cores_and_settings_survive_reload() {
+    with_save_dir("cores", |_| {
         let mut data = SaveData::default();
-        data.favor_points = 42;
+        data.cores = 42;
         data.settings.master_volume = 0.5;
         save::save(&data).expect("save");
         let loaded = save::load();
-        assert_eq!(loaded.favor_points, 42);
+        assert_eq!(loaded.cores, 42);
         assert!((loaded.settings.master_volume - 0.5).abs() < f32::EPSILON);
     });
 }
@@ -91,7 +91,11 @@ fn save_empty_string_env_falls_through() {
     // On this machine dirs::data_dir() exists, so we get a real path —
     // the point is it didn't join "" into a relative "save.json".
     if let Some(p) = path {
-        assert!(p.is_absolute(), "save path should be absolute, got {}", p.display());
+        assert!(
+            p.is_absolute(),
+            "save path should be absolute, got {}",
+            p.display()
+        );
     }
 }
 
@@ -99,10 +103,14 @@ fn save_empty_string_env_falls_through() {
 fn save_garbage_file_loads_defaults_safely() {
     with_save_dir("garbage", |dir| {
         std::fs::create_dir_all(dir).unwrap();
-        std::fs::write(dir.join(light_show::save::SAVE_FILENAME), b"\x00\xff\xfe garbage").unwrap();
+        std::fs::write(
+            dir.join(light_show::save::SAVE_FILENAME),
+            b"\x00\xff\xfe garbage",
+        )
+        .unwrap();
         let loaded = save::load();
         assert_eq!(loaded.completed_levels.len(), 0);
-        assert_eq!(loaded.favor_points, 0);
+        assert_eq!(loaded.cores, 0);
     });
 }
 

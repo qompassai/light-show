@@ -107,7 +107,7 @@ tx/wavelength/window, `scripted_outage`, dialogue keys), `LEVEL_SOURCES`
   `tick_outage`, `check_outage_resolution` (repaired → win with a
   wink; expired → loss; both → `Results`, never back to `Playing`).
 - `results.rs` — banner (`SERVICE RESTORED` / `OUTAGE TIMED OUT`),
-  final ledger, companion line, +10 favor on wins, Continue / Retry /
+  final ledger, companion line, +10 cores on wins, Continue / Retry /
   Main Menu buttons.
 - `credits.rs` — code/art/font credits + compile-time-embedded music
   attribution; Back → `MainMenu`.
@@ -115,7 +115,7 @@ tx/wavelength/window, `scripted_outage`, dialogue keys), `LEVEL_SOURCES`
 ### `src/ui/mod.rs`
 
 `LedgerUiPlugin`: the OTDR-styled live readout —
-`Loss / Rx / Window / IN-OUT WINDOW / OUTAGE countdown / Favor`,
+`Loss / Rx / Window / IN-OUT WINDOW / OUTAGE countdown / Cores`,
 updated every frame in `Playing` and `OutageActive`.
 
 ### `src/audio.rs`
@@ -135,7 +135,7 @@ The companions: `Companion` enum (Séraphine/Ondine/Linka/Lattice),
 `SelectedCompanion` resource, `CompanionSprite` with moods
 (Idle/Celebrate/Alarmed/Wink/…) and 64×64 sprite sheets with per-mood
 accent tinting, `DialogueBank` (per-companion JSON, localizable),
-`FavorPoints` (+10 per clean win, spendable on hints),
+`Cores` (+10 per clean win, spendable on hints),
 `respawn_on_companion_change`, and `SpliceReaction` events fired from
 `handle_pointer_input` so she reacts to placements.
 

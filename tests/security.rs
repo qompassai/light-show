@@ -254,8 +254,7 @@ fn sec_all_sfx_decode_cleanly() {
     for kind in ALL_SFX {
         let rel = sfx_path(kind);
         let full = root.join(rel);
-        let bytes = std::fs::read(&full)
-            .unwrap_or_else(|e| panic!("SFX missing: {} ({})", rel, e));
+        let bytes = std::fs::read(&full).unwrap_or_else(|e| panic!("SFX missing: {} ({})", rel, e));
         assert!(!bytes.is_empty(), "SFX empty: {}", rel);
         // Mirror bevy_audio 0.19.1's decode path: must not panic.
         let decoded = rodio::Decoder::builder()

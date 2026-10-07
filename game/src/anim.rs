@@ -192,6 +192,59 @@ fn drive_transition_fade(
 
 /// Applies pending [`TransitionRequest`]s instantly, bypassing the fade.
 ///
+/// Seconds a level-ending reaction (bubble + emotion) must stay
+/// visible in-level before the `Results` transition may start. The
+/// floor from the playtest is ~1.6 s of real visibility; the margin
+/// above it covers the 0.3 s fade-out that follows, so the reaction is
+/// never flash-covered by the results screen.
+pub const COMPLETION_HOLD_SECS: f32 = 1.8;
+
+/// A deferred `Results` transition: level-ending systems (win check,
+/// outage resolution, quiz scoring) `begin` the hold when they fire the
+/// completion reaction, and the reaction system
+/// (`waifu::reactions::drive_results_gate`) ticks it down and writes
+/// the actual [`TransitionRequest`] when it expires — exactly once.
+///
+/// Headless harnesses that never insert this resource keep the old
+/// immediate-request behavior (callers use `Option<ResMut<ResultsGate>>`
+/// and fall back), matching how the fade itself degrades in tests.
+#[derive(Debug, Default, Resource)]
+pub struct ResultsGate {
+    remaining_secs: Option<f32>,
+}
+
+impl ResultsGate {
+    /// Start (or restart) the completion hold.
+    pub fn begin(&mut self) {
+        self.remaining_secs = Some(COMPLETION_HOLD_SECS);
+    }
+
+    /// Whether a completion is currently being held in-level.
+    pub fn is_holding(&self) -> bool {
+        self.remaining_secs.is_some()
+    }
+
+    /// Cancel any pending hold (a fresh attempt supersedes it).
+    pub fn clear(&mut self) {
+        self.remaining_secs = None;
+    }
+
+    /// Advance the hold by `dt_secs` (clamped at 0). Returns `true`
+    /// exactly once: on the tick the hold expires.
+    pub fn tick(&mut self, dt_secs: f32) -> bool {
+        let Some(remaining) = &mut self.remaining_secs else {
+            return false;
+        };
+        *remaining -= dt_secs.max(0.0);
+        if *remaining <= 0.0 {
+            self.remaining_secs = None;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 /// Test-only helper for the playthrough suite (`playthrough.rs`): those
 /// tests assert on game logic (win conditions, outage resolution), not
 /// on the presentation-layer fade timing, so they drain the request
@@ -213,6 +266,7 @@ impl Plugin for AnimPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<TransitionFade>()
             .init_resource::<TransitionRequest>()
+            .init_resource::<ResultsGate>()
             .add_systems(Startup, spawn_fade_overlay)
             .add_systems(Update, drive_transition_fade);
     }
@@ -259,6 +313,33 @@ mod tests {
     #[test]
     fn sine_in_out_midpoint_is_half() {
         assert!((EaseFunction::SineInOut.sample_clamped(0.5) - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn results_gate_holds_for_the_full_completion_beat() {
+        // The playtest floor is ~1.6 s of in-level reaction visibility:
+        // the hold must not expire before it, and must expire exactly
+        // once shortly after.
+        assert!(COMPLETION_HOLD_SECS >= 1.6);
+        let mut gate = ResultsGate::default();
+        assert!(!gate.is_holding());
+        assert!(!gate.tick(1.0), "an idle gate never expires");
+        gate.begin();
+        assert!(gate.is_holding());
+        assert!(!gate.tick(1.6), "still holding at the 1.6 s floor");
+        assert!(gate.is_holding());
+        assert!(gate.tick(0.3), "expires once the hold elapses");
+        assert!(!gate.is_holding());
+        assert!(!gate.tick(0.3), "expiry fires exactly once");
+    }
+
+    #[test]
+    fn results_gate_clear_cancels_a_pending_hold() {
+        let mut gate = ResultsGate::default();
+        gate.begin();
+        gate.clear();
+        assert!(!gate.is_holding());
+        assert!(!gate.tick(COMPLETION_HOLD_SECS + 1.0));
     }
 
     /// Drives `drive_transition_fade` through a full request cycle and

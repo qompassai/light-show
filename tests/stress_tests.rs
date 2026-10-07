@@ -47,9 +47,8 @@ fn stress_load_all_levels_rapidly() {
     // Load all 80 levels in rapid succession - simulates level select spam
     let start = Instant::now();
     for idx in 0..80 {
-        let level: LevelDef =
-            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
-                .expect("level should parse");
+        let level: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
+            .expect("level should parse");
         assert!(!level.id.is_empty());
     }
     let elapsed = start.elapsed();
@@ -67,9 +66,8 @@ fn stress_level_parse_memory() {
     // (This is a smoke test; real memory profiling needs external tools)
     for _ in 0..50 {
         for idx in 0..80 {
-            let _: LevelDef =
-                serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
-                    .expect("level should parse");
+            let _: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
+                .expect("level should parse");
         }
     }
     // If we get here without OOM, basic memory hygiene is OK
@@ -87,8 +85,7 @@ fn stress_rapid_level_index_access() {
                 for _ in 0..100 {
                     for idx in 0..80 {
                         let level: LevelDef =
-                            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
-                                .unwrap();
+                            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
                         assert!(!level.id.is_empty());
                     }
                 }
@@ -106,11 +103,11 @@ fn stress_rapid_level_index_access() {
 fn stress_outage_timer_boundaries() {
     // Test outage timer edge cases
     let test_cases = [
-        0.0,     // zero
-        0.001,   // epsilon
-        30.0,    // typical (hikari3)
-        45.0,    // typical (hikari9)
-        3600.0,  // 1 hour
+        0.0,      // zero
+        0.001,    // epsilon
+        30.0,     // typical (hikari3)
+        45.0,     // typical (hikari9)
+        3600.0,   // 1 hour
         f64::MAX, // extreme
     ];
     for &secs in &test_cases {
@@ -139,8 +136,7 @@ fn stress_string_allocation() {
     // Verify string handling doesn't leak in level data
     let mut total_len = 0;
     for idx in 0..80 {
-        let level: LevelDef =
-            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
+        let level: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
         total_len += level.title.len() + level.briefing.len();
     }
     // 80 levels should have reasonable total text (< 1MB)

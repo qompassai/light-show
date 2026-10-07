@@ -15,6 +15,7 @@ use crate::anim::TransitionRequest;
 use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::LevelDef;
 use crate::waifu::{trigger_mood_pop, CompanionSprite, Mood};
+use crate::warehouse::Loadout;
 use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
 use osp_sim::{Alarm, AlarmAck, Outage};
@@ -32,8 +33,10 @@ impl Plugin for OutagePlugin {
                     spawn_outage_banner,
                     alarm_companion,
                     spawn_alarm_list_panel,
-                ),
+                )
+                    .after(apply_loadout_timer),
             )
+            .add_systems(OnEnter(GameState::OutageActive), apply_loadout_timer)
             .add_systems(
                 Update,
                 (
@@ -61,6 +64,29 @@ impl Plugin for OutagePlugin {
 #[derive(Resource, Default)]
 pub struct ActiveOutage {
     pub outage: Option<Outage>,
+    /// Seconds the Warehouse loadout adds to this outage's repair timer,
+    /// set by `apply_loadout_timer` on every outage start. Kept here, not
+    /// in `elapsed_seconds`, so degrading hazards still worsen on the
+    /// real clock: gear buys time, it doesn't slow the water.
+    pub timer_bonus_secs: f64,
+}
+
+impl ActiveOutage {
+    /// Seconds left on the repair timer, gear bonus included; 0 with no
+    /// outage.
+    pub fn time_remaining(&self) -> f64 {
+        self.outage.as_ref().map_or(0.0, |o| {
+            (o.kind.base_timer_seconds() + self.timer_bonus_secs - o.elapsed_seconds).max(0.0)
+        })
+    }
+
+    /// True when an unresolved outage has run out of (bonus-extended)
+    /// time. Mirrors `Outage::is_expired`.
+    pub fn is_expired(&self) -> bool {
+        self.outage
+            .as_ref()
+            .is_some_and(|o| !o.resolved && self.time_remaining() <= 0.0)
+    }
 }
 
 /// All active NOC alarms. Each outage that fires creates an `Alarm` here;
@@ -202,13 +228,45 @@ struct BannerSlideOut {
     elapsed_secs: f32,
 }
 
+/// Applies Warehouse gear to the outage that just fired: recomputes the
+/// `Loadout` from the save, extends the repair timer by the spare
+/// battery's multiplier and the field coffee's bonus, and uses up one
+/// coffee when it contributed. Without a save (headless tests) the timer
+/// is the plain base timer.
+fn apply_loadout_timer(
+    mut active: ResMut<ActiveOutage>,
+    save: Option<ResMut<crate::save::SaveData>>,
+    loadout: Option<ResMut<Loadout>>,
+    save_writer: Option<MessageWriter<crate::save::SaveRequest>>,
+) {
+    active.timer_bonus_secs = 0.0;
+    let (Some(base_secs), Some(mut save)) = (
+        active.outage.as_ref().map(|o| o.kind.base_timer_seconds()),
+        save,
+    ) else {
+        return;
+    };
+    let gear = Loadout::from_save(&save);
+    active.timer_bonus_secs = gear.outage_extra_secs(base_secs);
+    if gear.outage_timer_bonus_secs > 0.0
+        && crate::warehouse::consume_one(&mut save.consumables, crate::warehouse::FIELD_COFFEE)
+    {
+        if let Some(mut writer) = save_writer {
+            writer.write(crate::save::SaveRequest);
+        }
+    }
+    if let Some(mut loadout) = loadout {
+        *loadout = Loadout::from_save(&save);
+    }
+}
+
 fn announce_outage(mut commands: Commands, active: Res<ActiveOutage>, sfx: Res<crate::audio::Sfx>) {
     sfx.play(&mut commands, crate::audio::SfxKind::Alarm);
     if let Some(outage) = &active.outage {
         info!(
             "OUTAGE: {} (timer: {:.0}s)",
             outage.kind.flavor_text(),
-            outage.time_remaining()
+            active.time_remaining()
         );
     }
 }
@@ -267,7 +325,7 @@ fn spawn_outage_banner(
             ));
             parent.spawn((
                 OutageBannerText,
-                Text::new(format!("REPAIR NOW — {:.0}s", outage.time_remaining())),
+                Text::new(format!("REPAIR NOW — {:.0}s", active.time_remaining())),
                 TextFont {
                     font: asset_server.load(crate::fonts::DISPLAY_BOLD).into(),
                     font_size: FontSize::Px(20.0 * FONT_SIZE_ADJUST),
@@ -282,11 +340,11 @@ fn update_outage_banner(
     active: Res<ActiveOutage>,
     mut query: Query<&mut Text, With<OutageBannerText>>,
 ) {
-    let Some(outage) = &active.outage else {
+    if active.outage.is_none() {
         return;
-    };
+    }
     for mut text in &mut query {
-        text.0 = format!("REPAIR NOW — {:.0}s", outage.time_remaining());
+        text.0 = format!("REPAIR NOW — {:.0}s", active.time_remaining());
     }
 }
 
@@ -358,7 +416,7 @@ fn tick_outage(
         return;
     };
     outage.tick(time.delta_secs_f64());
-    let remaining = outage.time_remaining();
+    let remaining = active.time_remaining();
     if remaining > TICK_WINDOW_SECONDS {
         // Outside the window: re-arm so re-entering it always ticks.
         *last_whole_second = u32::MAX;
@@ -390,6 +448,8 @@ fn check_outage_resolution(
     sfx: Res<crate::audio::Sfx>,
     api_progress: Res<crate::states::api_console::ApiProgress>,
     triage_progress: Res<crate::states::triage_console::TriageProgress>,
+    mut gate: Option<ResMut<crate::anim::ResultsGate>>,
+    mut reaction_inbox: Option<ResMut<crate::waifu::reactions::ReactionInbox>>,
 ) {
     let Some(outage) = active.outage.clone() else {
         return;
@@ -399,12 +459,21 @@ fn check_outage_resolution(
     // `check_win_condition`): re-requesting queues a duplicate
     // Results -> Results transition whose OnExit/OnEnter pair rebuilds
     // the results screen mid-frame.
-    let transition_pending = request.0.is_some() || matches!(*next_state, NextState::Pending(_));
+    let gate_holding = gate.as_ref().is_some_and(|g| g.is_holding());
+    let transition_pending =
+        request.0.is_some() || matches!(*next_state, NextState::Pending(_)) || gate_holding;
 
-    if !transition_pending && outage.is_expired() {
+    if !transition_pending && active.is_expired() {
         sfx.play(&mut commands, crate::audio::SfxKind::Lose);
         outcome.won = false;
-        request.0 = Some(GameState::Results);
+        if let Some(mut inbox) = reaction_inbox.as_deref_mut() {
+            inbox.push(crate::waifu::reactions::ReactionTrigger::LevelFailed);
+        }
+        match gate.as_deref_mut() {
+            Some(g) if !g.is_holding() => g.begin(),
+            Some(_) => {}
+            None => request.0 = Some(GameState::Results),
+        }
         return;
     }
 
@@ -453,7 +522,14 @@ fn check_outage_resolution(
                 trigger_mood_pop(&mut commands, entity);
             }
         }
-        request.0 = Some(GameState::Results);
+        if let Some(mut inbox) = reaction_inbox.as_deref_mut() {
+            inbox.push(crate::waifu::reactions::ReactionTrigger::LevelComplete);
+        }
+        match gate.as_deref_mut() {
+            Some(g) if !g.is_holding() => g.begin(),
+            Some(_) => {}
+            None => request.0 = Some(GameState::Results),
+        }
     }
 }
 
@@ -547,6 +623,7 @@ mod tests {
         outage.tick(9999.0);
         world.insert_resource(ActiveOutage {
             outage: Some(outage),
+            ..default()
         });
         world.insert_resource(connected_live_graph());
         world.insert_resource(fixture_level((0, 1)));
@@ -573,6 +650,7 @@ mod tests {
         let outage = Outage::new(OutageKind::WaterIntrusion, 0, 1);
         world.insert_resource(ActiveOutage {
             outage: Some(outage),
+            ..default()
         });
         world.insert_resource(connected_live_graph());
         world.insert_resource(fixture_level((0, 1)));

@@ -832,3 +832,149 @@ fn clara_api_wrong_pick_raises_alarm_without_advancing() {
     }
     assert_eq!(expect_results(&app, true), 44);
 }
+
+// ---------------------------------------------------------------------------
+// Production plugin set: the three console plugins + dialogue UI together.
+//
+// The base harness omits these (see `playthrough_app`); the tests below
+// install them all at once, the way `build_app()` does. B0001 query
+// conflicts panic when a system's queries initialize/run, so reaching
+// `Playing` with a family's console spawned — and staying there over
+// settle frames — is the assertion. The button counts prove the consoles
+// really spawned rather than silently skipping the level.
+// ---------------------------------------------------------------------------
+
+/// Headless app with the full production UI plugin set: everything in
+/// `playthrough_app()` plus `ApiConsolePlugin`, `QuizPlugin`,
+/// `TriageConsolePlugin`, and `DialogueUiPlugin` — the combination
+/// `build_app()` installs. (The base harness inits the consoles' progress
+/// resources manually; the plugins init them too, which is idempotent.)
+fn playthrough_app_with_full_ui() -> App {
+    let mut app = playthrough_app();
+    app.add_plugins((
+        crate::states::api_console::ApiConsolePlugin,
+        crate::states::quiz::QuizPlugin,
+        crate::states::triage_console::TriageConsolePlugin,
+        crate::waifu::dialogue_ui::DialogueUiPlugin,
+    ));
+    app
+}
+
+/// Index into `LEVEL_SOURCES` for a level id (the same lookup the footage
+/// driver uses to resolve `--footage <level-id>`).
+fn level_index_for_id(id: &str) -> usize {
+    crate::level::LEVEL_SOURCES
+        .iter()
+        .position(|source| {
+            let def: LevelDef = serde_json::from_str(source).expect("embedded level source parses");
+            def.id == id
+        })
+        .unwrap_or_else(|| panic!("no embedded level with id {id}"))
+}
+
+/// Jump an app straight to `index` for `companion`, mirroring
+/// `handle_select_buttons`: select companion, set level, request Playing.
+/// Asserts the level actually loaded and stayed in `Playing`.
+fn jump_to_level(app: &mut App, companion: Companion, index: usize) {
+    settle(app);
+    assert_eq!(
+        game_state(app),
+        GameState::MainMenu,
+        "a jump starts from the main menu"
+    );
+    app.world_mut().resource_mut::<SelectedCompanion>().0 = companion;
+    app.world_mut().resource_mut::<CurrentLevelIndex>().0 = index;
+    app.world_mut()
+        .resource_mut::<crate::anim::TransitionRequest>()
+        .0 = Some(GameState::Playing);
+    settle(app);
+    assert_eq!(game_state(app), GameState::Playing, "the level must load");
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, index);
+}
+
+/// Count entities carrying marker `C`.
+fn entity_count<C: Component>(app: &mut App) -> usize {
+    let world = app.world_mut();
+    let mut query = world.query::<&C>();
+    query.iter(world).count()
+}
+
+/// The production plugin set — all three console plugins plus the
+/// dialogue UI, installed together as `build_app()` installs them — must
+/// load a level from every console family with no B0001 query conflict.
+#[test]
+fn production_plugin_set_no_b0001_on_level_load() {
+    // Clara's clara5 is a pure API-console level.
+    let mut api_app = playthrough_app_with_full_ui();
+    jump_to_level(&mut api_app, Companion::Clara, level_index_for_id("clara5"));
+    assert!(
+        entity_count::<crate::states::api_console::ApiButton>(&mut api_app) > 0,
+        "the API console must spawn its buttons on clara5"
+    );
+
+    // Aino's aino2 is an alarm-triage level.
+    let mut triage_app = playthrough_app_with_full_ui();
+    jump_to_level(
+        &mut triage_app,
+        Companion::Aino,
+        level_index_for_id("aino2"),
+    );
+    assert!(
+        entity_count::<crate::states::triage_console::TriageButton>(&mut triage_app) > 0,
+        "the triage console must spawn its buttons on aino2"
+    );
+
+    // Léa's lea1 is a quiz level.
+    let mut quiz_app = playthrough_app_with_full_ui();
+    jump_to_level(&mut quiz_app, Companion::Lea, level_index_for_id("lea1"));
+    assert!(
+        entity_count::<crate::states::quiz::QuizChoice>(&mut quiz_app) > 0,
+        "the quiz UI must spawn its choices on lea1"
+    );
+}
+
+/// The 28 levels footage mode used to load with the console + dialogue
+/// UI plugins skipped ("to avoid Bevy B0001" in `build_app`'s list). Every
+/// one must load with the full production UI plugin set installed; a
+/// query conflict in any level's UI systems panics this test with the
+/// B0001. This is the ground truth the footage skip never had.
+#[test]
+fn footage_skipped_levels_load_with_full_ui_plugins() {
+    const FOOTAGE_SKIPPED: [(&str, Companion); 28] = [
+        ("clara3", Companion::Clara),
+        ("clara4", Companion::Clara),
+        ("clara5", Companion::Clara),
+        ("clara6", Companion::Clara),
+        ("clara7", Companion::Clara),
+        ("clara8", Companion::Clara),
+        ("clara9", Companion::Clara),
+        ("clara10", Companion::Clara),
+        ("aino1", Companion::Aino),
+        ("aino2", Companion::Aino),
+        ("aino3", Companion::Aino),
+        ("aino4", Companion::Aino),
+        ("aino5", Companion::Aino),
+        ("aino6", Companion::Aino),
+        ("aino7", Companion::Aino),
+        ("aino8", Companion::Aino),
+        ("aino9", Companion::Aino),
+        ("aino10", Companion::Aino),
+        ("hikari1", Companion::Hikari),
+        ("hikari2", Companion::Hikari),
+        ("hikari3", Companion::Hikari),
+        ("hikari4", Companion::Hikari),
+        ("hikari5", Companion::Hikari),
+        ("hikari6", Companion::Hikari),
+        ("hikari7", Companion::Hikari),
+        ("hikari8", Companion::Hikari),
+        ("hikari9", Companion::Hikari),
+        ("hikari10", Companion::Hikari),
+    ];
+    for (id, companion) in FOOTAGE_SKIPPED {
+        let mut app = playthrough_app_with_full_ui();
+        jump_to_level(&mut app, companion, level_index_for_id(id));
+        // Extra frames under Playing: the consoles' Update systems and
+        // the dialogue ticker must keep running, not just initialize.
+        settle(&mut app);
+    }
+}

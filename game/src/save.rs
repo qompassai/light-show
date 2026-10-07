@@ -11,16 +11,20 @@
 //! * Every load path is total: missing file, corrupt JSON, wrong types,
 //!   and unknown enum variants all degrade to defaults with a log line.
 //!   A save file is user-editable by definition — it is untrusted input.
+//! * A save that cannot be loaded (unparseable, invalid UTF-8, wrong
+//!   version) is moved aside to `save.json.corrupt` before defaults are
+//!   used, so the next successful write never silently destroys the
+//!   evidence.
 //! * Writes are atomic (temp file + rename) so a crash mid-write never
 //!   leaves a half-written save.
 //! * `LIGHTSHOW_SAVE_DIR` overrides the path (testing, custom launchers).
 
 use crate::cheat_codes::UnlockedSpecialists;
-use crate::waifu::{Companion, FavorPoints};
+use crate::waifu::{Companion, Cores};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Current save format version. Bump when `SaveData` changes shape and
 /// add a migration in `load`.
@@ -62,9 +66,23 @@ pub struct SaveData {
     /// (`"Clara"`). Stored as strings so an unknown future name degrades
     /// to "skip" instead of failing the whole load.
     pub unlocked_specialists: Vec<String>,
-    /// Hint-economy balance (see `FavorPoints`).
-    pub favor_points: u32,
+    /// Core balance (see `Cores`): dead parts traded in at the
+    /// Warehouse. Renamed from `favor_points`; the serde alias keeps
+    /// saves written before the rename loading, and `default` covers
+    /// saves old enough to predate the field entirely.
+    #[serde(default, alias = "favor_points")]
+    pub cores: u32,
     pub settings: Settings,
+    /// Warehouse permanents owned, by item id (see `warehouse::SHOP`).
+    /// `serde(default)` keeps pre-Warehouse saves loading.
+    #[serde(default)]
+    pub owned_gear: Vec<String>,
+    /// Warehouse tools whose quiz the player has passed, by tool id.
+    #[serde(default)]
+    pub warehouse_quiz_passed: Vec<String>,
+    /// Warehouse consumables carried, by item id; duplicates are the count.
+    #[serde(default)]
+    pub consumables: Vec<String>,
 }
 
 impl Default for SaveData {
@@ -73,8 +91,11 @@ impl Default for SaveData {
             version: SAVE_VERSION,
             completed_levels: Vec::new(),
             unlocked_specialists: Vec::new(),
-            favor_points: 0,
+            cores: 0,
             settings: Settings::default(),
+            owned_gear: Vec::new(),
+            warehouse_quiz_passed: Vec::new(),
+            consumables: Vec::new(),
         }
     }
 }
@@ -164,6 +185,14 @@ impl std::fmt::Display for SaveError {
     }
 }
 
+/// Sidecar path next to the save file: `save.json` + `"tmp"` is the
+/// atomic-write temp file, + `"corrupt"` is where an unloadable save is
+/// preserved (see `load`). Same directory, so renames stay on one
+/// filesystem and remain atomic.
+fn sidecar_path(path: &Path, extra_extension: &str) -> PathBuf {
+    path.with_extension(format!("json.{extra_extension}"))
+}
+
 /// Write `data` atomically (temp file + rename). Creates parent dirs.
 pub fn save(data: &SaveData) -> Result<(), SaveError> {
     let path = save_path().ok_or(SaveError::NoPath)?;
@@ -172,10 +201,61 @@ pub fn save(data: &SaveData) -> Result<(), SaveError> {
     }
     let text = serde_json::to_string_pretty(data).map_err(SaveError::Json)?;
     // Temp file in the same directory so rename is atomic on all platforms.
-    let tmp = path.with_extension("json.tmp");
+    let tmp = sidecar_path(&path, "tmp");
     std::fs::write(&tmp, text).map_err(SaveError::Io)?;
     std::fs::rename(&tmp, &path).map_err(SaveError::Io)?;
     Ok(())
+}
+
+/// Delete the save file and its sidecars (atomic-write temp, preserved
+/// corrupt copy). Backs the menu's New Game reset: after this returns
+/// `Ok`, `load` yields defaults. Missing files are success — erasing a
+/// game that was never saved is not an error. A sidecar that cannot be
+/// removed does not stop the remaining removals; the first failure is
+/// reported after all three have been attempted.
+pub fn erase() -> Result<(), SaveError> {
+    let path = save_path().ok_or(SaveError::NoPath)?;
+    let candidates = [
+        path.clone(),
+        sidecar_path(&path, "tmp"),
+        sidecar_path(&path, "corrupt"),
+    ];
+    let mut first_error: Option<std::io::Error> = None;
+    for candidate in candidates {
+        match std::fs::remove_file(&candidate) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                if first_error.is_none() {
+                    first_error = Some(e);
+                }
+            }
+        }
+    }
+    match first_error {
+        None => Ok(()),
+        Some(e) => Err(SaveError::Io(e)),
+    }
+}
+
+/// Move a save that failed to load aside to `save.json.corrupt` so it
+/// survives for inspection instead of being overwritten by the next
+/// successful write. Best-effort: failure is logged, never propagated —
+/// starting the game matters more than the forensics.
+fn preserve_unloadable_save(path: &Path) {
+    let preserved = sidecar_path(path, "corrupt");
+    // `rename` refuses to replace an existing destination on Windows;
+    // drop a previously preserved copy first so the newest corruption
+    // is always the one kept.
+    let _ = std::fs::remove_file(&preserved);
+    match std::fs::rename(path, &preserved) {
+        Ok(()) => warn!("preserved unloadable save as {}", preserved.display()),
+        Err(e) => warn!(
+            "could not preserve unloadable save {} ({})",
+            path.display(),
+            e
+        ),
+    }
 }
 
 /// Load the save file. Total: any failure (no path, missing file,
@@ -201,6 +281,14 @@ pub fn load() -> SaveData {
                 path.display(),
                 e
             );
+            if e.kind() == std::io::ErrorKind::InvalidData {
+                // Not valid UTF-8: unparseable by definition. Preserve
+                // it like any other corrupt save instead of leaving it
+                // in place to be overwritten by the next write. Other
+                // read errors (permissions, a directory in the way) may
+                // be transient, so those files stay where they are.
+                preserve_unloadable_save(&path);
+            }
             return SaveData::default();
         }
     };
@@ -212,6 +300,7 @@ pub fn load() -> SaveData {
                 path.display(),
                 e
             );
+            preserve_unloadable_save(&path);
             return SaveData::default();
         }
     };
@@ -220,6 +309,9 @@ pub fn load() -> SaveData {
             "save version {} != supported {}; starting fresh",
             data.version, SAVE_VERSION
         );
+        // Preserve the mismatch too: a save written by a newer build
+        // must survive being opened once by an older one.
+        preserve_unloadable_save(&path);
         return SaveData::default();
     }
     validate(&mut data);
@@ -251,14 +343,29 @@ fn validate(data: &mut SaveData) {
         .retain(|n| !n.is_empty() && n.len() <= 32);
     data.unlocked_specialists.sort();
     data.unlocked_specialists.dedup();
+    // Warehouse ids: same bounds. Gear and passed quizzes are sets;
+    // consumables are a multiset, so they are only length-capped.
+    for list in [&mut data.owned_gear, &mut data.warehouse_quiz_passed] {
+        list.retain(|id| !id.is_empty() && id.len() <= 32);
+        list.sort();
+        list.dedup();
+    }
+    data.consumables
+        .retain(|id| !id.is_empty() && id.len() <= 32);
+    data.consumables.truncate(CONSUMABLES_MAX);
 }
+
+/// Upper bound on carried consumables across all kinds: every shop
+/// consumable at its stack cap. Bounds a hand-edited save.
+const CONSUMABLES_MAX: usize =
+    crate::warehouse::SHOP.len() * crate::warehouse::CONSUMABLE_STACK_MAX;
 
 // ---------------------------------------------------------------------------
 // Bevy wiring
 // ---------------------------------------------------------------------------
 
 /// Request a save write. Systems emit this after mutating `SaveData`,
-/// `UnlockedSpecialists`, or `FavorPoints`.
+/// `UnlockedSpecialists`, or `Cores`.
 #[derive(Message)]
 pub struct SaveRequest;
 
@@ -289,12 +396,18 @@ impl Plugin for SavePlugin {
 #[derive(Resource)]
 struct PendingUnlockSeed(HashSet<Companion>);
 
-/// Copy persisted unlocks into the runtime resource on startup.
+/// Copy persisted unlocks and the core balance into the runtime
+/// resources on startup. Cores must be seeded before the first
+/// `sync_progression_to_save` run, which otherwise sees the default 0 as
+/// a change and overwrites the saved balance with it.
 fn seed_unlocks_from_save(
     mut commands: Commands,
     seed: Res<PendingUnlockSeed>,
     mut specialists: ResMut<UnlockedSpecialists>,
+    save: Res<SaveData>,
+    mut cores: ResMut<Cores>,
 ) {
+    cores.0 = save.cores;
     let before = specialists.unlocked.len();
     specialists.unlocked.extend(seed.0.iter().copied());
     let added = specialists.unlocked.len() - before;
@@ -308,11 +421,11 @@ fn seed_unlocks_from_save(
 /// the disk write only happens when something actually changed.
 fn sync_progression_to_save(
     unlocked: Res<UnlockedSpecialists>,
-    favor: Res<FavorPoints>,
+    cores: Res<Cores>,
     mut save: ResMut<SaveData>,
     mut writer: MessageWriter<SaveRequest>,
 ) {
-    if !unlocked.is_changed() && !favor.is_changed() {
+    if !unlocked.is_changed() && !cores.is_changed() {
         return;
     }
     let mut dirty = false;
@@ -325,8 +438,8 @@ fn sync_progression_to_save(
             dirty |= save.unlock_specialist(*c);
         }
     }
-    if save.favor_points != favor.0 {
-        save.favor_points = favor.0;
+    if save.cores != cores.0 {
+        save.cores = cores.0;
         dirty = true;
     }
     if dirty {
@@ -347,13 +460,14 @@ fn write_save_on_request(mut reader: MessageReader<SaveRequest>, data: Res<SaveD
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::sync::Mutex;
 
     /// Tests that mutate `LIGHTSHOW_SAVE_DIR` must not run concurrently:
     /// env vars are process-global and Rust runs tests in threads.
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
+    /// Shared with other modules' tests that write saves.
+    pub(crate) static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn complete_level_dedups() {
@@ -410,12 +524,12 @@ mod tests {
         let mut s = SaveData::default();
         s.complete_level("c1l1");
         s.unlock_specialist(Companion::Aino);
-        s.favor_points = 30;
+        s.cores = 30;
         save(&s).expect("save should succeed");
         let loaded = load();
         assert!(loaded.is_completed("c1l1"));
         assert!(loaded.unlocked_set().contains(&Companion::Aino));
-        assert_eq!(loaded.favor_points, 30);
+        assert_eq!(loaded.cores, 30);
         std::env::remove_var("LIGHTSHOW_SAVE_DIR");
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -458,6 +572,255 @@ mod tests {
         std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
         let loaded = load();
         assert_eq!(loaded.completed_levels.len(), 0);
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pre_warehouse_save_loads_with_empty_warehouse_fields() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-pre-warehouse");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join(SAVE_FILENAME),
+            r#"{"version":1,"completed_levels":["c1l1"],"unlocked_specialists":[],"favor_points":25,"settings":{"master_volume":1.0,"music_volume":1.0,"sfx_volume":1.0}}"#,
+        )
+        .unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let loaded = load();
+        assert!(loaded.is_completed("c1l1"));
+        assert_eq!(loaded.cores, 25);
+        assert!(loaded.owned_gear.is_empty());
+        assert!(loaded.warehouse_quiz_passed.is_empty());
+        assert!(loaded.consumables.is_empty());
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn warehouse_fields_round_trip() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-warehouse");
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let s = SaveData {
+            owned_gear: vec!["headlamp".into(), "spare_battery".into()],
+            warehouse_quiz_passed: vec!["scout_pro_3".into()],
+            consumables: vec![
+                "field_coffee".into(),
+                "field_coffee".into(),
+                "spare_remotes".into(),
+            ],
+            ..SaveData::default()
+        };
+        save(&s).expect("save should succeed");
+        let loaded = load();
+        assert_eq!(loaded.owned_gear, s.owned_gear);
+        assert_eq!(loaded.warehouse_quiz_passed, s.warehouse_quiz_passed);
+        // Duplicates are the count: they must survive the load.
+        assert_eq!(loaded.consumables, s.consumables);
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn validate_bounds_hostile_warehouse_lists() {
+        let mut s = SaveData {
+            owned_gear: vec![
+                "headlamp".into(),
+                "headlamp".into(),
+                "".into(),
+                "x".repeat(33),
+            ],
+            warehouse_quiz_passed: vec!["scout_pro_3".into(), "scout_pro_3".into()],
+            consumables: vec!["field_coffee".to_owned(); CONSUMABLES_MAX + 50],
+            ..SaveData::default()
+        };
+        s.consumables.push(String::new());
+        validate(&mut s);
+        assert_eq!(s.owned_gear, vec!["headlamp".to_owned()]);
+        assert_eq!(s.warehouse_quiz_passed, vec!["scout_pro_3".to_owned()]);
+        assert_eq!(s.consumables.len(), CONSUMABLES_MAX);
+    }
+
+    #[test]
+    fn wrong_typed_warehouse_field_degrades_to_default() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-warehouse-type");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join(SAVE_FILENAME),
+            r#"{"version":1,"completed_levels":["c1l1"],"unlocked_specialists":[],"favor_points":5,"settings":{"master_volume":1.0,"music_volume":1.0,"sfx_volume":1.0},"owned_gear":"headlamp"}"#,
+        )
+        .unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let loaded = load();
+        // Corrupt shape loads as a fresh save, never a panic.
+        assert_eq!(loaded.completed_levels.len(), 0);
+        assert!(loaded.owned_gear.is_empty());
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn startup_seeds_cores_so_sync_does_not_zero_the_save() {
+        let mut app = App::new();
+        app.insert_resource(SaveData {
+            cores: 42,
+            ..SaveData::default()
+        });
+        app.insert_resource(PendingUnlockSeed(HashSet::new()));
+        app.init_resource::<UnlockedSpecialists>();
+        app.init_resource::<Cores>();
+        app.add_message::<SaveRequest>();
+        app.add_systems(Startup, seed_unlocks_from_save);
+        app.add_systems(Update, sync_progression_to_save);
+        app.update();
+        assert_eq!(app.world().resource::<Cores>().0, 42);
+        assert_eq!(app.world().resource::<SaveData>().cores, 42);
+    }
+
+    /// Adversarial: an unparseable save is preserved byte-for-byte
+    /// under the `.corrupt` suffix instead of being left at the live
+    /// path, where the next successful write would silently destroy
+    /// it. A second load still yields defaults — no crash-loop.
+    #[test]
+    fn corrupt_save_is_preserved_under_the_corrupt_suffix() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-preserve");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(SAVE_FILENAME), "{not json").unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let loaded = load();
+        assert_eq!(loaded.completed_levels.len(), 0);
+        assert!(!dir.join(SAVE_FILENAME).exists());
+        let preserved_path = sidecar_path(&dir.join(SAVE_FILENAME), "corrupt");
+        let preserved = std::fs::read_to_string(&preserved_path).unwrap();
+        assert_eq!(preserved, "{not json");
+        let loaded_again = load();
+        assert_eq!(loaded_again.completed_levels.len(), 0);
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Adversarial: a second corruption replaces the first preserved
+    /// copy — preservation never fails just because a `.corrupt` file
+    /// already exists.
+    #[test]
+    fn repeated_corruption_preserves_the_newest_copy() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-preserve-twice");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        std::fs::write(dir.join(SAVE_FILENAME), "{first").unwrap();
+        let _ = load();
+        std::fs::write(dir.join(SAVE_FILENAME), "{second").unwrap();
+        let _ = load();
+        let preserved_path = sidecar_path(&dir.join(SAVE_FILENAME), "corrupt");
+        let preserved = std::fs::read_to_string(&preserved_path).unwrap();
+        assert_eq!(preserved, "{second");
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Adversarial: invalid UTF-8 is unparseable input too, and takes
+    /// the same preserve-and-default path as broken JSON.
+    #[test]
+    fn non_utf8_save_is_preserved_and_loads_defaults() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-preserve-utf8");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(SAVE_FILENAME), b"\xff\xfe\x00garbage").unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let loaded = load();
+        assert_eq!(loaded.completed_levels.len(), 0);
+        assert!(!dir.join(SAVE_FILENAME).exists());
+        let preserved_path = sidecar_path(&dir.join(SAVE_FILENAME), "corrupt");
+        assert_eq!(
+            std::fs::read(&preserved_path).unwrap(),
+            b"\xff\xfe\x00garbage"
+        );
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Adversarial: a version-mismatched save (e.g. written by a newer
+    /// build) is preserved rather than discarded, so downgrading once
+    /// does not cost the player their progress.
+    #[test]
+    fn wrong_version_save_is_preserved() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-preserve-version");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let text = r#"{"version":999,"completed_levels":["c1l1"],"unlocked_specialists":[],"favor_points":0,"settings":{"master_volume":1.0,"music_volume":1.0,"sfx_volume":1.0}}"#;
+        std::fs::write(dir.join(SAVE_FILENAME), text).unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let loaded = load();
+        assert_eq!(loaded.completed_levels.len(), 0);
+        assert!(!dir.join(SAVE_FILENAME).exists());
+        let preserved_path = sidecar_path(&dir.join(SAVE_FILENAME), "corrupt");
+        assert_eq!(std::fs::read_to_string(&preserved_path).unwrap(), text);
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Adversarial: a crash mid-write leaves a half-written temp file
+    /// next to the last good save. The good save still loads, and the
+    /// next successful save consumes the temp name (rename), leaving
+    /// no stale temp behind.
+    #[test]
+    fn stale_tmp_from_an_interrupted_write_is_ignored() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-stale-tmp");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let mut s = SaveData::default();
+        s.complete_level("c1l1");
+        save(&s).expect("save should succeed");
+        let tmp = sidecar_path(&dir.join(SAVE_FILENAME), "tmp");
+        std::fs::write(&tmp, "{\"version\":1,\"completed_lev").unwrap();
+        let loaded = load();
+        assert!(loaded.is_completed("c1l1"));
+        save(&s).expect("save after a stale tmp should succeed");
+        assert!(!tmp.exists());
+        let loaded = load();
+        assert!(loaded.is_completed("c1l1"));
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn erase_removes_the_save_and_its_sidecars() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-erase");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let mut s = SaveData::default();
+        s.complete_level("c1l1");
+        save(&s).expect("save should succeed");
+        let corrupt = sidecar_path(&dir.join(SAVE_FILENAME), "corrupt");
+        std::fs::write(&corrupt, "{old corruption").unwrap();
+        erase().expect("erase should succeed");
+        assert!(!dir.join(SAVE_FILENAME).exists());
+        assert!(!corrupt.exists());
+        let loaded = load();
+        assert_eq!(loaded.completed_levels.len(), 0);
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Erasing when nothing was ever saved is success, not an error:
+    /// the New Game reset must work on a fresh profile too.
+    #[test]
+    fn erase_without_any_files_is_ok() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-erase-empty");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        erase().expect("erase of an absent save should succeed");
         std::env::remove_var("LIGHTSHOW_SAVE_DIR");
         let _ = std::fs::remove_dir_all(&dir);
     }

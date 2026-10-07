@@ -163,10 +163,13 @@ pub struct BoardRoot;
 pub struct LedgerRoot;
 
 /// Marks the root UI entity that hosts the level-intro briefing text
-/// (world/title heading, flavor briefing, and the companion's on-enter
-/// dialogue line, when the level defines one).
+/// (world/title heading and the level's instructional briefing).
 #[derive(Component)]
 pub struct BriefingRoot;
+
+/// Widest measure the briefing text column may take, in px. Narrower
+/// windows wrap at the window width instead (the panel is full-width).
+const BRIEFING_TEXT_MAX_W: f32 = 880.0;
 
 /// Resolves which concrete `Component` a `(from, to, slot)` placement
 /// refers to — the same lookup `rebuild_live_graph` does per placed edge,
@@ -266,6 +269,54 @@ fn component_short_label(component: &Component) -> &'static str {
         Component::Repeater { .. } => "RPT",
         Component::EthernetRun { .. } => "CAT",
         Component::Switch { .. } => "SW",
+    }
+}
+
+/// Compact number formatting for pill captions: whole values print
+/// without a decimal point ("15"), fractional ones keep one decimal
+/// ("2.5") — captions are read at a glance, mid-puzzle.
+fn fmt_compact(value: f64) -> String {
+    if (value - value.round()).abs() < 1e-9 {
+        format!("{value:.0}")
+    } else {
+        format!("{value:.1}")
+    }
+}
+
+/// Value caption drawn under a pill's icon: the spec that distinguishes
+/// this choice from its siblings on the same edge. Sibling pills share
+/// one icon (the three Unity Gain amps differ only in `gain_db`), so
+/// the icon alone cannot carry the choice. `None` where the icon
+/// already is the distinction (splice/connector kinds) or where the
+/// remaining fields are hidden state rather than a player-facing spec
+/// (splice degradation, connector contamination).
+fn component_value_label(component: &Component) -> Option<String> {
+    match component {
+        Component::Amplifier { gain_db } => Some(format!("+{} dB", fmt_compact(*gain_db))),
+        Component::Tap { tap_loss_db } => Some(format!("-{} dB", fmt_compact(*tap_loss_db))),
+        Component::Splitter { ratio } => Some(format!("1x{}", ratio.branch_count())),
+        Component::Span { length_km, .. } => Some(format!("{} km", fmt_compact(*length_km))),
+        Component::CoaxSpan { length_m } => Some(format!("{} m", fmt_compact(*length_m))),
+        Component::WirelessHop { distance_m, .. } => {
+            Some(format!("{} m", fmt_compact(*distance_m)))
+        }
+        Component::Repeater { tx_dbm } => Some(format!("{} dBm", fmt_compact(*tx_dbm))),
+        Component::EthernetRun {
+            length_m,
+            category,
+        } => Some(format!(
+            "{} m {}",
+            fmt_compact(*length_m),
+            match category {
+                osp_sim::component::CableCategory::Cat5e => "Cat5e",
+                osp_sim::component::CableCategory::Cat6 => "Cat6",
+            }
+        )),
+        Component::Switch { poe_budget_w } => Some(format!("{} W", fmt_compact(*poe_budget_w))),
+        Component::Macrobend { excess_loss_db } => {
+            Some(format!("+{} dB", fmt_compact(*excess_loss_db)))
+        }
+        Component::Splice { .. } | Component::Connector { .. } => None,
     }
 }
 
@@ -623,11 +674,17 @@ fn layout_node_labels(
 /// the `OnEnter(Playing)` setup system, right after loading the level.
 /// `half_w` is half the window width in world units (camera zoom is 1:1),
 /// used to keep label plates on screen.
+///
+/// The briefing panel carries the level's instructional text ONLY.
+/// Companion flavor lines (the level's `on_enter_line` key into the
+/// dialogue bank) used to be appended to it in quotes; the first
+/// playtest showed a random quip landing inside the instructions
+/// ("Ooh, a punch-down with zero crosstalk?…") — chatter belongs to
+/// the dialogue system, not the briefing, so it is no longer folded in.
 pub fn spawn_board_from_level(
     commands: &mut Commands,
     level: &LevelDef,
     asset_server: &AssetServer,
-    on_enter_dialogue: Option<&str>,
     half_w: f32,
 ) {
     let label_font: Handle<Font> = asset_server.load(crate::fonts::DISPLAY);
@@ -637,10 +694,14 @@ pub fn spawn_board_from_level(
         "World {} — {}\n{}",
         level.world, level.title, level.briefing
     );
-    if let Some(line) = on_enter_dialogue {
-        briefing_text.push_str("\n\"");
-        briefing_text.push_str(line);
-        briefing_text.push('"');
+    // The first level carries the how-to: the playtest showed the two
+    // placement gestures are not discoverable on their own, so they are
+    // taught here in the briefing and reinforced live by the ledger's
+    // empty-state line (see `LevelDef::partial_ledger`).
+    if level.id == "w1l1" {
+        briefing_text.push_str(
+            "\nHow to play: tap a pill beside a link to place that exact component — the caption under each pill shows its value. Or drag from one glowing node to the next to place the standard part. Watch the ledger at the bottom: land Rx inside the window to light the link.",
+        );
     }
     commands
         .spawn((
@@ -662,19 +723,35 @@ pub fn spawn_board_from_level(
             BackgroundColor(Color::srgba(0.051, 0.051, 0.118, 0.7)),
         ))
         .with_children(|parent| {
+            // The briefing is the level's primary instruction text: it
+            // renders at briefing size (17 px, not the 14 px fine print
+            // of the first playtest) in a centered column capped at a
+            // readable measure, so lines wrap inside the panel instead
+            // of stretching edge to edge, and the auto-height panel
+            // hugs the wrapped text.
             parent.spawn((
                 Text::new(briefing_text),
                 TextFont {
                     font: body_font.clone().into(),
-                    font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                    font_size: FontSize::Px(17.0 * FONT_SIZE_ADJUST),
                     ..default()
                 },
                 TextColor(BOARD_ACCENT),
+                Node {
+                    max_width: Val::Px(BRIEFING_TEXT_MAX_W),
+                    ..default()
+                },
             ));
         });
 
+    // `Visibility` on the root is load-bearing: every board child is a
+    // sprite or a text (both carry `Visibility` through their required
+    // components), and a parent without it trips Bevy's B0004 hierarchy
+    // warning once per child. The signal pulses spawn about once a
+    // second, so the warning spammed the log for a whole session on
+    // the first playtest.
     commands
-        .spawn((BoardRoot, Transform::default()))
+        .spawn((BoardRoot, Transform::default(), Visibility::default()))
         .with_children(|parent| {
             // Circuit-texture backdrop fitted to the level's node extents,
             // far behind everything else (z = -10).
@@ -794,6 +871,24 @@ pub fn spawn_board_from_level(
                         },
                         Transform::from_translation(pos.extend(4.0)),
                     ));
+                    // Value caption under the pill: the spec that
+                    // tells sibling choices apart (three amps, one
+                    // icon, three gains).
+                    if let Some(caption) = component_value_label(component) {
+                        parent.spawn((
+                            Text2d::new(caption),
+                            TextFont {
+                                font: label_font.clone().into(),
+                                font_size: FontSize::Px(13.0 * FONT_SIZE_ADJUST),
+                                ..default()
+                            },
+                            TextColor(LIGHT_WARM),
+                            Anchor::CENTER,
+                            Transform::from_translation(
+                                (pos + Vec2::new(0.0, -(PILL_RADIUS + 12.0))).extend(6.0),
+                            ),
+                        ));
+                    }
                     if let Some(icon_path) = component_icon_path(component) {
                         parent.spawn((
                             ComponentIcon,
@@ -1996,6 +2091,54 @@ mod tests {
     }
 
     #[test]
+    fn component_value_labels_distinguish_sibling_choices() {
+        // The three Unity Gain amps share one icon and differ only in
+        // gain: their captions must carry the difference.
+        let amp_labels: Vec<String> = [15.0, 20.0, 25.0]
+            .into_iter()
+            .map(|gain_db| {
+                component_value_label(&Component::Amplifier { gain_db })
+                    .expect("amplifier must have a value caption")
+            })
+            .collect();
+        assert_eq!(amp_labels, vec!["+15 dB", "+20 dB", "+25 dB"]);
+
+        let tap_labels: Vec<String> = [8.0, 11.0, 14.0]
+            .into_iter()
+            .map(|tap_loss_db| {
+                component_value_label(&Component::Tap { tap_loss_db })
+                    .expect("tap must have a value caption")
+            })
+            .collect();
+        assert_eq!(tap_labels, vec!["-8 dB", "-11 dB", "-14 dB"]);
+
+        assert_eq!(
+            component_value_label(&Component::Splitter {
+                ratio: osp_sim::component::SplitterRatio::OneByFour,
+            }),
+            Some("1x4".to_string())
+        );
+        assert_eq!(
+            component_value_label(&Component::EthernetRun {
+                length_m: 65.0,
+                category: osp_sim::component::CableCategory::Cat6,
+            }),
+            Some("65 m Cat6".to_string())
+        );
+        // Kind is the distinction for splices/connectors (their icons
+        // differ); degradation/contamination are hidden state.
+        assert_eq!(component_value_label(&fusion_splice()), None);
+        assert_eq!(component_value_label(&mechanical_splice()), None);
+        assert_eq!(
+            component_value_label(&Component::Connector {
+                kind: osp_sim::ConnectorType::Apc,
+                contamination_db: 0.0,
+            }),
+            None
+        );
+    }
+
+    #[test]
     fn component_short_label_covers_every_variant_with_unique_labels() {
         let labels = [
             (fusion_splice(), "FUS"),
@@ -2339,6 +2482,7 @@ mod tests {
         // Outage present: streaks spawn up to the per-frame batch size.
         app.world_mut().insert_resource(ActiveOutage {
             outage: Some(Outage::new(osp_sim::OutageKind::AerialDamage, 0, 1)),
+            ..default()
         });
         app.world_mut().run_system_once(update_storm_rain);
         let spawned = app

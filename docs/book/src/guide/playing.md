@@ -58,7 +58,7 @@ At the top, the **ledger UI** — styled like an OTDR trace readout —
 shows the live link budget, recomputed every frame:
 
 ```text
-Loss: 12.35 dB  |  Rx: -9.35 dBm  |  Window: [-27, -8] dBm  |  IN WINDOW  |  Favor: 10
+Loss: 12.35 dB  |  Rx: -9.35 dBm  |  Window: [-27, -8] dBm  |  IN WINDOW  |  Cores: 10
 ```
 
 `IN WINDOW` / `OUT OF WINDOW` is the whole puzzle in two words: win
@@ -142,7 +142,7 @@ entirely, so a player who pre-builds the eventual protection route
 can't win before the storm — the outage content is the point of the
 level.
 
-## 5. Results and favor
+## 5. Results and cores
 
 The results screen shows a banner — **SERVICE RESTORED** (green) or
 **OUTAGE TIMED OUT** (red) — the level name, the final ledger
@@ -150,8 +150,9 @@ The results screen shows a banner — **SERVICE RESTORED** (green) or
 and a companion reaction line picked from the dialogue bank
 (`level_win` / `level_fail_cold`, overridable per level).
 
-A clean win earns **+10 favor points** (`FAVOR_PER_WIN`); losses earn
-nothing. Favor is spendable later on optional hints, and the running
+A clean win earns **+10 cores** (`CORES_PER_WIN`) — dead parts
+recovered from the job; losses earn nothing. Cores are spendable
+later on optional hints, and the running
 total is always visible in the ledger. Buttons: **Continue** (win only,
 and only if another bundled level exists — advances the level index),
 **Retry** (loss), **Main Menu** (resets the level index to 0).

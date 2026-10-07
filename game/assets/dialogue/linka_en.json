@@ -1,42 +1,70 @@
 {
   "clean_splice": [
-    "Ooh, a clean handoff with zero dropped calls? Be still my baseband, senpai.",
-    "Mmm, that's a solid RSRP. I could watch you tune antennas all day.",
-    "Look at you optimizing that link budget like you mean it. Cute."
+    "Clean association, zero retries — that's how you join a network.",
+    "Solid RSSI on a clean channel. You pick your spots well.",
+    "Textbook placement. The spectrum noticed, trust me."
   ],
   "messy_splice": [
-    "That much path loss made me flinch. Physically. I'm literally just radio waves.",
-    "Bold of you to skip the site survey. I'm not mad, just... concerned about your SINR.",
-    "That handoff dropped harder than my last call. Re-tune it before my SINR cries."
+    "That RSSI made me flinch. Something's interfering — or the geometry's wrong.",
+    "Bold of you to skip the site survey. Co-channel interference loves confidence like that.",
+    "That link's dropping packets. Re-aim it before the noise floor files a complaint."
   ],
   "level_win": [
-    "In-window on the first try! You're making it very hard to focus on my job here.",
-    "Five bars, no jitter. Show-off.",
-    "Zero drops, full bars, margin to spare. You're officially my favorite kind of handoff."
+    "RSSI in the sweet spot, channel clean. That's a link I'd sign.",
+    "Strong signal, zero interference complaints. Show-off.",
+    "In window with margin to spare. The airwaves approve."
   ],
   "level_fail_hot": [
-    "Whoa, you're overdriving that PA — you're gonna desense the receiver. Back it off, hotshot.",
-    "You're blasting the PA into saturation! Back off the power before you desense everything.",
-    "Too hot, hotshot! That uplink's screaming. Reduce gain or you'll cook the front end."
+    "Too hot — you're desensing the receiver! Back the power off before you cook the front end.",
+    "That RSSI is suspiciously strong and totally unusable: saturation. Dial it down.",
+    "Overdriving helps no one. Less power, cleaner channel."
   ],
   "level_fail_cold": [
-    "Signal's in the noise floor. Add gain or move closer to the tower.",
-    "We're in a dead zone down here. More gain, better antenna, or move the site — pick one.",
-    "Signal's barely a whisper. Add a repeater or get closer — I can't work with static."
+    "RSSI's under the floor. Shorten the path or find a cleaner channel.",
+    "We're in a dead zone. Better geometry or a repeater — pick one.",
+    "Signal's a whisper in a loud room. Move closer or clear the interference."
   ],
   "outage_start": [
-    "Uh oh, we dropped to zero bars — chop chop, I do NOT do well with dead air.",
-    "We just dropped the whole sector! Get moving — I can't flirt with zero bars.",
-    "Carrier lost! Chop chop — dead air makes me *very* cranky."
+    "Uh oh — RSSI just fell off a cliff. Chop chop, dead air helps no one.",
+    "We lost the link entirely! Get moving — interference doesn't hunt itself.",
+    "Carrier's gone. Every minute dark is a minute the noise wins."
   ],
   "outage_resolved": [
-    "Bars are back! You re-acquired that carrier faster than I could finish my coffee. I don't drink coffee. I don't know why I said that.",
-    "Five bars and the handoff's seamless! You re-acquire like a pro.",
-    "Sector's back, SINR's gorgeous. I knew you had good instincts for RF."
+    "Link's back and the RSSI's honest again. Fast recovery.",
+    "Clean channel, stable signal. You hunt interference like a pro.",
+    "Back in window. Whatever was shouting out there, you routed around it."
   ],
   "hint_request": [
-    "Aww, need a hint on the link budget? Fine — for you, anything. *wink*",
-    "A hint? For you? Always. Check your weakest link first — it's usually the obvious one.",
-    "Fine, *one* hint: follow the RSRP. The measurements never lie, unlike some engineers I could name."
+    "Need a hint on the interference hunt? Check your weakest RSSI first.",
+    "One hint: follow the RSSI trend. The measurements never lie.",
+    "Hint: find what's sharing your channel before you touch the power."
+  ],
+  "first_placement": [
+    "First radio down. Now we chase RSSI — stronger isn't always cleaner.",
+    "Placed. Read the RSSI before you trust it; interference hides in good numbers."
+  ],
+  "segment_complete": [
+    "Link's closed end to end. Now — is the RSSI honest?",
+    "Full path. If the RSSI holds, we're golden."
+  ],
+  "too_hot": [
+    "Too hot — that front end's saturated! Fried radio... bag it, that's a core.",
+    "Blasted past the top of the window. Cooked part, one core — Warehouse rules."
+  ],
+  "too_low": [
+    "RSSI's in the basement. Either the path's too long or something's shouting over us — find the interference.",
+    "Too weak. Fix the geometry or clear the channel; gain alone won't fix a noisy floor."
+  ],
+  "level_complete": [
+    "RSSI strong, channel clean, zero retries. That's a link.",
+    "In window with margin. Whatever was interfering, you routed around it."
+  ],
+  "level_failed": [
+    "Out of window. Don't just add power — hunt the interference first.",
+    "Missed it. Check what's sharing your channel before you blame the distance."
+  ],
+  "idle_nudge": [
+    "Still scanning? Trust the RSSI trend, not the first pretty number.",
+    "Quiet air's deceptive. Pick your channel and commit."
   ]
 }

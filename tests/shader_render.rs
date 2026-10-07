@@ -170,7 +170,11 @@ fn all_picker_frames_resolve() {
     // sprites/picker/{stem}_select_{i}.png, i in 0..SELECT_ANIM_FRAMES (6).
     for c in SHIPPED_COMPANIONS {
         for i in 0..6 {
-            assert_asset(&format!("sprites/picker/{}_select_{}.png", c.picker_stem(), i));
+            assert_asset(&format!(
+                "sprites/picker/{}_select_{}.png",
+                c.picker_stem(),
+                i
+            ));
         }
     }
 }
@@ -232,9 +236,13 @@ fn unshipped_companions_art_gaps_are_known() {
     let gaps = [
         (Companion::Clara, "sprites/clara/clara_sheet_fullbody.png"),
         (Companion::Aino, "sprites/aino/aino_sheet_fullbody.png"),
-        (Companion::Hikari, "sprites/hikari/hikari_sheet_fullbody.png"),
+        (
+            Companion::Hikari,
+            "sprites/hikari/hikari_sheet_fullbody.png",
+        ),
         (Companion::Lea, "sprites/lea/lea_sheet_fullbody.png"),
-        (Companion::Lea, "art/companions/lea_portrait.jpg"),
+        // The Lea portrait landed 2026-10-06 (character-art pass); her
+        // sprite sheet is still the open gap, so she stays out of ALL.
     ];
     for (companion, rel) in gaps {
         assert!(
@@ -255,11 +263,7 @@ fn asset_paths_use_forward_slashes_only() {
     // but breaks on Android/Linux asset resolution.
     for c in SHIPPED_COMPANIONS {
         for p in [c.portrait_path(), c.sprite_path()] {
-            assert!(
-                !p.contains('\\'),
-                "backslash in asset path: {}",
-                p
-            );
+            assert!(!p.contains('\\'), "backslash in asset path: {}", p);
         }
     }
     for f in FONTS {

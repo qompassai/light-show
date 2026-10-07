@@ -56,9 +56,9 @@ impl DialogueBank {
             (
                 "clean_splice",
                 &[
-                    "Ara ara~ a 0.05 dB fusion splice? Be still my heart, senpai.",
-                    "Mmm, that's a clean core alignment. I could watch you splice all day.",
-                    "Look at you, prepping your cleaver like you mean it. Cute.",
+                    "0.05 dB on the fusion splice. That is exactly how a splice is supposed to read.",
+                    "Clean core alignment, loss right at nominal. The OTDR trace will have nothing to gossip about.",
+                    "Cleaver prepped like a pro — angle true, face clean. Splice it.",
                 ],
             ),
             (
@@ -72,9 +72,9 @@ impl DialogueBank {
             (
                 "level_win",
                 &[
-                    "In-window, first try! You're making it very hard to focus on my job here.",
+                    "In-window, first try, budget balanced to the tenth. Textbook.",
                     "-15.2 dBm, right in the pocket. Show-off.",
-                    "Margin to spare and not a dB wasted. You're officially my favorite kind of trouble.",
+                    "Margin to spare and not a dB wasted. That's the whole job, done right.",
                 ],
             ),
             (
@@ -97,7 +97,7 @@ impl DialogueBank {
                 "outage_start",
                 &[
                     "Uh oh — got a fault on the line. Chop chop, I do NOT do well with dead air.",
-                    "Fiber cut! OTDR's already screaming. Get moving, I can't flirt with a dark fiber.",
+                    "Fiber cut! OTDR's already screaming. Get moving — dark fiber helps no one.",
                     "We just lost light on the span. Chop chop — dead fiber makes me *very* cranky.",
                 ],
             ),
@@ -106,15 +106,64 @@ impl DialogueBank {
                 &[
                     "Service restored! You rerouted that faster than I could finish my coffee. I don't drink coffee. I don't know why I said that.",
                     "Light's back and the trace is clean! You splice like you mean it, senpai.",
-                    "Span restored, loss budget intact. I knew you had good hands.",
+                    "Span restored, loss budget intact. That OTDR trace is showing off.",
                 ],
             ),
             (
                 "hint_request",
                 &[
-                    "Aww, need a hint? Fine — for you, anything. *wink*",
-                    "A hint? For you? Always. Check your worst splice first — it's usually the obvious one.",
-                    "Fine, *one* hint: follow the loss. The budget never lies, unlike some people I could name.",
+                    "Need a hint? Start with your worst splice — it's usually the obvious one.",
+                    "One hint: follow the loss. The budget never lies.",
+                    "Check the longest span first. Attenuation compounds quietly.",
+                ],
+            ),
+            (
+                "first_placement",
+                &[
+                    "First component down. Now we find out what the budget thinks of your plan.",
+                    "Placed. Remember: every tenth of a dB is a decision.",
+                ],
+            ),
+            (
+                "segment_complete",
+                &[
+                    "Route's connected end to end. Now the only question is the window.",
+                    "Full path. Hold your breath for the budget check.",
+                ],
+            ),
+            (
+                "too_hot",
+                &[
+                    "Too hot! That part's cooked — bag it. That's a core for the Warehouse now.",
+                    "Overdriven and fried. The Warehouse pays a core for dead parts like that.",
+                ],
+            ),
+            (
+                "too_low",
+                &[
+                    "Signal's fading under the window. We're spending dB we don't have — check your worst loss.",
+                    "Too low. Something on this route is eating light; find the hungriest splice.",
+                ],
+            ),
+            (
+                "level_complete",
+                &[
+                    "In window and clean. That's how a route is supposed to land.",
+                    "Service restored, budget balanced. Textbook work.",
+                ],
+            ),
+            (
+                "level_failed",
+                &[
+                    "Out of window — the budget doesn't bend, but routes can be rebuilt.",
+                    "Missed the window this time. The loss is in there somewhere; we'll find it.",
+                ],
+            ),
+            (
+                "idle_nudge",
+                &[
+                    "Still thinking it over? The window isn't moving — trust your worst splice.",
+                    "Take your time. The light's patient, even if the outage clock isn't.",
                 ],
             ),
         ])
@@ -126,7 +175,7 @@ impl DialogueBank {
             (
                 "clean_splice",
                 &[
-                    "Ooh, an F-connector torqued to spec? I felt that in my signal-to-noise ratio.",
+                    "F-connector torqued to spec, return loss clean. That's how you terminate.",
                     "Mmm, zero return loss. You really know how to sweep a line, don't you.",
                     "Look at that tap value — precise. I like precise.",
                 ],
@@ -142,9 +191,9 @@ impl DialogueBank {
             (
                 "level_win",
                 &[
-                    "Locked in-band on the first pass? Careful, you're making my downstream blush.",
+                    "Locked in-band on the first pass, tilt flat. That's a sweep worth framing.",
                     "Clean sweep, zero ingress. Show-off.",
-                    "Flat sweep, MER to spare. You're officially my favorite kind of interference — the good kind.",
+                    "Flat sweep, MER to spare, zero ingress. The node approves.",
                 ],
             ),
             (
@@ -182,79 +231,180 @@ impl DialogueBank {
             (
                 "hint_request",
                 &[
-                    "Aww, need a hint on the tap budget? Fine — for you, anything. *wink*",
-                    "A hint? For you? Always. Check your noisiest tap first — ingress loves the obvious.",
-                    "Fine, *one* hint: follow the tilt. The sweep never lies, unlike some techs I could name.",
+                    "Need a hint on the tap budget? Check your noisiest tap first — ingress loves the obvious.",
+                    "One hint: follow the tilt. The sweep never lies.",
+                    "Start at the farthest tap and work back. Losses stack in order.",
+                ],
+            ),
+            (
+                "first_placement",
+                &[
+                    "First piece in the cascade. Everything after this is gain staging.",
+                    "Placed. Watch the tilt as you build — the high end falls first.",
+                ],
+            ),
+            (
+                "segment_complete",
+                &[
+                    "Cascade's continuous to the tap. The sweep says it's all one plant now.",
+                    "End to end. Now we see where the level lands at the drop.",
+                ],
+            ),
+            (
+                "too_hot",
+                &[
+                    "Too hot — that stage is clipping! Cooked part... bag it, that's a core now.",
+                    "Overdriven into distortion. Fried is fried: one more core for the bin.",
+                ],
+            ),
+            (
+                "too_low",
+                &[
+                    "Level's sinking toward the noise floor. More gain or fewer splits — pick one.",
+                    "Too low at the tap. Something's eating your dBmV; check the longest run.",
+                ],
+            ),
+            (
+                "level_complete",
+                &[
+                    "Flat sweep, in window, MER to spare. That's a clean cascade.",
+                    "Unity gain, locked in-band. Beautiful balance.",
+                ],
+            ),
+            (
+                "level_failed",
+                &[
+                    "Out of window. The cascade keeps every receipt — rebalance it stage by stage.",
+                    "Missed the window. Tilt or level — one of them is lying to you.",
+                ],
+            ),
+            (
+                "idle_nudge",
+                &[
+                    "Meter's waiting on you. Ingress loves an idle line, you know.",
+                    "Still mapping it out? Start from the tap and work back.",
                 ],
             ),
         ])
     }
 
-    /// Linka — mobile / cellular RF.
+    /// Linka — wireless / Wi-Fi RF. Her lines are discipline-first per
+    /// Matt's direction: RSSI readouts and resolving Wi-Fi interference
+    /// (co-channel networks, noisy neighbors, channel choice, antenna
+    /// geometry) — in her voice, never the flirt pool.
     fn linka() -> Self {
         Self::from_pairs(&[
             (
                 "clean_splice",
                 &[
-                    "Ooh, a clean handoff with zero dropped calls? Be still my baseband, senpai.",
-                    "Mmm, that's a solid RSRP. I could watch you tune antennas all day.",
-                    "Look at you optimizing that link budget like you mean it. Cute.",
+                    "Clean association, zero retries — that's how you join a network.",
+                    "Solid RSSI on a clean channel. You pick your spots well.",
+                    "Textbook placement. The spectrum noticed, trust me.",
                 ],
             ),
             (
                 "messy_splice",
                 &[
-                    "That much path loss made me flinch. Physically. I'm literally just radio waves.",
-                    "Bold of you to skip the site survey. I'm not mad, just... concerned about your SINR.",
-                    "That handoff dropped harder than my last call. Re-tune it before my SINR cries.",
+                    "That RSSI made me flinch. Something's interfering — or the geometry's wrong.",
+                    "Bold of you to skip the site survey. Co-channel interference loves confidence like that.",
+                    "That link's dropping packets. Re-aim it before the noise floor files a complaint.",
                 ],
             ),
             (
                 "level_win",
                 &[
-                    "In-window on the first try! You're making it very hard to focus on my job here.",
-                    "Five bars, no jitter. Show-off.",
-                    "Zero drops, full bars, margin to spare. You're officially my favorite kind of handoff.",
+                    "RSSI in the sweet spot, channel clean. That's a link I'd sign.",
+                    "Strong signal, zero interference complaints. Show-off.",
+                    "In window with margin to spare. The airwaves approve.",
                 ],
             ),
             (
                 "level_fail_hot",
                 &[
-                    "Whoa, you're overdriving that PA — you're gonna desense the receiver. Back it off, hotshot.",
-                    "You're blasting the PA into saturation! Back off the power before you desense everything.",
-                    "Too hot, hotshot! That uplink's screaming. Reduce gain or you'll cook the front end.",
+                    "Too hot — you're desensing the receiver! Back the power off before you cook the front end.",
+                    "That RSSI is suspiciously strong and totally unusable: saturation. Dial it down.",
+                    "Overdriving helps no one. Less power, cleaner channel.",
                 ],
             ),
             (
                 "level_fail_cold",
                 &[
-                    "Signal's in the noise floor. Add gain or move closer to the tower.",
-                    "We're in a dead zone down here. More gain, better antenna, or move the site — pick one.",
-                    "Signal's barely a whisper. Add a repeater or get closer — I can't work with static.",
+                    "RSSI's under the floor. Shorten the path or find a cleaner channel.",
+                    "We're in a dead zone. Better geometry or a repeater — pick one.",
+                    "Signal's a whisper in a loud room. Move closer or clear the interference.",
                 ],
             ),
             (
                 "outage_start",
                 &[
-                    "Uh oh, we dropped to zero bars — chop chop, I do NOT do well with dead air.",
-                    "We just dropped the whole sector! Get moving — I can't flirt with zero bars.",
-                    "Carrier lost! Chop chop — dead air makes me *very* cranky.",
+                    "Uh oh — RSSI just fell off a cliff. Chop chop, dead air helps no one.",
+                    "We lost the link entirely! Get moving — interference doesn't hunt itself.",
+                    "Carrier's gone. Every minute dark is a minute the noise wins.",
                 ],
             ),
             (
                 "outage_resolved",
                 &[
-                    "Bars are back! You re-acquired that carrier faster than I could finish my coffee. I don't drink coffee. I don't know why I said that.",
-                    "Five bars and the handoff's seamless! You re-acquire like a pro.",
-                    "Sector's back, SINR's gorgeous. I knew you had good instincts for RF.",
+                    "Link's back and the RSSI's honest again. Fast recovery.",
+                    "Clean channel, stable signal. You hunt interference like a pro.",
+                    "Back in window. Whatever was shouting out there, you routed around it.",
                 ],
             ),
             (
                 "hint_request",
                 &[
-                    "Aww, need a hint on the link budget? Fine — for you, anything. *wink*",
-                    "A hint? For you? Always. Check your weakest link first — it's usually the obvious one.",
-                    "Fine, *one* hint: follow the RSRP. The measurements never lie, unlike some engineers I could name.",
+                    "Need a hint on the interference hunt? Check your weakest RSSI first.",
+                    "One hint: follow the RSSI trend. The measurements never lie.",
+                    "Hint: find what's sharing your channel before you touch the power.",
+                ],
+            ),
+            (
+                "first_placement",
+                &[
+                    "First radio down. Now we chase RSSI — stronger isn't always cleaner.",
+                    "Placed. Read the RSSI before you trust it; interference hides in good numbers.",
+                ],
+            ),
+            (
+                "segment_complete",
+                &[
+                    "Link's closed end to end. Now — is the RSSI honest?",
+                    "Full path. If the RSSI holds, we're golden.",
+                ],
+            ),
+            (
+                "too_hot",
+                &[
+                    "Too hot — that front end's saturated! Fried radio... bag it, that's a core.",
+                    "Blasted past the top of the window. Cooked part, one core — Warehouse rules.",
+                ],
+            ),
+            (
+                "too_low",
+                &[
+                    "RSSI's in the basement. Either the path's too long or something's shouting over us — find the interference.",
+                    "Too weak. Fix the geometry or clear the channel; gain alone won't fix a noisy floor.",
+                ],
+            ),
+            (
+                "level_complete",
+                &[
+                    "RSSI strong, channel clean, zero retries. That's a link.",
+                    "In window with margin. Whatever was interfering, you routed around it.",
+                ],
+            ),
+            (
+                "level_failed",
+                &[
+                    "Out of window. Don't just add power — hunt the interference first.",
+                    "Missed it. Check what's sharing your channel before you blame the distance.",
+                ],
+            ),
+            (
+                "idle_nudge",
+                &[
+                    "Still scanning? Trust the RSSI trend, not the first pretty number.",
+                    "Quiet air's deceptive. Pick your channel and commit.",
                 ],
             ),
         ])
@@ -267,8 +417,8 @@ impl DialogueBank {
                 "clean_splice",
                 &[
                     "Ooh, a punch-down with zero crosstalk? Be still my collision domain, senpai.",
-                    "Mmm, that's a clean 568B pinout. I could watch you dress cable all day.",
-                    "Look at you labeling every drop like you mean it. Cute.",
+                    "Clean 568B pinout, pairs untwisted the minimum. That certifies.",
+                    "Every drop labeled, every run dressed. The next tech thanks you.",
                 ],
             ),
             (
@@ -282,9 +432,9 @@ impl DialogueBank {
             (
                 "level_win",
                 &[
-                    "Full duplex, zero retransmits, first try! You're making it very hard to focus on my job here.",
+                    "Full duplex, zero retransmits, first try. Every constraint green.",
                     "Gigabit link, clean negotiation. Show-off.",
-                    "Wire-speed, zero errors, margin to spare. You're officially my favorite kind of packet.",
+                    "Wire-speed, zero errors, margin to spare. Cleanest path on the board.",
                 ],
             ),
             (
@@ -316,15 +466,64 @@ impl DialogueBank {
                 &[
                     "Link's back up! You traced that fault faster than I could finish my ping sweep. I don't actually ping things. I don't know why I said that.",
                     "All ports green and the CRCs are clean! You trace faults like a pro.",
-                    "Network's back, zero collisions. I knew you had good hands for copper.",
+                    "Network's back, zero collisions. Your terminations held under pressure.",
                 ],
             ),
             (
                 "hint_request",
                 &[
-                    "Aww, need a hint on the cable run? Fine — for you, anything. *wink*",
-                    "A hint? For you? Always. Check your longest run first — attenuation loves the obvious.",
-                    "Fine, *one* hint: follow the link lights. The switch never lies, unlike some admins I could name.",
+                    "Need a hint on the cable run? Check your longest run first — the 100 m wall is real.",
+                    "One hint: follow the link lights. A dark port is a confession.",
+                    "Hint: meter the run before you blame the switch. Copper keeps receipts.",
+                ],
+            ),
+            (
+                "first_placement",
+                &[
+                    "First drop punched down. Mind the untwist — crosstalk starts there.",
+                    "Placed. Every run from here counts against the 100 m wall.",
+                ],
+            ),
+            (
+                "segment_complete",
+                &[
+                    "Path's continuous end to end. Now the constraints decide: length, PoE, bandwidth.",
+                    "Full run. Check it against the checklist before you celebrate.",
+                ],
+            ),
+            (
+                "too_hot",
+                &[
+                    "Too hot — that PoE load cooked the part! Bag it: one core for the Warehouse.",
+                    "Over the PoE budget and fried. Dead part, one core — that's the trade.",
+                ],
+            ),
+            (
+                "too_low",
+                &[
+                    "Below PHY spec at that length. Shorten the run or add a switch — physics won't negotiate.",
+                    "Signal's under spec. Something on this run is too long or too lossy.",
+                ],
+            ),
+            (
+                "level_complete",
+                &[
+                    "Wire-speed, zero errors, every constraint green. That's a certified run.",
+                    "Full duplex and in spec. The checklist has nothing left to say.",
+                ],
+            ),
+            (
+                "level_failed",
+                &[
+                    "Out of spec. The constraints keep receipts — measure the longest run first.",
+                    "Missed it. Length, PoE, or bandwidth: one of the three is lying.",
+                ],
+            ),
+            (
+                "idle_nudge",
+                &[
+                    "Still measuring? Start with the longest run — it's the usual suspect.",
+                    "Take your time. The link lights aren't going anywhere.",
                 ],
             ),
         ])
@@ -473,6 +672,91 @@ mod tests {
         assert_eq!(bank.random_line("outage_start"), Some("Lights out."));
         let wrapped = r#"{"lines": {"level_win": ["Nice run!"]}}"#;
         assert!(serde_json::from_str::<DialogueBank>(wrapped).is_err());
+    }
+
+    const REACTION_KEYS: &[&str] = &[
+        "first_placement",
+        "segment_complete",
+        "too_hot",
+        "too_low",
+        "level_complete",
+        "level_failed",
+        "idle_nudge",
+    ];
+
+    #[test]
+    fn every_main_companion_has_every_reaction_key() {
+        for companion in Companion::ALL {
+            let bank = DialogueBank::load_default(companion);
+            for key in REACTION_KEYS {
+                assert!(
+                    bank.lines.get(*key).is_some_and(|l| !l.is_empty()),
+                    "{companion:?} is missing reaction lines for '{key}'"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn results_and_reaction_pools_carry_no_arousal_framing() {
+        // Playtest round 2 (Matt): the aroused/flirt pool is out of
+        // results and reaction text. Professional-playful is fine;
+        // these substrings are the arousal framings that shipped once
+        // and must never come back on these surfaces.
+        const BANNED: &[&str] = &[
+            "hard to focus",
+            "be still my heart",
+            "favorite kind of",
+            "good hands",
+            "flirt",
+            "*wink*",
+            "ara ara",
+            "i could watch you",
+        ];
+        const SURFACES: &[&str] = &[
+            "level_win",
+            "level_complete",
+            "level_failed",
+            "outage_resolved",
+            "first_placement",
+            "segment_complete",
+            "too_hot",
+            "too_low",
+            "idle_nudge",
+            "hint_request",
+        ];
+        for companion in Companion::ALL {
+            let bank = DialogueBank::load_default(companion);
+            for key in SURFACES {
+                for line in bank.lines.get(*key).into_iter().flatten() {
+                    let lower = line.to_lowercase();
+                    for banned in BANNED {
+                        assert!(
+                            !lower.contains(banned),
+                            "{companion:?} '{key}' line carries banned framing '{banned}': {line}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn json_mirrors_match_the_compiled_banks() {
+        // The JSON files under assets/dialogue are doc/localization
+        // mirrors of the compiled banks (not runtime-loaded). They
+        // must not drift: a stale mirror once kept shipping the old
+        // flirt lines after the bank was rewritten.
+        for companion in Companion::ALL {
+            let stem = companion.picker_stem();
+            let path = format!("{}/assets/dialogue/{stem}_en.json", env!("CARGO_MANIFEST_DIR"));
+            let text = std::fs::read_to_string(&path)
+                .unwrap_or_else(|e| panic!("mirror {path} unreadable: {e}"));
+            let mirror: DialogueBank = serde_json::from_str(&text)
+                .unwrap_or_else(|e| panic!("mirror {path} does not parse: {e}"));
+            let bank = DialogueBank::load_default(companion);
+            assert_eq!(mirror.lines, bank.lines, "mirror {stem}_en.json drifted from the compiled bank");
+        }
     }
 
     #[test]

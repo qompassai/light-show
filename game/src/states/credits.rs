@@ -10,6 +10,7 @@
 use super::GameState;
 use crate::anim::TransitionRequest;
 use crate::fonts::FONT_SIZE_ADJUST;
+use crate::ui::{styled_button, ButtonPalette, BUTTON_BORDER};
 use bevy::prelude::*;
 
 pub struct CreditsPlugin;
@@ -98,9 +99,12 @@ fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
                     Button,
                     Node {
                         padding: UiRect::axes(Val::Px(28.0), Val::Px(12.0)),
+                        border: BUTTON_BORDER,
+                        border_radius: crate::ui::BUTTON_RADIUS,
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.2, 0.2, 0.28)),
+                    styled_button(ButtonPalette::back()),
                 ))
                 .with_children(|btn| {
                     btn.spawn(text(&body_medium, "Back", 20.0, Color::WHITE));

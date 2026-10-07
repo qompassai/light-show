@@ -1,6 +1,6 @@
 {
   "clean_splice": [
-    "Ooh, an F-connector torqued to spec? I felt that in my signal-to-noise ratio.",
+    "F-connector torqued to spec, return loss clean. That's how you terminate.",
     "Mmm, zero return loss. You really know how to sweep a line, don't you.",
     "Look at that tap value — precise. I like precise."
   ],
@@ -10,9 +10,9 @@
     "That return loss is atrocious. Re-terminate it before my tuner files a complaint."
   ],
   "level_win": [
-    "Locked in-band on the first pass? Careful, you're making my downstream blush.",
+    "Locked in-band on the first pass, tilt flat. That's a sweep worth framing.",
     "Clean sweep, zero ingress. Show-off.",
-    "Flat sweep, MER to spare. You're officially my favorite kind of interference — the good kind."
+    "Flat sweep, MER to spare, zero ingress. The node approves."
   ],
   "level_fail_hot": [
     "Whoa, that's way too much signal — you're gonna clip the amp. Pad it down, hotshot.",
@@ -35,8 +35,36 @@
     "Node's back, tilt's flat. I knew you had good ears for ingress."
   ],
   "hint_request": [
-    "Aww, need a hint on the tap budget? Fine — for you, anything. *wink*",
-    "A hint? For you? Always. Check your noisiest tap first — ingress loves the obvious.",
-    "Fine, *one* hint: follow the tilt. The sweep never lies, unlike some techs I could name."
+    "Need a hint on the tap budget? Check your noisiest tap first — ingress loves the obvious.",
+    "One hint: follow the tilt. The sweep never lies.",
+    "Start at the farthest tap and work back. Losses stack in order."
+  ],
+  "first_placement": [
+    "First piece in the cascade. Everything after this is gain staging.",
+    "Placed. Watch the tilt as you build — the high end falls first."
+  ],
+  "segment_complete": [
+    "Cascade's continuous to the tap. The sweep says it's all one plant now.",
+    "End to end. Now we see where the level lands at the drop."
+  ],
+  "too_hot": [
+    "Too hot — that stage is clipping! Cooked part... bag it, that's a core now.",
+    "Overdriven into distortion. Fried is fried: one more core for the bin."
+  ],
+  "too_low": [
+    "Level's sinking toward the noise floor. More gain or fewer splits — pick one.",
+    "Too low at the tap. Something's eating your dBmV; check the longest run."
+  ],
+  "level_complete": [
+    "Flat sweep, in window, MER to spare. That's a clean cascade.",
+    "Unity gain, locked in-band. Beautiful balance."
+  ],
+  "level_failed": [
+    "Out of window. The cascade keeps every receipt — rebalance it stage by stage.",
+    "Missed the window. Tilt or level — one of them is lying to you."
+  ],
+  "idle_nudge": [
+    "Meter's waiting on you. Ingress loves an idle line, you know.",
+    "Still mapping it out? Start from the tap and work back."
   ]
 }

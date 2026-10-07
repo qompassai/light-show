@@ -21,7 +21,10 @@ pub use component::{
     free_space_path_loss_db, CableCategory, Component, ConnectorType, SpliceType,
     COAX_LOSS_DB_PER_M,
 };
-pub use graph::{EthernetEval, EthernetViolation, LinkBudgetResult, PathGraph, PathNode};
+pub use graph::{
+    CoaxEval, CoaxViolation, EthernetEval, EthernetViolation, LinkBudgetResult, PathGraph,
+    PathNode, WirelessEval, WirelessViolation,
+};
 pub use medium::Medium;
 pub use outage::{Outage, OutageKind};
 pub use wavelength::Wavelength;

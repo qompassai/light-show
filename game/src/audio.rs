@@ -19,15 +19,19 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
 use crate::level::{load_level, CurrentLevelIndex};
+use crate::save::{SaveData, Settings};
 use crate::states::{GameState, LevelOutcome};
 use crate::waifu::{Companion, SelectedCompanion};
+use bevy::audio::GlobalVolume;
 use bevy::prelude::*;
 
 pub struct MusicPlugin;
 
 impl Plugin for MusicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::MainMenu), play_menu_track)
+        app.add_systems(Startup, apply_volume_settings)
+            .add_systems(Update, sync_volume_settings_on_change)
+            .add_systems(OnEnter(GameState::MainMenu), play_menu_track)
             .add_systems(OnExit(GameState::MainMenu), stop_music)
             .add_systems(OnEnter(GameState::Playing), play_level_track)
             .add_systems(OnExit(GameState::Playing), stop_music)
@@ -52,6 +56,88 @@ impl Plugin for MusicPlugin {
             // boss track takes over) and restarts when play resumes.
             .add_systems(OnEnter(GameState::Playing), play_ambience)
             .add_systems(OnExit(GameState::Playing), stop_ambience);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Persisted volume settings: the `Settings` in the save file drive the
+// live audio output. `master_volume` maps to Bevy's `GlobalVolume`; the
+// music and SFX sliders scale their bus constants at spawn time. All
+// defaults are 1.0, so an untouched save reproduces the original fixed
+// mix exactly. Before this wiring existed the sliders were stored and
+// validated but never read — persisted volume was silently inert.
+// ---------------------------------------------------------------------------
+
+/// Effective music-bus level for persisted `settings`: music tracks
+/// spawn at full scale, so the saved music slider is the bus level.
+pub fn music_bus_volume(settings: &Settings) -> f32 {
+    settings.music_volume
+}
+
+/// Effective ambience level: the fixed mix constant scaled by the saved
+/// music slider (the hum layers under the music, so it follows its bus).
+pub fn ambience_bus_volume(settings: &Settings) -> f32 {
+    AMBIENCE_VOLUME * settings.music_volume
+}
+
+/// Effective SFX bus level for persisted `settings`: the fixed mix
+/// constant scaled by the saved SFX slider.
+pub fn sfx_bus_volume(settings: &Settings) -> f32 {
+    SFX_VOLUME * settings.sfx_volume
+}
+
+/// Music-bus level for an optional save: no save resource means the
+/// default settings, i.e. full scale.
+fn music_volume_or_default(save: Option<&SaveData>) -> f32 {
+    save.map_or(1.0, |s| music_bus_volume(&s.settings))
+}
+
+/// Ambience level for an optional save (see `music_volume_or_default`).
+fn ambience_volume_or_default(save: Option<&SaveData>) -> f32 {
+    save.map_or(AMBIENCE_VOLUME, |s| ambience_bus_volume(&s.settings))
+}
+
+/// Push the persisted volume settings into the live audio output: the
+/// saved master volume becomes Bevy's `GlobalVolume` and the saved SFX
+/// slider is cached on the `Sfx` resource, whose spawns read it.
+///
+/// Bevy 0.19 applies `GlobalVolume` when a sink starts, not
+/// retroactively, so a change reaches already-playing music at its
+/// next spawn — in this game every state transition respawns its
+/// track, so that is never far away. SFX one-shots pick changes up on
+/// their next play.
+///
+/// Registered at `Startup` by `MusicPlugin` and re-run on save changes
+/// via `sync_volume_settings_on_change`, so the wiring holds if a
+/// settings screen ever mutates the save at runtime. Every parameter
+/// is optional: partial plugin sets and headless tests skip the pieces
+/// they don't have instead of panicking.
+fn apply_volume_settings(
+    save: Option<Res<SaveData>>,
+    mut global: Option<ResMut<GlobalVolume>>,
+    mut sfx: Option<ResMut<Sfx>>,
+) {
+    let Some(save) = save else {
+        return;
+    };
+    if let Some(global) = &mut global {
+        global.volume = bevy::audio::Volume::Linear(save.settings.master_volume);
+    }
+    if let Some(sfx) = &mut sfx {
+        sfx.volume_scale = save.settings.sfx_volume;
+    }
+}
+
+/// `Update` companion to `apply_volume_settings`: reapplying is
+/// idempotent but pointless every frame, so the body only runs when
+/// the save resource actually changed.
+fn sync_volume_settings_on_change(
+    save: Option<Res<SaveData>>,
+    global: Option<ResMut<GlobalVolume>>,
+    sfx: Option<ResMut<Sfx>>,
+) {
+    if save.as_ref().is_some_and(|s| s.is_changed()) {
+        apply_volume_settings(save, global, sfx);
     }
 }
 
@@ -181,6 +267,7 @@ fn spawn_track(
     asset_root: &AssetRootDir,
     path: &str,
     looping: bool,
+    volume: f32,
 ) {
     // Curative guard: validate decodability on the main thread before
     // handing the asset to bevy_audio. If the file is corrupt, we log
@@ -197,6 +284,7 @@ fn spawn_track(
             } else {
                 bevy::audio::PlaybackMode::Despawn
             },
+            volume: bevy::audio::Volume::Linear(volume),
             ..default()
         },
     ));
@@ -206,6 +294,7 @@ fn play_menu_track(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
+    save: Option<Res<SaveData>>,
 ) {
     spawn_track(
         &mut commands,
@@ -213,6 +302,7 @@ fn play_menu_track(
         &asset_root,
         menu_track(),
         true,
+        music_volume_or_default(save.as_deref()),
     );
 }
 
@@ -221,6 +311,7 @@ fn play_level_track(
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
     level_index: Res<CurrentLevelIndex>,
+    save: Option<Res<SaveData>>,
 ) {
     // `load_level` parses the compile-time-embedded level JSON (the same
     // call `playing::setup_level` makes on this same state enter); the
@@ -232,6 +323,7 @@ fn play_level_track(
         &asset_root,
         playing_track(level_index.0, world),
         true,
+        music_volume_or_default(save.as_deref()),
     );
 }
 
@@ -240,6 +332,7 @@ fn play_outage_track(
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
     mut outage_count: Local<u32>,
+    save: Option<Res<SaveData>>,
 ) {
     spawn_track(
         &mut commands,
@@ -247,6 +340,7 @@ fn play_outage_track(
         &asset_root,
         outage_track(*outage_count),
         true,
+        music_volume_or_default(save.as_deref()),
     );
     *outage_count += 1;
 }
@@ -258,6 +352,7 @@ fn play_results_track(
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
     outcome: Res<LevelOutcome>,
+    save: Option<Res<SaveData>>,
 ) {
     spawn_track(
         &mut commands,
@@ -265,6 +360,7 @@ fn play_results_track(
         &asset_root,
         results_track(outcome.won),
         false,
+        music_volume_or_default(save.as_deref()),
     );
 }
 
@@ -344,6 +440,7 @@ fn play_companion_theme(
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
     selected: Res<SelectedCompanion>,
+    save: Option<Res<SaveData>>,
 ) {
     spawn_track(
         &mut commands,
@@ -351,6 +448,7 @@ fn play_companion_theme(
         &asset_root,
         companion_theme(selected.0),
         true,
+        music_volume_or_default(save.as_deref()),
     );
 }
 
@@ -359,6 +457,7 @@ fn play_ambience(
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
     selected: Res<SelectedCompanion>,
+    save: Option<Res<SaveData>>,
 ) {
     let path = companion_ambience(selected.0);
     // Same curative guard as `spawn_track`: validate on the main thread
@@ -371,7 +470,7 @@ fn play_ambience(
         AudioPlayer::<AudioSource>(asset_server.load(path.to_string())),
         PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
-            volume: bevy::audio::Volume::Linear(AMBIENCE_VOLUME),
+            volume: bevy::audio::Volume::Linear(ambience_volume_or_default(save.as_deref())),
             ..default()
         },
     ));
@@ -512,6 +611,11 @@ pub struct Sfx {
     menu_open: Handle<AudioSource>,
     menu_close: Handle<AudioSource>,
     tab_switch: Handle<AudioSource>,
+    /// Saved SFX slider (0.0..=1.0), seeded from the save file at
+    /// startup by `apply_volume_settings` and refreshed whenever the
+    /// save changes; scales [`SFX_VOLUME`] on every spawn. The 1.0
+    /// default is the unscaled original mix.
+    volume_scale: f32,
 }
 
 impl FromWorld for Sfx {
@@ -535,6 +639,7 @@ impl FromWorld for Sfx {
             menu_open: server.load(sfx_path(SfxKind::MenuOpen)),
             menu_close: server.load(sfx_path(SfxKind::MenuClose)),
             tab_switch: server.load(sfx_path(SfxKind::TabSwitch)),
+            volume_scale: 1.0,
         }
     }
 }
@@ -562,13 +667,20 @@ impl Sfx {
         }
     }
 
-    /// Spawn a one-shot playback of `kind` at [`SFX_VOLUME`].
+    /// The level one-shots spawn at: the fixed mix constant scaled by
+    /// the saved SFX slider cached on this resource.
+    fn effective_volume(&self) -> f32 {
+        SFX_VOLUME * self.volume_scale
+    }
+
+    /// Spawn a one-shot playback of `kind` at the SFX bus level
+    /// ([`SFX_VOLUME`] scaled by the saved SFX slider).
     /// `PlaybackMode::Despawn` removes the entity when the sample ends.
     pub fn play(&self, commands: &mut Commands, kind: SfxKind) {
         self.play_with_speed(commands, kind, 1.0);
     }
 
-    /// Spawn a one-shot playback of `kind` at [`SFX_VOLUME`] with a
+    /// Spawn a one-shot playback of `kind` at the SFX bus level with a
     /// playback-speed multiplier (pitch-shifts the sample; the
     /// per-companion dialogue blip uses this instead of shipping eight
     /// near-identical files).
@@ -577,7 +689,7 @@ impl Sfx {
             AudioPlayer(self.handle(kind).clone()),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: bevy::audio::Volume::Linear(SFX_VOLUME),
+                volume: bevy::audio::Volume::Linear(self.effective_volume()),
                 speed,
                 ..default()
             },
@@ -607,6 +719,7 @@ impl Sfx {
             menu_open: Handle::default(),
             menu_close: Handle::default(),
             tab_switch: Handle::default(),
+            volume_scale: 1.0,
         }
     }
 }
@@ -858,5 +971,104 @@ mod tests {
         world.run_system_once(|query: Query<Entity, With<AudioPlayer<AudioSource>>>| {
             assert_eq!(query.iter().count(), 1);
         });
+    }
+
+    /// The persisted sliders scale their buses, and the default
+    /// settings (all 1.0) reproduce the original fixed mix exactly —
+    /// wiring the save through must not change an untouched profile.
+    #[test]
+    fn saved_settings_scale_the_audio_buses() {
+        let defaults = Settings::default();
+        assert_eq!(music_bus_volume(&defaults), 1.0);
+        assert_eq!(ambience_bus_volume(&defaults), AMBIENCE_VOLUME);
+        assert_eq!(sfx_bus_volume(&defaults), SFX_VOLUME);
+
+        let settings = Settings {
+            master_volume: 0.5,
+            music_volume: 0.5,
+            sfx_volume: 0.25,
+        };
+        assert_eq!(music_bus_volume(&settings), 0.5);
+        assert!((ambience_bus_volume(&settings) - AMBIENCE_VOLUME * 0.5).abs() < f32::EPSILON);
+        assert!((sfx_bus_volume(&settings) - SFX_VOLUME * 0.25).abs() < f32::EPSILON);
+        // No save resource: the buses fall back to the default mix.
+        assert_eq!(music_volume_or_default(None), 1.0);
+        assert_eq!(ambience_volume_or_default(None), AMBIENCE_VOLUME);
+    }
+
+    /// Startup wiring: the saved master volume lands in `GlobalVolume`
+    /// and the SFX slider on the `Sfx` resource, and a later save
+    /// change re-applies both without a relaunch.
+    #[test]
+    fn saved_volumes_apply_at_startup_and_on_change() {
+        fn linear_volume(app: &App) -> f32 {
+            match app.world().resource::<GlobalVolume>().volume {
+                bevy::audio::Volume::Linear(v) => v,
+                other => panic!("expected a linear global volume, got {other:?}"),
+            }
+        }
+
+        let mut app = App::new();
+        let mut save = SaveData::default();
+        save.settings.master_volume = 0.4;
+        save.settings.sfx_volume = 0.5;
+        app.insert_resource(save);
+        app.insert_resource(GlobalVolume::default());
+        app.insert_resource(Sfx::for_tests());
+        app.add_systems(Startup, apply_volume_settings);
+        app.add_systems(Update, sync_volume_settings_on_change);
+        app.update();
+        assert!((linear_volume(&app) - 0.4).abs() < f32::EPSILON);
+        assert!((app.world().resource::<Sfx>().volume_scale - 0.5).abs() < f32::EPSILON);
+
+        // Simulate a settings edit landing in the save resource: the
+        // change-detected sync must follow it.
+        {
+            let mut save = app.world_mut().resource_mut::<SaveData>();
+            save.settings.master_volume = 0.9;
+            save.settings.sfx_volume = 1.0;
+        }
+        app.update();
+        assert!((linear_volume(&app) - 0.9).abs() < f32::EPSILON);
+        assert!((app.world().resource::<Sfx>().volume_scale - 1.0).abs() < f32::EPSILON);
+    }
+
+    /// Adversarial: with no save, no `GlobalVolume`, and no `Sfx`
+    /// resource installed, the apply system degrades to a no-op
+    /// instead of panicking on a missing resource.
+    #[test]
+    fn apply_volume_settings_tolerates_missing_resources() {
+        use bevy_ecs::system::RunSystemOnce;
+        let mut world = World::new();
+        world.run_system_once(apply_volume_settings).unwrap();
+    }
+
+    /// `Sfx::play` spawns at the fixed mix constant scaled by the
+    /// saved SFX slider cached on the resource.
+    #[test]
+    fn play_uses_the_saved_sfx_scale() {
+        use bevy_ecs::system::RunSystemOnce;
+        let mut world = World::new();
+        let mut sfx = Sfx::for_tests();
+        sfx.volume_scale = 0.5;
+        world.insert_resource(sfx);
+        world
+            .run_system_once(|mut commands: Commands, sfx: Res<Sfx>| {
+                sfx.play(&mut commands, SfxKind::Click);
+            })
+            .unwrap();
+        world
+            .run_system_once(
+                |query: Query<&PlaybackSettings, With<AudioPlayer<AudioSource>>>| {
+                    let settings = query.single().expect("one playback spawned");
+                    match settings.volume {
+                        bevy::audio::Volume::Linear(v) => {
+                            assert!((v - SFX_VOLUME * 0.5).abs() < f32::EPSILON)
+                        }
+                        other => panic!("expected a linear volume, got {other:?}"),
+                    }
+                },
+            )
+            .unwrap();
     }
 }

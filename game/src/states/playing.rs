@@ -9,7 +9,6 @@ use crate::anim::TransitionRequest;
 use crate::board;
 use crate::level::{self, CurrentLevelIndex, LevelDef};
 use crate::test_log;
-use crate::waifu::dialogue::DialogueBank;
 use crate::waifu::trigger_mood_pop;
 use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
@@ -164,7 +163,6 @@ fn setup_level(
     mut clock: ResMut<LevelClock>,
     mut active_outage: ResMut<ActiveOutage>,
     asset_server: Res<AssetServer>,
-    dialogue: Res<DialogueBank>,
     mut companions: Query<(Entity, &mut crate::waifu::CompanionSprite)>,
     cameras: Query<(Entity, &Transform), With<Camera>>,
     windows: Query<&Window, With<PrimaryWindow>>,
@@ -208,24 +206,11 @@ fn setup_level(
     live.wavelength = WavelengthWrapper(level_def.wavelength.into());
     live.tx_dbm = level_def.tx_dbm;
 
-    // The companion's on-enter flavor line, if this level defines one and
-    // the active dialogue bank has a matching entry — purely cosmetic,
-    // never gates play (see `crate::waifu` module docs).
-    let on_enter_dialogue = level_def
-        .on_enter_line
-        .as_deref()
-        .and_then(|key| dialogue.random_line(key));
     // Half the window width in world units (camera zoom is 1:1): keeps
     // node-label plates on screen. Falls back to the 720-wide design
     // resolution when no window exists (unit tests).
     let half_w = windows.single().map(|w| w.width() * 0.5).unwrap_or(360.0);
-    board::spawn_board_from_level(
-        &mut commands,
-        &level_def,
-        &asset_server,
-        on_enter_dialogue,
-        half_w,
-    );
+    board::spawn_board_from_level(&mut commands, &level_def, &asset_server, half_w);
     // Signals the on-device instrumentation tests (android/app/src/androidTest)
     // that the board has finished spawning and is ready to receive touch
     // input — they poll Logcat for this line before injecting gestures.
@@ -252,6 +237,7 @@ fn check_scripted_outage(
     mut active_outage: ResMut<ActiveOutage>,
     mut alarm_list: ResMut<AlarmList>,
     mut request: ResMut<TransitionRequest>,
+    mut reaction_inbox: Option<ResMut<crate::waifu::reactions::ReactionInbox>>,
 ) {
     let Some(scripted) = &level.scripted_outage else {
         return;
@@ -270,6 +256,9 @@ fn check_scripted_outage(
             active_outage.outage.as_ref(),
             &mut live.graph,
         );
+        if let Some(mut inbox) = reaction_inbox.as_deref_mut() {
+            inbox.push(crate::waifu::reactions::ReactionTrigger::OutageStart);
+        }
         request.0 = Some(GameState::OutageActive);
     }
 }
@@ -297,6 +286,8 @@ fn check_win_condition(
     board_roots: Query<Entity, With<crate::board::BoardRoot>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut glow_materials: Option<ResMut<Assets<crate::shaders::GlowMaterial>>>,
+    gate: Option<ResMut<crate::anim::ResultsGate>>,
+    mut reaction_inbox: Option<ResMut<crate::waifu::reactions::ReactionInbox>>,
 ) {
     if level.scripted_outage.is_some() {
         return;
@@ -307,7 +298,9 @@ fn check_win_condition(
     // its OnExit/OnEnter pair tears down and rebuilds the results screen,
     // despawning the buttons out from under input (and replaying the win
     // SFX every frame).
-    let transition_pending = request.0.is_some() || matches!(*next_state, NextState::Pending(_));
+    let gate_holding = gate.as_ref().is_some_and(|g| g.is_holding());
+    let transition_pending =
+        request.0.is_some() || matches!(*next_state, NextState::Pending(_)) || gate_holding;
     // API-driver levels (Clara's NBI/SMx puzzles) additionally require
     // the expected call sequence through the console. The board check
     // still applies underneath — both gates must pass.
@@ -358,6 +351,17 @@ fn check_win_condition(
                 trigger_mood_pop(&mut commands, entity);
             }
         }
-        request.0 = Some(GameState::Results);
+        // Completion reaction first, results after the hold: fire the
+        // reaction in-level and let the gate driver issue the
+        // transition once ~1.8 s of reaction time has played. Without
+        // the gate (headless harnesses), keep the immediate request.
+        if let Some(mut inbox) = reaction_inbox.as_deref_mut() {
+            inbox.push(crate::waifu::reactions::ReactionTrigger::LevelComplete);
+        }
+        match gate {
+            Some(mut gate) if !gate.is_holding() => gate.begin(),
+            Some(_) => {}
+            None => request.0 = Some(GameState::Results),
+        }
     }
 }

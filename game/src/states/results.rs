@@ -10,8 +10,9 @@ use crate::anim::TransitionRequest;
 use crate::board;
 use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::{CurrentLevelIndex, LevelDef};
+use crate::ui::{styled_button, ButtonPalette, BUTTON_BORDER};
 use crate::waifu::dialogue::DialogueBank;
-use crate::waifu::{FavorPoints, SelectedCompanion};
+use crate::waifu::{Cores, SelectedCompanion};
 use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
 
@@ -260,28 +261,36 @@ fn show_results(
     selected: Res<SelectedCompanion>,
     dialogue: Res<DialogueBank>,
     asset_server: Res<AssetServer>,
-    mut favor: ResMut<FavorPoints>,
+    mut cores: ResMut<Cores>,
+    salvage_tracker: Option<ResMut<crate::salvage::SalvageTracker>>,
+    mut pending_haul: Option<ResMut<crate::salvage::PendingHaul>>,
+    mut pill_inbox: Option<ResMut<crate::waifu::pill::PillInbox>>,
     save: Option<ResMut<crate::save::SaveData>>,
     save_writer: Option<MessageWriter<crate::save::SaveRequest>>,
+    loadout: Option<Res<crate::warehouse::Loadout>>,
 ) {
     info!("Level complete — won={}", outcome.won);
     crate::test_log!("level_result won={}", outcome.won);
 
-    // A clean win earns favor points, spendable later on optional hints
-    // (see `crate::waifu::FavorPoints`); losses earn nothing.
-    const FAVOR_PER_WIN: u32 = 10;
+    // A clean win pays cores — dead parts recovered from the job and
+    // traded back at the Warehouse for hints and gear
+    // (see `crate::waifu::Cores`); losses earn nothing. A first
+    // clear adds `FIRST_CLEAR_CORES`, and the Loadout's `cores_mult`
+    // (golden crimper) scales the whole award.
+    const CORES_PER_WIN: u32 = 10;
     if outcome.won {
-        favor.0 = favor.0.saturating_add(FAVOR_PER_WIN);
-    }
-
-    // Persist progression: a win records the level; favor syncs to the
-    // save via SavePlugin's change-detected system.
-    if outcome.won {
+        // Persist progression: a win records the level; cores syncs to
+        // the save via SavePlugin's change-detected system.
+        let mut first_clear = false;
         if let (Some(mut save), Some(mut writer)) = (save, save_writer) {
-            if save.complete_level(&level.id) {
+            first_clear = save.complete_level(&level.id);
+            if first_clear {
                 writer.write(crate::save::SaveRequest);
             }
         }
+        let cores_mult = loadout.map_or(1.0, |l| l.cores_mult);
+        let award = crate::warehouse::win_cores(CORES_PER_WIN, first_clear, cores_mult);
+        cores.0 = cores.0.saturating_add(award);
     }
 
     let ledger_text = level.signal_ledger(
@@ -299,13 +308,57 @@ fn show_results(
 
     let dialogue_key = if outcome.won {
         level.on_win_line.as_deref().unwrap_or("level_win")
-    } else {
+    } else if level.on_fail_line.is_some() {
         level.on_fail_line.as_deref().unwrap_or("level_fail_cold")
+    } else {
+        // No level override: pick hot vs cold from the final delivered
+        // level against the window, so a fried route hears the hot line.
+        let window = level.receive_window();
+        let delivered = live
+            .graph
+            .compute_link_budget(
+                level.source_node,
+                level.target_node,
+                live.tx_dbm,
+                live.wavelength.0,
+                window,
+            )
+            .map(|r| r.received_dbm);
+        match delivered {
+            Ok(dbm) if dbm > window.max_dbm => "level_fail_hot",
+            _ => "level_fail_cold",
+        }
     };
     let dialogue_line = dialogue
         .random_line(dialogue_key)
         .unwrap_or("...")
         .to_string();
+    // The companion's results line speaks through the universal pill,
+    // never as bare quoted text on the results screen.
+    if let Some(mut pill) = pill_inbox.as_deref_mut() {
+        pill.push_line(
+            crate::waifu::pill::PillSpeaker::Companion(selected.0),
+            dialogue_line.clone(),
+        );
+    }
+    // Salvage banking: fried parts pay 1 core each, win OR lose,
+    // exactly once per attempt (the tracker was reset on level entry
+    // and bank() drains it). Unmultiplied by design.
+    let mut salvage_line: Option<String> = None;
+    if let Some(mut tracker) = salvage_tracker {
+        let haul = tracker.bank();
+        if !haul.is_empty() {
+            let n = haul.len() as u32;
+            cores.0 = cores.0.saturating_add(n);
+            salvage_line = Some(format!(
+                "Recovered cores: {} (+{n})",
+                crate::salvage::salvage_summary(&haul)
+            ));
+            if let Some(mut pending) = pending_haul.as_deref_mut() {
+                pending.set(&haul);
+            }
+        }
+    }
 
     // Invariant: Results is only reachable with a tracked (base-four)
     // companion, because the select screen is the sole gate into Playing
@@ -429,15 +482,15 @@ fn show_results(
                     TextLayout::justify(Justify::Center),
                 ));
             }
-            {
-                let color = Color::srgb(1.0, 0.435, 0.682); // #ff6fae
+            if let Some(line) = &salvage_line {
+                let color = Color::srgb(1.0, 0.85, 0.4);
                 parent.spawn((
                     ResultEntrance {
-                        delay_secs: ENTRANCE_DIALOGUE_DELAY,
+                        delay_secs: ENTRANCE_LEDGER_DELAY,
                         elapsed_secs: 0.0,
                         kind: EntranceKind::FadeIn { original: color },
                     },
-                    Text::new(format!("\u{201c}{dialogue_line}\u{201d}")),
+                    Text::new(line.clone()),
                     TextFont {
                         font: asset_server.load(crate::fonts::BODY).into(),
                         font_size: FontSize::Px(16.0 * FONT_SIZE_ADJUST),
@@ -523,9 +576,12 @@ fn spawn_result_button(
         Button,
         Node {
             padding: UiRect::axes(Val::Px(24.0), Val::Px(12.0)),
+            border: BUTTON_BORDER,
+            border_radius: crate::ui::BUTTON_RADIUS,
             ..default()
         },
         BackgroundColor(color),
+        styled_button(ButtonPalette::from_face(color.with_alpha(1.0))),
     ));
     button.with_children(|btn| {
         btn.spawn((

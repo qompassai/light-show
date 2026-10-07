@@ -12,6 +12,7 @@ mod bench;
 mod board;
 pub mod cheat_codes;
 mod fonts;
+mod salvage;
 #[cfg(debug_assertions)]
 mod footage;
 mod fx;
@@ -23,6 +24,7 @@ pub mod shaders;
 mod states;
 mod ui;
 pub mod waifu;
+pub mod warehouse;
 
 use bevy::prelude::*;
 use bevy::render::renderer::RenderAdapterInfo;
@@ -155,63 +157,34 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
         .add_plugins(states::menu::MenuPlugin)
         .add_plugins(states::companion_select::CompanionSelectPlugin)
         .add_plugins(states::credits::CreditsPlugin)
+        // Also owns the `warehouse::Loadout` resource that outage.rs and
+        // results.rs read.
+        .add_plugins(states::warehouse::WarehousePlugin)
         .add_plugins(states::playing::PlayingPlugin);
-    // Skip UI plugins in footage mode for the 28 Clara/Aino/Hikari levels
-    // to avoid Bevy B0001 (their Text queries conflict). The footage driver
-    // places components directly, bypassing UI.
-    #[cfg(debug_assertions)]
-    let footage_skip_ui = footage_args.level_id.as_ref().is_some_and(|id| {
-        matches!(
-            id.as_str(),
-            "clara3"
-                | "clara4"
-                | "clara5"
-                | "clara6"
-                | "clara7"
-                | "clara8"
-                | "clara9"
-                | "clara10"
-                | "aino1"
-                | "aino2"
-                | "aino3"
-                | "aino4"
-                | "aino5"
-                | "aino6"
-                | "aino7"
-                | "aino8"
-                | "aino9"
-                | "aino10"
-                | "hikari1"
-                | "hikari2"
-                | "hikari3"
-                | "hikari4"
-                | "hikari5"
-                | "hikari6"
-                | "hikari7"
-                | "hikari8"
-                | "hikari9"
-                | "hikari10"
-        )
-    });
-    #[cfg(not(debug_assertions))]
-    let footage_skip_ui = false;
-    if !footage_skip_ui {
-        app.add_plugins(states::api_console::ApiConsolePlugin);
-        app.add_plugins(states::quiz::QuizPlugin);
-        app.add_plugins(states::triage_console::TriageConsolePlugin);
-    } else {
-        app.init_resource::<states::api_console::ApiProgress>();
-        app.init_resource::<states::quiz::QuizProgress>();
-        app.init_resource::<states::triage_console::TriageProgress>();
-    }
+    // The console plugins are installed unconditionally, footage mode
+    // included. Footage used to skip them for 28 Clara/Aino/Hikari levels
+    // over Bevy B0001 query conflicts; 1eeb4b7 fixed those conflicts with
+    // disjoint Text-query filters, and every skipped level is now pinned
+    // loading under the full plugin set by
+    // `playthrough::footage_skipped_levels_load_with_full_ui_plugins`
+    // (one console family at a time in
+    // `playthrough::production_plugin_set_no_b0001_on_level_load`). The
+    // footage driver is unaffected: it writes `PlacedChoices` and quiz
+    // state directly and never sets `Interaction`, which is all the
+    // consoles' button handlers read.
+    app.add_plugins(states::api_console::ApiConsolePlugin);
+    app.add_plugins(states::quiz::QuizPlugin);
+    app.add_plugins(states::triage_console::TriageConsolePlugin);
     app.add_plugins(states::outage::OutagePlugin)
         .add_plugins(states::results::ResultsPlugin)
         .add_plugins(save::SavePlugin)
         .add_plugins(shaders::ShaderPlugin)
         .add_plugins(waifu::SeraphinePlugin)
         .add_plugins(waifu::dialogue_ui::DialogueUiPlugin)
+        .add_plugins(waifu::reactions::ReactionsPlugin)
         .add_plugins(fx::FxPlugin)
         .add_plugins(ui::LedgerUiPlugin)
+        .add_plugins(ui::ButtonStylePlugin)
         .add_plugins(anim::AnimPlugin)
         .add_plugins(audio::MusicPlugin)
         .add_plugins(audio::SfxPlugin);

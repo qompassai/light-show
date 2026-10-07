@@ -702,6 +702,46 @@ impl LevelDef {
         .all(|r| r.in_window)
     }
 
+    /// Ledger line for a route that is not complete yet: teaches the
+    /// two placement gestures before anything is placed, then reports
+    /// the running level at the frontier of the connected chain so the
+    /// player can steer toward the receive window while building. A
+    /// live degrade outage's extra loss is applied exactly as the
+    /// complete-path budget applies it.
+    fn partial_ledger(
+        &self,
+        graph: &PathGraph,
+        tx_dbm: f64,
+        wavelength: Wavelength,
+        outage: Option<&Outage>,
+    ) -> String {
+        let window = self.receive_window();
+        let units = self.units_label();
+        let (mut level, hops, _frontier) =
+            graph.frontier_budget(self.source_node, tx_dbm, wavelength);
+        if hops == 0 {
+            return format!(
+                "Nothing placed yet — tap a pill to place a component, or drag node to node to connect. Window: {:.1} to {:.1} {}",
+                window.min_dbm, window.max_dbm, units
+            );
+        }
+        if let Some(outage) = outage {
+            if !outage.resolved && !outage.kind.is_full_cut() {
+                level -= outage.accumulated_extra_loss_db();
+            }
+        }
+        format!(
+            "Placed: {} {}  |  Level so far: {:.2} {}  |  Window: {:.1} to {:.1} {} — route not complete",
+            hops,
+            if hops == 1 { "hop" } else { "hops" },
+            level,
+            units,
+            window.min_dbm,
+            window.max_dbm,
+            units
+        )
+    }
+
     /// One-line ledger summary for the results screen and the live
     /// ledger, medium-aware: dB media get the loss/Rx/margin readout with
     /// the medium's unit label, Ethernet gets the constraint checklist.
@@ -784,16 +824,25 @@ impl LevelDef {
                         result.received_dbm,
                         units,
                         result.margin_db,
-                        if result.in_window {
-                            "IN WINDOW"
-                        } else {
-                            "OUT OF WINDOW"
-                        },
+                        window_verdict(result.received_dbm, self.receive_window()),
                     ),
-                    Err(_) => "Link disconnected — no route completed.".to_string(),
+                    Err(_) => self.partial_ledger(graph, tx_dbm, wavelength, outage),
                 }
             }
         }
+    }
+}
+
+/// Verdict word for a completed route: inside the receive window, or
+/// the side of it the received level missed on — a bare miss message
+/// leaves the player guessing whether to add gain or add loss.
+fn window_verdict(received_dbm: f64, window: ReceiveWindow) -> &'static str {
+    if window.contains(received_dbm) {
+        "IN WINDOW"
+    } else if received_dbm < window.min_dbm {
+        "TOO LOW"
+    } else {
+        "TOO HOT"
     }
 }
 
@@ -1114,7 +1163,6 @@ mod tests {
             .as_ref()
             .map(|s| Outage::new(OutageKind::from(s.kind), s.edge_from, s.edge_to))
     }
-
 
     // Every bundled level must be winnable, and — except the fiber
     // tutorial, where both splice types are valid — exactly one pill per

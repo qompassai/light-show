@@ -1,6 +1,6 @@
 //! The anime-styled AI companion system. Purely reactive and skippable:
 //! never gates puzzle solving, only comments on it and offers optional
-//! favor-point hints. Keeping the companion fully optional is what keeps
+//! hints bought with cores. Keeping the companion fully optional is what keeps
 //! this build eligible for F-Droid (no pay-to-skip, no anti-feature dark
 //! patterns) while still giving Google Play a clear "fun mascot" feature
 //! to market.
@@ -17,6 +17,8 @@
 
 pub mod dialogue;
 pub mod dialogue_ui;
+pub mod pill;
+pub mod reactions;
 pub mod sprite;
 
 use bevy::image::{TextureAtlas, TextureAtlasLayout};
@@ -27,7 +29,7 @@ pub struct SeraphinePlugin;
 
 impl Plugin for SeraphinePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(FavorPoints::default())
+        app.insert_resource(Cores::default())
             .insert_resource(SelectedCompanion::default())
             .insert_resource(DialogueBank::load_default(Companion::default()))
             .init_resource::<CompanionAtlasLayout>()
@@ -136,11 +138,17 @@ impl FromWorld for CompanionAtlasLayout {
     }
 }
 
-/// Currency earned by clean splices / good decisions, spent only on
-/// optional hints. No real-money purchase path exists anywhere in the
-/// codebase — this is deliberate for store-compliance (see docs/GAME_DESIGN.md).
+/// The game's currency: dead parts (cores) recovered on the job and
+/// traded back to the Warehouse, spent on optional hints and Warehouse
+/// gear (`states::warehouse`). No real-money purchase
+/// path exists anywhere in the codebase — this is deliberate for
+/// store-compliance (see docs/GAME_DESIGN.md).
+///
+/// No hint charge exists yet: `hint_request` lines are dialogue only. When
+/// a hint purchase lands it must skip the charge when
+/// `warehouse::Loadout::hint_free` is set (the headlamp).
 #[derive(Resource, Default)]
-pub struct FavorPoints(pub u32);
+pub struct Cores(pub u32);
 
 /// Which companion the player picked on the companion-select screen.
 /// Changing this at runtime (see
@@ -423,8 +431,15 @@ fn respawn_on_companion_change(
 fn animate_companion(time: Res<Time>, mut query: Query<&mut CompanionSprite>) {
     for mut chan in &mut query {
         chan.anim_timer.tick(time.delta());
-        if chan.anim_timer.just_finished() {
-            chan.frame = (chan.frame + 1) % 4; // 4 frames per mood row
+        // Advance by every period that elapsed this tick, not just one:
+        // `just_finished()` alone drops the extra periods whenever a
+        // rendered frame outlasts the frame duration (window resizes,
+        // swap-chain stalls), so the idle loop ran slow and unevenly —
+        // the playtest's "slow/glitchy avatar". `times_finished_this_tick`
+        // keeps the loop phase-locked to the authored 0.18 s/frame.
+        let advances = chan.anim_timer.times_finished_this_tick() as usize;
+        if advances > 0 {
+            chan.frame = (chan.frame + advances) % (sprite::FRAMES_PER_ROW as usize);
         }
     }
 }

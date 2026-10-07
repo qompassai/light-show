@@ -1,14 +1,30 @@
-![Light Show hero art](assets/art/hero_header.jpg)
+![Light Show — cover art: four companions splicing light over a night city](assets/art/hero_header.jpg)
 
-# Light Show
+<h1 align="center">Light Show</h1>
+
+<p align="center"><em>Real OSP fiber-optic engineering as a puzzle game — one companion for every access technology.</em></p>
 
 A puzzle game about real Outside Plant (OSP) fiber-optic engineering, built
 in Rust with [Bevy](https://bevyengine.org/), for Android (Google Play +
 F-Droid), with a squad of anime-styled AI companions — one per access
 technology — who react to every splice you make.
 
+## Quick start
+
+Grab a trial build for your platform — no toolchain needed:
+
+| Platform | Get it | Notes |
+| --- | --- | --- |
+| **Windows 11** | [Download from Releases](https://github.com/qompassai/light-show/releases) | Zip with the `.exe` — extract it, keep the `assets` folder next to the exe, and double-click. |
+| **Linux** | [Download from Releases](https://github.com/qompassai/light-show/releases) | Tarball — extract it and run `./light-show` from the extracted folder. |
+| **Android** | [Download from Releases](https://github.com/qompassai/light-show/releases) | APK — sideload it (your phone may ask you to allow installs from your browser or files app). |
+
+These are **unsigned trial builds** for testing, ahead of the signed store
+releases. On Windows, SmartScreen will flag the unsigned exe on first
+launch: click **More info → Run anyway**.
+
 <details>
-<summary><img src="assets/art/companions/linka_profile_64.png" width="28" valign="middle"> Quick start</summary>
+<summary>Dev quick start — build from source</summary>
 
 ```sh
 cargo run -p light-show
@@ -22,7 +38,7 @@ including the link-budget model and level progression.
 </details>
 
 <details>
-<summary><img src="assets/art/companions/seraphine_profile_64.png" width="28" valign="middle"><img src="assets/art/companions/ondine_profile_64.png" width="28" valign="middle"><img src="assets/art/companions/linka_profile_64.png" width="28" valign="middle"><img src="assets/art/companions/lattice_profile_64.png" width="28" valign="middle"> Meet the companions</summary>
+<summary>Meet the companions</summary>
 
 Pick a companion from the menu before you start splicing — each one is tied
 to a real access technology, has her own dialogue bank, and reacts to your
@@ -41,7 +57,7 @@ Full character briefs, palettes, and mood-sheet specs live in
 </details>
 
 <details>
-<summary><img src="assets/art/companions/seraphine_profile_64.png" width="28" valign="middle"> Gameplay</summary>
+<summary>Gameplay</summary>
 
 Real captures from the desktop build (scripted input driving the actual
 game under Xvfb — no mockups). MP4 versions alongside each GIF.
@@ -73,7 +89,7 @@ only reachable through the results screen.
 </details>
 
 <details>
-<summary><img src="assets/art/companions/lattice_profile_64.png" width="28" valign="middle"> Project layout</summary>
+<summary>Project layout</summary>
 
 ```
 crates/osp_sim/       Engine-agnostic fiber-optic link-budget simulation core
@@ -93,7 +109,7 @@ tools/                 Art + music generation scripts (placeholder art, companio
 </details>
 
 <details>
-<summary><img src="assets/art/companions/ondine_profile_64.png" width="28" valign="middle"> Status</summary>
+<summary>Status</summary>
 
 Feature-complete gameplay loop: core simulation (`osp_sim`) is fully
 implemented and tested; the Bevy front-end has a working state machine

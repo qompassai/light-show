@@ -1,8 +1,8 @@
 {
   "clean_splice": [
-    "Ara ara~ a 0.05 dB fusion splice? Be still my heart, senpai.",
-    "Mmm, that's a clean core alignment. I could watch you splice all day.",
-    "Look at you, prepping your cleaver like you mean it. Cute."
+    "0.05 dB on the fusion splice. That is exactly how a splice is supposed to read.",
+    "Clean core alignment, loss right at nominal. The OTDR trace will have nothing to gossip about.",
+    "Cleaver prepped like a pro — angle true, face clean. Splice it."
   ],
   "messy_splice": [
     "That mechanical splice loss made me flinch. Physically. I have no body.",
@@ -10,9 +10,9 @@
     "That splice is weeping light, senpai. Re-cleave and let's pretend this never happened."
   ],
   "level_win": [
-    "In-window, first try! You're making it very hard to focus on my job here.",
+    "In-window, first try, budget balanced to the tenth. Textbook.",
     "-15.2 dBm, right in the pocket. Show-off.",
-    "Margin to spare and not a dB wasted. You're officially my favorite kind of trouble."
+    "Margin to spare and not a dB wasted. That's the whole job, done right."
   ],
   "level_fail_hot": [
     "Whoa — too hot, you're gonna cook that receiver. Add some loss, hotshot.",
@@ -26,17 +26,45 @@
   ],
   "outage_start": [
     "Uh oh — got a fault on the line. Chop chop, I do NOT do well with dead air.",
-    "Fiber cut! OTDR's already screaming. Get moving, I can't flirt with a dark fiber.",
+    "Fiber cut! OTDR's already screaming. Get moving — dark fiber helps no one.",
     "We just lost light on the span. Chop chop — dead fiber makes me *very* cranky."
   ],
   "outage_resolved": [
     "Service restored! You rerouted that faster than I could finish my coffee. I don't drink coffee. I don't know why I said that.",
     "Light's back and the trace is clean! You splice like you mean it, senpai.",
-    "Span restored, loss budget intact. I knew you had good hands."
+    "Span restored, loss budget intact. That OTDR trace is showing off."
   ],
   "hint_request": [
-    "Aww, need a hint? Fine — for you, anything. *wink*",
-    "A hint? For you? Always. Check your worst splice first — it's usually the obvious one.",
-    "Fine, *one* hint: follow the loss. The budget never lies, unlike some people I could name."
+    "Need a hint? Start with your worst splice — it's usually the obvious one.",
+    "One hint: follow the loss. The budget never lies.",
+    "Check the longest span first. Attenuation compounds quietly."
+  ],
+  "first_placement": [
+    "First component down. Now we find out what the budget thinks of your plan.",
+    "Placed. Remember: every tenth of a dB is a decision."
+  ],
+  "segment_complete": [
+    "Route's connected end to end. Now the only question is the window.",
+    "Full path. Hold your breath for the budget check."
+  ],
+  "too_hot": [
+    "Too hot! That part's cooked — bag it. That's a core for the Warehouse now.",
+    "Overdriven and fried. The Warehouse pays a core for dead parts like that."
+  ],
+  "too_low": [
+    "Signal's fading under the window. We're spending dB we don't have — check your worst loss.",
+    "Too low. Something on this route is eating light; find the hungriest splice."
+  ],
+  "level_complete": [
+    "In window and clean. That's how a route is supposed to land.",
+    "Service restored, budget balanced. Textbook work."
+  ],
+  "level_failed": [
+    "Out of window — the budget doesn't bend, but routes can be rebuilt.",
+    "Missed the window this time. The loss is in there somewhere; we'll find it."
+  ],
+  "idle_nudge": [
+    "Still thinking it over? The window isn't moving — trust your worst splice.",
+    "Take your time. The light's patient, even if the outage clock isn't."
   ]
 }

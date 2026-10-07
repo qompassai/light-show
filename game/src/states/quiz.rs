@@ -299,6 +299,7 @@ pub(crate) fn handle_quiz_choices(
     >,
     mut next_btn: Query<&mut Node, With<QuizNext>>,
     sfx: Res<crate::audio::Sfx>,
+    mut pill_inbox: Option<ResMut<crate::waifu::pill::PillInbox>>,
 ) {
     let Some(quiz) = &level.quiz else {
         return;
@@ -331,7 +332,13 @@ pub(crate) fn handle_quiz_choices(
                 .as_deref()
                 .map(|a| format!(" [{a}]"))
                 .unwrap_or_default();
-            **text = format!("Léa:{article} {}", q.explanation);
+            **text = String::new();
+            if let Some(mut pill) = pill_inbox.as_deref_mut() {
+                pill.push_line(
+                    crate::waifu::pill::PillSpeaker::Companion(crate::waifu::Companion::Lea),
+                    format!("{article} {}", q.explanation),
+                );
+            }
         }
         for mut node in &mut next_btn {
             node.display = Display::Flex;
@@ -387,8 +394,9 @@ pub(crate) fn handle_quiz_next(
     >,
     mut outcome: ResMut<LevelOutcome>,
     mut request: ResMut<TransitionRequest>,
-    next_state: Res<NextState<GameState>>,
     sfx: Res<crate::audio::Sfx>,
+    mut gate: Option<ResMut<crate::anim::ResultsGate>>,
+    mut reaction_inbox: Option<ResMut<crate::waifu::reactions::ReactionInbox>>,
 ) {
     let Some(quiz) = &level.quiz else {
         return;
@@ -408,10 +416,21 @@ pub(crate) fn handle_quiz_next(
                 sfx.play(&mut commands, crate::audio::SfxKind::Lose);
             }
             outcome.won = won;
-            let transition_pending =
-                request.0.is_some() || matches!(*next_state, NextState::Pending(_));
+            let gate_holding = gate.as_ref().is_some_and(|g| g.is_holding());
+            let transition_pending = request.0.is_some() || gate_holding;
             if !transition_pending {
-                request.0 = Some(GameState::Results);
+                if let Some(mut inbox) = reaction_inbox.as_deref_mut() {
+                    inbox.push(if won {
+                        crate::waifu::reactions::ReactionTrigger::LevelComplete
+                    } else {
+                        crate::waifu::reactions::ReactionTrigger::LevelFailed
+                    });
+                }
+                match gate.as_deref_mut() {
+                    Some(g) if !g.is_holding() => g.begin(),
+                    Some(_) => {}
+                    None => request.0 = Some(GameState::Results),
+                }
             }
             return;
         }

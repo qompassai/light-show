@@ -13,6 +13,7 @@ use crate::cheat_codes::{
 use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::CurrentLevelIndex;
 use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
+use crate::ui::{styled_button, ButtonPalette, BUTTON_BORDER};
 use crate::waifu::{Companion, SelectedCompanion};
 use bevy::prelude::*;
 
@@ -31,6 +32,7 @@ impl Plugin for CompanionSelectPlugin {
                     handle_select_buttons,
                     handle_back_button,
                     animate_select_cards,
+                    normalize_select_silhouettes,
                     highlight_select_cards,
                     // Words before Konami: `KonamiState::consumes` must see
                     // the pre-feed progress. If Konami fed first, progress
@@ -141,8 +143,15 @@ pub(crate) struct SelectButton(pub(crate) Companion);
 #[derive(Component)]
 pub(crate) struct BackButton;
 
-/// One frame of the silhouette strip is 160×256; the card shows it at
-/// 96×144.
+/// Placeholder box for a card silhouette, and the display height
+/// every silhouette is normalized to. The shipped frames are 64×64
+/// canvases whose drawn content fills a different share per companion
+/// (Séraphine/Linka stand ~50 px tall in theirs, Lattice/Ondine the
+/// full 64), so the raw canvas stretched into this 2:3 box rendered
+/// each companion at a different size, squashed vertically — the
+/// first playtest's picker complaint. `normalize_select_silhouettes`
+/// crops each card to its content and re-derives the width from the
+/// content aspect at this height.
 const SILHOUETTE_DISPLAY: Vec2 = Vec2::new(96.0, 144.0);
 /// Frames in each companion-select silhouette animation.
 const SELECT_ANIM_FRAMES: usize = 6;
@@ -159,6 +168,10 @@ const SELECT_ANIM_FRAME_SECS: f32 = 0.12;
 struct SelectAnim {
     frames: [Handle<Image>; SELECT_ANIM_FRAMES],
     index: usize,
+    /// Set once `normalize_select_silhouettes` has cropped this card's
+    /// silhouette to its drawn content and sized it to the shared
+    /// display height.
+    normalized: bool,
 }
 
 /// Marks the silhouette `ImageBundle` inside a companion card; the
@@ -249,9 +262,12 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
                     Node {
                         padding: UiRect::axes(Val::Px(24.0), Val::Px(10.0)),
                         margin: UiRect::top(Val::Px(8.0)),
+                        border: BUTTON_BORDER,
+                        border_radius: crate::ui::BUTTON_RADIUS,
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.2, 0.2, 0.28)),
+                    styled_button(ButtonPalette::back()),
                 ))
                 .with_children(|btn| {
                     btn.spawn((
@@ -281,7 +297,11 @@ fn spawn_companion_card(
     parent
         .spawn((
             SelectButton(companion),
-            SelectAnim { frames, index: 0 },
+            SelectAnim {
+                frames,
+                index: 0,
+                normalized: false,
+            },
             // The glow outline starts at zero width; `highlight_select_cards`
             // raises it in the companion's accent color on hover/press.
             Outline {
@@ -406,6 +426,113 @@ fn animate_select_cards(
                 image.image = anim.frames[anim.index].clone();
             }
         }
+    }
+}
+
+/// The drawn-content rectangle of one RGBA8 frame: the bounding box
+/// of its non-transparent pixels, in image pixel coordinates (max
+/// exclusive, matching `ImageNode::rect`). `None` when the buffer is
+/// the wrong size for the claimed dimensions or nothing is drawn.
+/// Pure over the pixel buffer so it is unit-testable without assets.
+fn content_rect_rgba(data: &[u8], width: u32, height: u32) -> Option<Rect> {
+    let expected = (width as usize)
+        .checked_mul(height as usize)?
+        .checked_mul(4)?;
+    if data.len() < expected {
+        return None;
+    }
+    let (mut min_x, mut min_y) = (width, height);
+    let (mut max_x, mut max_y) = (0u32, 0u32);
+    for y in 0..height {
+        for x in 0..width {
+            let alpha = data[((y * width + x) * 4 + 3) as usize];
+            if alpha > 0 {
+                min_x = min_x.min(x);
+                min_y = min_y.min(y);
+                max_x = max_x.max(x + 1);
+                max_y = max_y.max(y + 1);
+            }
+        }
+    }
+    if max_x == 0 {
+        return None;
+    }
+    Some(Rect::new(
+        min_x as f32,
+        min_y as f32,
+        max_x as f32,
+        max_y as f32,
+    ))
+}
+
+/// The drawn-content rectangle of a loaded frame image. Only the
+/// RGBA8 formats the PNG loader produces are measured; anything else
+/// (or an image whose CPU-side data is gone) yields `None` and the
+/// card simply keeps its placeholder box.
+fn content_rect(image: &Image) -> Option<Rect> {
+    use bevy::render::render_resource::TextureFormat;
+    if !matches!(
+        image.texture_descriptor.format,
+        TextureFormat::Rgba8Unorm | TextureFormat::Rgba8UnormSrgb
+    ) {
+        return None;
+    }
+    let size = image.size();
+    content_rect_rgba(image.data.as_deref()?, size.x, size.y)
+}
+
+/// Display size for a silhouette cropped to `content`: every card's
+/// content stands `SILHOUETTE_DISPLAY.y` tall, with the width the
+/// content's own aspect ratio implies — consistent heights, no
+/// squash, whatever canvas the art was exported on.
+fn silhouette_display_size(content: Rect) -> Vec2 {
+    let height = SILHOUETTE_DISPLAY.y;
+    Vec2::new(height * content.width() / content.height(), height)
+}
+
+/// One-time per card: once all of a card's frames are resident,
+/// compute the union of their content rectangles (the union, so the
+/// animation's frame-to-frame motion is never cropped), set it as
+/// the silhouette's `ImageNode::rect`, and size the node from the
+/// content aspect. Cards whose art is missing or unreadable keep the
+/// placeholder box and are retried each frame until it arrives.
+fn normalize_select_silhouettes(
+    images: Res<Assets<Image>>,
+    mut cards: Query<(&mut SelectAnim, &Children)>,
+    mut silhouettes: Query<(&mut ImageNode, &mut Node), With<SelectSilhouette>>,
+) {
+    for (mut anim, children) in &mut cards {
+        if anim.normalized {
+            continue;
+        }
+        let mut union: Option<Rect> = None;
+        for frame in &anim.frames {
+            let Some(rect) = images.get(frame).and_then(content_rect) else {
+                union = None;
+                break;
+            };
+            union = Some(match union {
+                Some(acc) => Rect::new(
+                    acc.min.x.min(rect.min.x),
+                    acc.min.y.min(rect.min.y),
+                    acc.max.x.max(rect.max.x),
+                    acc.max.y.max(rect.max.y),
+                ),
+                None => rect,
+            });
+        }
+        let Some(content) = union else {
+            continue;
+        };
+        let size = silhouette_display_size(content);
+        for child in children {
+            if let Ok((mut image, mut node)) = silhouettes.get_mut(*child) {
+                image.rect = Some(content);
+                node.width = Val::Px(size.x);
+                node.height = Val::Px(size.y);
+            }
+        }
+        anim.normalized = true;
     }
 }
 
@@ -634,6 +761,7 @@ mod tests {
                 SelectAnim {
                     frames: std::array::from_fn(|_| Handle::default()),
                     index: 0,
+                    normalized: false,
                 },
                 Interaction::Hovered,
             ))
@@ -682,5 +810,64 @@ mod tests {
         assert_eq!(Companion::Hikari.track_len(), 10);
         assert_eq!(Companion::Lea.track_start_index(), Some(70));
         assert_eq!(Companion::Lea.track_len(), 10);
+    }
+
+    /// A 4×4 RGBA buffer with the given opaque pixels set.
+    fn rgba_with_opaque(width: u32, height: u32, opaque: &[(u32, u32)]) -> Vec<u8> {
+        let mut data = vec![0u8; (width * height * 4) as usize];
+        for &(x, y) in opaque {
+            data[((y * width + x) * 4 + 3) as usize] = 255;
+        }
+        data
+    }
+
+    #[test]
+    fn content_rect_bounds_the_drawn_pixels() {
+        // One pixel at (3, 2): the rect is that pixel, max exclusive.
+        let data = rgba_with_opaque(4, 4, &[(3, 2)]);
+        assert_eq!(
+            content_rect_rgba(&data, 4, 4),
+            Some(Rect::new(3.0, 2.0, 4.0, 3.0))
+        );
+        // Content touching every edge crops to the whole canvas.
+        let data = rgba_with_opaque(4, 4, &[(0, 0), (3, 0), (0, 3), (3, 3)]);
+        assert_eq!(
+            content_rect_rgba(&data, 4, 4),
+            Some(Rect::new(0.0, 0.0, 4.0, 4.0))
+        );
+        // The shipped Séraphine pose: 44×50 of content at (10, 14).
+        let mut pixels: Vec<(u32, u32)> = Vec::new();
+        for y in 14..64 {
+            for x in 10..54 {
+                pixels.push((x, y));
+            }
+        }
+        let data = rgba_with_opaque(64, 64, &pixels);
+        assert_eq!(
+            content_rect_rgba(&data, 64, 64),
+            Some(Rect::new(10.0, 14.0, 54.0, 64.0))
+        );
+    }
+
+    #[test]
+    fn content_rect_rejects_empty_and_truncated_buffers() {
+        // Fully transparent: nothing drawn, no crop.
+        assert_eq!(content_rect_rgba(&vec![0u8; 4 * 4 * 4], 4, 4), None);
+        // A buffer too small for the claimed dimensions is corrupt,
+        // not a small image.
+        assert_eq!(content_rect_rgba(&vec![255u8; 8], 4, 4), None);
+        assert_eq!(content_rect_rgba(&[], 0, 0), None);
+    }
+
+    #[test]
+    fn silhouette_display_size_equalizes_height_and_keeps_aspect() {
+        // The two shipped content shapes (Séraphine 44×50, Lattice
+        // 55×64) must stand the same height with undistorted widths.
+        let short = silhouette_display_size(Rect::new(10.0, 14.0, 54.0, 64.0));
+        let tall = silhouette_display_size(Rect::new(3.0, 0.0, 58.0, 64.0));
+        assert_eq!(short.y, SILHOUETTE_DISPLAY.y);
+        assert_eq!(tall.y, SILHOUETTE_DISPLAY.y);
+        assert!((short.x - SILHOUETTE_DISPLAY.y * 44.0 / 50.0).abs() < 0.01);
+        assert!((tall.x - SILHOUETTE_DISPLAY.y * 55.0 / 64.0).abs() < 0.01);
     }
 }

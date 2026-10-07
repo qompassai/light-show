@@ -34,7 +34,11 @@ fn level_with_minimal_required_fields_parses() {
         "target_node": 0
     }"#;
     let result: Result<LevelDef, _> = serde_json::from_str(minimal);
-    assert!(result.is_ok(), "minimal level should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "minimal level should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -56,7 +60,10 @@ fn level_missing_required_medium_field_fails_loudly() {
         "target_node": 0
     }"#;
     let result: Result<LevelDef, _> = serde_json::from_str(no_medium);
-    assert!(result.is_err(), "missing medium should fail loudly, not silently default");
+    assert!(
+        result.is_err(),
+        "missing medium should fail loudly, not silently default"
+    );
 }
 
 #[test]

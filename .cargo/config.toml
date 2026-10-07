@@ -1,3 +1,8 @@
+# Fast build config (2026-10-06): sccache for compilation caching,
+# mold for fast linking. Set RUSTC_WRAPPER=sccache in env.
+[build]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
 # Android 15+ (API 35+) requires 16 KB ELF page alignment for native
 # libraries in apps targeting API 35+. We target API 36, so this is a
 # hard Play Store requirement, not an optimization.

@@ -10,6 +10,7 @@ pub mod playing;
 pub mod quiz;
 pub mod results;
 pub mod triage_console;
+pub mod warehouse;
 
 use bevy::prelude::*;
 
@@ -34,6 +35,10 @@ pub enum GameState {
     /// attribution must be user-visible, so this is a real state rather
     /// than a menu-local overlay.
     Credits,
+    /// The Warehouse: tool shelf, host-led lessons and quizzes that pay
+    /// cores, and the gear shop that spends them. Reachable from the main
+    /// menu; touches no levels.
+    Warehouse,
 }
 
 /// Why the game most recently entered `GameState::Results` — set in the

@@ -7,20 +7,21 @@
 
 use light_show::level::LevelDef;
 
-// --- 1. Schedule-conflict sweep ---
-// B0001 is the project's #1 crash class (hit twice already).
-// This test verifies the production plugin set doesn't have conflicts.
+// --- 1. Schedule-conflict sweep (B0001) ---
+// B0001 is the project's #1 crash class (hit twice already). The genuine
+// sweep — a headless App running the production plugin set (all three
+// console plugins + dialogue UI) through real level loads — lives in
+// game/src/playthrough.rs: `production_plugin_set_no_b0001_on_level_load`,
+// plus `footage_skipped_levels_load_with_full_ui_plugins` for the 28
+// levels footage mode once loaded with the UI plugins skipped. The test
+// below is only the data-layer smoke test: every embedded level parses
+// and carries a non-empty id.
 
 #[test]
-fn schedule_no_b0001_on_level_load() {
-    // Load each level type and verify no schedule conflicts
-    // (Actual headless App test would go here; this is a smoke test
-    // verifying level data doesn't trigger known bad patterns)
+fn level_registry_parses_all_levels() {
     for idx in 0..80 {
-        let level: LevelDef =
-            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
-                .expect("level should parse");
-        // Verify level has valid structure that won't cause query conflicts
+        let level: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
+            .expect("level should parse");
         assert!(!level.id.is_empty(), "Level {} has empty id", idx);
     }
 }
@@ -52,8 +53,7 @@ fn entity_cleanup_pattern() {
     // (Real entity counting happens in playthrough tests with World access)
     let mut level_ids = std::collections::HashSet::new();
     for idx in 0..80 {
-        let level: LevelDef =
-            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
+        let level: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
         // Each level ID should be unique (no duplicates = no leak in registry)
         assert!(
             level_ids.insert(level.id.clone()),
@@ -85,9 +85,8 @@ fn rapid_level_switching() {
     // Simulate rapid level switching (player mashing level select)
     for _ in 0..50 {
         for idx in [0, 79, 40, 0, 79] {
-            let level: LevelDef =
-                serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
-                    .expect("level should parse");
+            let level: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx])
+                .expect("level should parse");
             assert!(!level.id.is_empty());
         }
     }
@@ -101,8 +100,7 @@ fn audio_asset_paths_valid() {
     // Verify audio references in levels are valid paths
     // (Real handle counting needs App access; this is a smoke test)
     for idx in 0..80 {
-        let level: LevelDef =
-            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
+        let level: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
         // Level should have valid audio-relevant fields
         let _ = level.tx_dbm; // Power level (audio cue)
     }
@@ -117,20 +115,11 @@ fn level_data_query_safe() {
     let mut max_nodes = 0;
     let mut max_edges = 0;
     for idx in 0..80 {
-        let level: LevelDef =
-            serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
+        let level: LevelDef = serde_json::from_str(light_show::level::LEVEL_SOURCES[idx]).unwrap();
         max_nodes = max_nodes.max(level.nodes.len());
         max_edges = max_edges.max(level.fixed_edges.len() + level.available_components.len());
     }
     // Sanity bounds: no level should have absurd entity counts
-    assert!(
-        max_nodes < 100,
-        "Level has too many nodes: {}",
-        max_nodes
-    );
-    assert!(
-        max_edges < 200,
-        "Level has too many edges: {}",
-        max_edges
-    );
+    assert!(max_nodes < 100, "Level has too many nodes: {}", max_nodes);
+    assert!(max_edges < 200, "Level has too many edges: {}", max_edges);
 }

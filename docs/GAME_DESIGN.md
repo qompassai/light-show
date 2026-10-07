@@ -153,8 +153,7 @@ The lesson is always in the near-miss.
   uniformly (`game/src/waifu/sprite.rs` atlas indexing).
 - Flirty-but-wholesome dialogue bank keyed to game events (see
   `src/waifu/dialogue.rs` and `assets/dialogue/seraphine_en.json`).
-- Gives **optional hints** (costs in-game "favor points" earned by clean
-  splices) — never required to solve a level, keeps it skippable/SFW-safe for
+- Gives **optional hints** (costs in-game cores — dead parts earned by clean splices) — never required to solve a level, keeps it skippable/SFW-safe for
   both storefronts.
 - No purchasable currency tied to dialogue — avoids loot-box/gacha
   anti-features so the build stays F-Droid eligible.
