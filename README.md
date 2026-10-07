@@ -46,7 +46,7 @@ splices, outages, and level results in her own voice.
 
 | | | | |
 |---|---|---|---|
-| ![Séraphine (mature)](assets/art/companions/seraphine_animated_mature.gif)<br>**Séraphine** — Fiber<br>*mature* | ![Ondine (mature)](assets/art/companions/ondine_animated_mature.gif)<br>**Ondine** — Coax<br>*mature* | ![Linka (mature)](assets/art/companions/linka_animated_mature.gif)<br>**Linka** — Wireless<br>*mature* | ![Lattice (mature)](assets/art/companions/lattice_animated_mature.gif)<br>**Lattice** — Wired<br>*mature* |
+| ![Séraphine (mature)](assets/art/companions/seraphine_animated_mature.gif)<br>**Séraphine** — Fiber<br>*mature* | ![Ondine (mature)](assets/art/companions/ondine_animated_mature.gif)<br>**Ondine** — Coax<br>*mature* | ![Linka (mature)](assets/art/companions/linka_animated_base.gif)<br>**Linka** — Wireless<br>*mature* | ![Lattice (mature)](assets/art/companions/lattice_animated_mature.gif)<br>**Lattice** — Wired<br>*mature* |
 
 Full character briefs, palettes, and mood-sheet specs live in
 [`docs/ART_STYLE.md`](docs/ART_STYLE.md).

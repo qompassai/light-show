@@ -1,13 +1,13 @@
 # bloch summary
 
-Generated: 1791338244
-Git HEAD: 3303b560ea0e43152005d0ade20a032a64ad6353
+Generated: 1791381771
+Git HEAD: b9dceca35d826f5f866e88ef68a7904a2bade766
 
-## Files: 5388 total
+## Files: 5393 total
 
 ## Languages
 
-- d: 4944 files
+- d: 4949 files
 - markdown: 153 files
 - json: 105 files
 - rust: 58 files
@@ -16,21 +16,21 @@ Git HEAD: 3303b560ea0e43152005d0ade20a032a64ad6353
 - bash: 12 files
 - txt: 10 files
 - lua: 9 files
-- toml: 8 files
 - tag: 8 files
-- text: 6 files
+- toml: 8 files
 - python: 6 files
+- text: 6 files
 - xml: 5 files
-- wgsl: 4 files
 - kotlin: 4 files
+- wgsl: 4 files
 - properties: 2 files
 - css: 1 files
-- yaml: 1 files
-- bat: 1 files
-- cff: 1 files
-- nix: 1 files
 - html: 1 files
 - uproject: 1 files
+- bat: 1 files
+- yaml: 1 files
+- nix: 1 files
+- cff: 1 files
 
 ## Top definitions by probability
 
@@ -51,6 +51,6 @@ Git HEAD: 3303b560ea0e43152005d0ade20a032a64ad6353
 15. mod `game/src/lib.rs::fonts` (p=0.011)
 16. enum `crates/osp_sim/src/component.rs::Component` (p=0.011)
 17. const `crates/osp_sim/src/lib.rs::DEFAULT_TX_DBM` (p=0.011)
-18. enum `game/src/states/mod.rs::GameState` (p=0.010)
-19. struct `crates/osp_sim/src/lib.rs::ReceiveWindow` (p=0.010)
+18. struct `crates/osp_sim/src/lib.rs::ReceiveWindow` (p=0.010)
+19. enum `game/src/states/mod.rs::GameState` (p=0.010)
 20. const `game/src/ui/neon.rs::NEON_GOLD` (p=0.010)
