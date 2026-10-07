@@ -3519,6 +3519,92 @@ mod tests {
         }
     }
 
+    fn splitter_on_edge<'a>(
+        level: &'a LevelDef,
+        from: u32,
+        to: u32,
+        ratio: osp_sim::component::SplitterRatio,
+    ) -> &'a ComponentChoice {
+        level
+            .available_components
+            .iter()
+            .find(|c| {
+                c.from == from
+                    && c.to == to
+                    && matches!(c.component, Component::Splitter { ratio: r } if r == ratio)
+            })
+            .expect("level must offer the splitter choice")
+    }
+
+    /// aino6/aino10 regression (the hot-board defect): both levels
+    /// launch at +3 dBm into a -27...-8 window, and as originally
+    /// authored the only route - span + span - budgets to +2.30 /
+    /// +2.16 dBm, above the ceiling: the board half could not pass
+    /// no matter what the player did. The levels now offer splitter
+    /// ratios on the second leg, and choosing the ratio that lands
+    /// the budget is the decision (the PON design skill: the launch
+    /// stays hot, the split eats it). aino6 has exactly one winning
+    /// combination (1:16; 1:8 misses the ceiling by 0.05 dB - close
+    /// is not in-window). aino10 has two, the sp1 pattern of a best
+    /// answer plus a poorer-but-legit one: 1:8 lands at -8.02 with
+    /// no headroom to spare, 1:16 is the engineered answer.
+    #[test]
+    fn aino6_aino10_choice_combinations_replay_their_board_readings() {
+        // (index, id, [span+span, span+1:4, span+1:8, span+1:16], wins)
+        for (index, id, readings, expected_wins) in [
+            (55usize, "aino6", [2.30, -4.65, -7.95, -11.05], 1usize),
+            (59, "aino10", [2.16, -4.72, -8.02, -11.12], 2),
+        ] {
+            let level = load_level(index);
+            assert_eq!(level.id, id, "track index {index} must be {id}");
+            let wavelength = Wavelength::from(level.wavelength);
+            let feeder = choice_on_edge(&level, 0, 1);
+            let second_leg = [
+                choice_on_edge(&level, 1, 2),
+                splitter_on_edge(&level, 1, 2, osp_sim::component::SplitterRatio::OneByFour),
+                splitter_on_edge(&level, 1, 2, osp_sim::component::SplitterRatio::OneByEight),
+                splitter_on_edge(
+                    &level,
+                    1,
+                    2,
+                    osp_sim::component::SplitterRatio::OneBySixteen,
+                ),
+            ];
+            let mut wins = 0usize;
+            for (choice, expected_dbm) in second_leg.iter().zip(readings.iter()) {
+                let verdict = if *expected_dbm >= level.window_min_dbm
+                    && *expected_dbm <= level.window_max_dbm
+                {
+                    "IN WINDOW"
+                } else {
+                    "TOO HOT"
+                };
+                assert_scenario_reading(&level, &[feeder, choice], *expected_dbm, verdict);
+                if level.is_win_state(
+                    &graph_with_placements(&level, &[feeder, choice]),
+                    level.tx_dbm,
+                    wavelength,
+                ) {
+                    wins += 1;
+                }
+            }
+            assert_eq!(
+                wins, expected_wins,
+                "{id} has {wins} winning board combinations, expected {expected_wins}"
+            );
+            // Adversarial: a half-routed path never wins - one leg
+            // placed leaves the target unreachable at any budget.
+            assert!(
+                !level.is_win_state(
+                    &graph_with_single_placement(&level, feeder),
+                    level.tx_dbm,
+                    wavelength,
+                ),
+                "{id} must not win with only the feeder leg placed"
+            );
+        }
+    }
+
     fn splice_on_edge<'a>(
         level: &'a LevelDef,
         from: u32,

@@ -79,6 +79,33 @@
       },
       "from": 1,
       "to": 2
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByFour"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneBySixteen"
+        }
+      },
+      "from": 1,
+      "to": 2
     }
   ],
   "briefing": "The big one: a fiber cut cascaded five alarms, the NOC needs the faulty NE identified through the NBI, and the protection path needs routing. Triage, query, repair -- in that order. Clear the board and go home.",

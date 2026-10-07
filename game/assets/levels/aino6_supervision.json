@@ -37,6 +37,33 @@
       },
       "from": 1,
       "to": 2
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByFour"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneByEight"
+        }
+      },
+      "from": 1,
+      "to": 2
+    },
+    {
+      "component": {
+        "Splitter": {
+          "ratio": "OneBySixteen"
+        }
+      },
+      "from": 1,
+      "to": 2
     }
   ],
   "briefing": "NE-12 needs a card swap. Stop supervision first (never work on a supervised NE), run the test action, then start supervision again. And the backup path needs a span placed -- route it.",

@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791402456
-Git HEAD: bb6a8b3d6c28f62bc026ddd6060f8d71dc52c99a
+Generated: 1791402576
+Git HEAD: 485e57a99848113dd48cb306fe016463a1f121d8
 
 ## Files: 6421 total
 
@@ -11,11 +11,11 @@ Git HEAD: bb6a8b3d6c28f62bc026ddd6060f8d71dc52c99a
 - markdown: 163 files
 - json: 112 files
 - rust: 71 files
-- lock: 24 files
 - rmeta: 24 files
+- lock: 24 files
 - bash: 12 files
-- txt: 10 files
 - tag: 10 files
+- txt: 10 files
 - lua: 9 files
 - toml: 8 files
 - python: 7 files
@@ -24,20 +24,20 @@ Git HEAD: bb6a8b3d6c28f62bc026ddd6060f8d71dc52c99a
 - wgsl: 4 files
 - kotlin: 4 files
 - properties: 2 files
+- css: 1 files
+- nix: 1 files
+- html: 1 files
 - yaml: 1 files
 - bat: 1 files
-- nix: 1 files
-- css: 1 files
 - cff: 1 files
 - uproject: 1 files
-- html: 1 files
 
 ## Top definitions by probability
 
 1. mod `game/src/lib.rs::states` (p=0.052)
 2. struct `game/src/level.rs::LevelDef` (p=0.044)
 3. mod `game/src/lib.rs::audio` (p=0.038)
-4. mod `game/src/lib.rs::level` (p=0.037)
+4. mod `game/src/lib.rs::level` (p=0.036)
 5. mod `game/src/lib.rs::waifu` (p=0.033)
 6. fn `tests/shader_render.rs::collect` (p=0.029)
 7. fn `game/src/waifu/pill.rs::len` (p=0.025)

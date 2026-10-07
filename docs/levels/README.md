@@ -44,8 +44,9 @@ Evaluator honesty, up front (each file repeats the part that governs it):
 - **Clara, Aino, and Hikari** levels carry `medium: Fiber` in their data, but Clara's are won via
   provisioning verification, Aino's via triage/NBI logic, and Hikari's portal levels via BxE
   sequence logic — not via the fiber window as a skill test.
-- Two Aino levels (aino6, aino10) carry board budgets that cannot satisfy their own windows as
-  authored — the arithmetic is shown in their sections.
+- Two Aino levels (aino6, aino10) gate on a board budget: a +3 dBm launch into a −27…−8
+  window that only a splitter swap on the second leg can land — the arithmetic is shown in
+  their sections.
 
 ## Level index
 
