@@ -10,7 +10,13 @@ Repo: https://github.com/qompassai/light-show.git
 Builds:
   - versionName: '0.1.0'
     versionCode: 16777472
-    commit: 1eeb4b7297cd8472b32d1be3b1a3a5de45460b9b
+    # Channel split (2026-10-07): the main tree carries keyed answer
+    # tags and release builds inject the key; F-Droid cannot hold the
+    # key, so this recipe stays pinned to the last plaintext commit.
+    # Do NOT bump past the tag migration without revisiting the split
+    # -- a keyless build of tagged data fails closed (quiz/API/triage
+    # levels unpassable by design). See docs/FDROID.md.
+    commit: 4e1711da1a3eb87f84f708f39a8319a5f28f90f9
     ndk: 30.0.16248370
     subdir: game
     sudo:

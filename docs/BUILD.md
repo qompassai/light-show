@@ -169,6 +169,18 @@ reproducible, and avoid any dependency that phones home, requires
 proprietary SDKs (no Google Play Services / Firebase / ads SDKs anywhere in
 the dependency tree), or fetches remote assets at build or runtime.
 
+### Answer key injection (release builds)
+
+Shipped level data carries keyed answer tags, not answers (see
+`game/src/answer_verify.rs`). Play and Windows release builds must be
+compiled with `LIGHT_SHOW_ANSWER_KEY` set to the production key from
+the primo sops answer store; `scripts/publish/play-build-aab.sh`
+loads it for the AAB build and fails closed when it cannot. A build
+without the key still runs, but quiz, API-sequence, and alarm-triage
+levels cannot be completed — that fail-closed behavior is the point.
+F-Droid is the exception: it builds a pinned plaintext commit and
+never sees the key (see `docs/FDROID.md`).
+
 ## Gates (run locally — CI workflows were removed)
 
 There is no CI on this repo (workflows removed 2026-09-30); the release

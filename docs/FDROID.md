@@ -23,6 +23,19 @@ reference copy). Key requirements this project is designed to satisfy:
 - **No pay-to-win / IAP.** There is no monetization at all — no ads,
   no purchases, no gacha, so the same build serves both stores unmodified.
 
+## Answer data (channel split)
+
+Level answers are not in the main tree: quiz, API-sequence, and
+alarm-triage levels carry keyed HMAC tags, and Play/Windows release
+builds inject the key (`LIGHT_SHOW_ANSWER_KEY`) so the game can
+verify player answers. F-Droid cannot hold that key, so **the recipe
+stays pinned to the last plaintext commit**
+(`4e1711da1a3eb87f84f708f39a8319a5f28f90f9` — the finish-up tree just
+before the tag migration landed). Do not bump the pin past the tag
+migration without revisiting this split: a keyless build of tagged
+data fails closed, and its quiz/API/triage levels are unpassable by
+design.
+
 ## Reference metadata recipe
 
 ```yaml
@@ -45,6 +58,9 @@ Builds:
     # from the actual build output on every version bump -- never
     # invented.
     versionCode: 16777472
+    # PINNED: the last plaintext commit (see "Answer data" above).
+    # For the F-Droid submission this is NOT a free choice -- it must
+    # stay at or before 4e1711da1a3eb87f84f708f39a8319a5f28f90f9.
     commit: __RELEASE_COMMIT_SHA__
     ndk: 30.0.16248370
     subdir: game

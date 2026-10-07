@@ -72,7 +72,28 @@ check_prereqs() {
     return "$missing"
 }
 
+load_answer_key() {
+    # The shipped level data carries keyed answer tags, not answers;
+    # a build without the key verifies nothing (quiz, API-sequence,
+    # and alarm-triage levels unpassable). Load the production key
+    # from the primo sops answer store into the environment only --
+    # never printed, never written to disk -- and fail closed if it
+    # cannot be loaded.
+    local store="$HOME/workspace/security/answer-store/answers.enc.json"
+    local age_key="$HOME/.config/sops/age/keys-light-show-answers.txt"
+    [[ -f "$store" ]] || die "answer store missing at $store -- cannot inject LIGHT_SHOW_ANSWER_KEY"
+    [[ -f "$age_key" ]] || die "answer-store age key missing at $age_key"
+    local key
+    key="$(SOPS_AGE_KEY_FILE="$age_key" sops -d --input-type json --output-type json "$store" \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["answer_key"]["production"])')" \
+        || die "failed to decrypt production answer key from the store"
+    [[ -n "$key" ]] || die "production answer key is empty in the store"
+    export LIGHT_SHOW_ANSWER_KEY="$key"
+    printf 'Answer key injected from sops store (value not shown).\n' >&2
+}
+
 build_native() {
+    load_answer_key
     printf 'Building native cdylib per ABI: %s\n' "$ABIS" >&2
     local ndk_args=()
     local abi
@@ -124,6 +145,7 @@ main() {
 
     if [[ "$mode" == "dry-run" ]]; then
         printf 'DRY RUN — would execute:\n' >&2
+        printf '  0. inject LIGHT_SHOW_ANSWER_KEY from the primo sops answer store (fail-closed)\n' >&2
         if [[ "$skip_native" -eq 0 ]]; then
             printf '  1. cargo ndk -t %s -o <jniLibs> build --release -p light-show\n' \
                 "${ABIS// / -t }" >&2
