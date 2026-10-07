@@ -11,7 +11,7 @@ use crate::cheat_codes::{
     CodeWordBuffer, KonamiState, UnlockedSpecialists, code_word_to_companion,
 };
 use crate::fonts::FONT_SIZE_ADJUST;
-use crate::level::CurrentLevelIndex;
+use crate::level::{self, CurrentLevelIndex, CurrentScenarioId};
 use crate::responsive::ArtBackdrop;
 use crate::ui::neon::{NEON_CYAN, NEON_DIM, NEON_GOLD, NeonText, spawn_neon_text};
 use crate::ui::{BUTTON_BORDER, ButtonPalette, styled_button};
@@ -31,6 +31,7 @@ impl Plugin for CompanionSelectPlugin {
                 Update,
                 (
                     handle_select_buttons,
+                    handle_scenario_buttons,
                     handle_back_button,
                     animate_select_cards,
                     normalize_select_silhouettes,
@@ -141,6 +142,19 @@ struct SelectRoot;
 #[derive(Component)]
 pub(crate) struct SelectButton(pub(crate) Companion);
 
+/// Tags a Field School button with the scenario level id it starts
+/// (see `level::SCENARIO_IDS`). Scenario levels are out-of-track: the
+/// button sets `CurrentScenarioId`, never a track position.
+#[derive(Component)]
+pub(crate) struct ScenarioButton(pub(crate) &'static str);
+
+/// Whether the Field School row shows on the picker: the scenarios are
+/// Séraphine's field school, so the row belongs to her discipline —
+/// it shows while Séraphine/Fiber is the selected companion.
+fn field_school_visible(selected: Companion) -> bool {
+    selected == Companion::Fiber
+}
+
 #[derive(Component)]
 pub(crate) struct BackButton;
 
@@ -193,7 +207,95 @@ impl Default for SelectAnimTimer {
     }
 }
 
-fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
+/// The Field School row: a labeled row of one button per scenario
+/// level (fj1/fj2/sp1), shown under the companion cards while
+/// Séraphine is the selected companion (see `field_school_visible`).
+/// Button labels are the scenario levels' own titles, loaded through
+/// the scenario registry — no second copy of the strings lives here.
+fn spawn_field_school_row(
+    parent: &mut ChildSpawnerCommands,
+    display: &Handle<Font>,
+    body: &Handle<Font>,
+    body_medium: &Handle<Font>,
+) {
+    parent
+        .spawn(Node {
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Center,
+            row_gap: Val::Px(8.0),
+            margin: UiRect::top(Val::Px(8.0)),
+            ..default()
+        })
+        .with_children(|section| {
+            spawn_neon_text(
+                section,
+                NeonText {
+                    marker: (),
+                    value: "field school — séraphine",
+                    font: display.clone(),
+                    font_size: 20.0,
+                    core: NEON_CYAN,
+                    glow: NEON_GOLD,
+                    glow_px: 1.0,
+                    glow_inner_alpha: 0.55,
+                    glow_outer_alpha: 0.25,
+                    width: Val::Auto,
+                    justify: Justify::Center,
+                },
+            );
+            section
+                .spawn(Node {
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(12.0),
+                    ..default()
+                })
+                .with_children(|row| {
+                    for id in level::SCENARIO_IDS {
+                        let label = level::load_scenario(id)
+                            .map(|def| def.title)
+                            .unwrap_or_else(|| id.to_string());
+                        row.spawn((
+                            ScenarioButton(id),
+                            Button,
+                            Node {
+                                padding: UiRect::axes(Val::Px(16.0), Val::Px(10.0)),
+                                border: BUTTON_BORDER,
+                                border_radius: crate::ui::BUTTON_RADIUS,
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgb(0.2, 0.2, 0.28)),
+                            styled_button(ButtonPalette::back()),
+                        ))
+                        .with_children(|btn| {
+                            btn.spawn((
+                                Text::new(label),
+                                TextFont {
+                                    font: body_medium.clone().into(),
+                                    font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
+                                    ..default()
+                                },
+                                TextColor(Color::WHITE),
+                            ));
+                        });
+                    }
+                });
+            section.spawn((
+                Text::new("Out-of-track field jobs — they never touch your track progress."),
+                TextFont {
+                    font: body.clone().into(),
+                    font_size: FontSize::Px(12.0 * FONT_SIZE_ADJUST),
+                    ..default()
+                },
+                TextColor(NEON_DIM),
+            ));
+        });
+}
+
+fn setup_select(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    selected: Res<SelectedCompanion>,
+) {
     let display: Handle<Font> = asset_server.load(crate::fonts::DISPLAY);
     let body: Handle<Font> = asset_server.load(crate::fonts::BODY);
     let body_medium: Handle<Font> = asset_server.load(crate::fonts::BODY_MEDIUM);
@@ -259,6 +361,9 @@ fn setup_select(mut commands: Commands, asset_server: Res<AssetServer>) {
             );
             for companion in Companion::ALL {
                 spawn_companion_card(parent, &asset_server, &display, &body, companion);
+            }
+            if field_school_visible(selected.0) {
+                spawn_field_school_row(parent, &display, &body, &body_medium);
             }
             parent
                 .spawn((
@@ -587,6 +692,7 @@ fn handle_select_buttons(
     interactions: Query<(&Interaction, &SelectButton), Changed<Interaction>>,
     mut selected: ResMut<SelectedCompanion>,
     mut index: ResMut<CurrentLevelIndex>,
+    mut scenario: ResMut<CurrentScenarioId>,
     mut request: ResMut<TransitionRequest>,
     sfx: Res<crate::audio::Sfx>,
 ) {
@@ -601,6 +707,36 @@ fn handle_select_buttons(
             sfx.play(&mut commands, crate::audio::SfxKind::Pick);
             selected.0 = button.0;
             index.0 = start;
+            // Starting a track level ends any Field School detour: the
+            // track index, not a stale scenario id, decides the level.
+            scenario.0 = None;
+            request.0 = Some(GameState::Playing);
+        }
+    }
+}
+
+/// A Field School press starts that scenario under Séraphine: the
+/// scenario id (not the track index) decides which level loads, via
+/// `level::load_current_level`. An id the registry doesn't know is
+/// acknowledged with a click and otherwise ignored — the buttons are
+/// spawned from `SCENARIO_IDS`, so this is unreachable in normal play.
+fn handle_scenario_buttons(
+    mut commands: Commands,
+    interactions: Query<(&Interaction, &ScenarioButton), Changed<Interaction>>,
+    mut selected: ResMut<SelectedCompanion>,
+    mut scenario: ResMut<CurrentScenarioId>,
+    mut request: ResMut<TransitionRequest>,
+    sfx: Res<crate::audio::Sfx>,
+) {
+    for (interaction, button) in &interactions {
+        if *interaction == Interaction::Pressed {
+            if level::load_scenario(button.0).is_none() {
+                sfx.play(&mut commands, crate::audio::SfxKind::Click);
+                continue;
+            }
+            sfx.play(&mut commands, crate::audio::SfxKind::Pick);
+            selected.0 = Companion::Fiber;
+            scenario.0 = Some(button.0.to_string());
             request.0 = Some(GameState::Playing);
         }
     }
@@ -635,9 +771,63 @@ mod tests {
         let mut world = World::new();
         world.insert_resource(SelectedCompanion(Companion::Fiber));
         world.insert_resource(CurrentLevelIndex(0));
+        world.insert_resource(CurrentScenarioId::default());
         world.init_resource::<TransitionRequest>();
         world.insert_resource(crate::audio::Sfx::for_tests());
         world
+    }
+
+    #[test]
+    fn field_school_row_shows_only_for_seraphine() {
+        assert!(field_school_visible(Companion::Fiber));
+        for other in [
+            Companion::Coax,
+            Companion::Mobile,
+            Companion::Ethernet,
+            Companion::Clara,
+            Companion::Aino,
+            Companion::Hikari,
+            Companion::Lea,
+        ] {
+            assert!(!field_school_visible(other), "{other:?} shows no row");
+        }
+    }
+
+    #[test]
+    fn pressing_a_scenario_button_starts_that_scenario_under_seraphine() {
+        let mut world = world_with_select_state();
+        world.spawn((ScenarioButton("fj2"), Interaction::Pressed));
+
+        world
+            .run_system_once(handle_scenario_buttons)
+            .expect("scenario system runs");
+
+        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Fiber);
+        assert_eq!(
+            world.resource::<CurrentScenarioId>().0.as_deref(),
+            Some("fj2")
+        );
+        // The track index is untouched: the scenario id loads the level.
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 0);
+        assert!(matches!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::Playing)
+        ));
+    }
+
+    #[test]
+    fn pressing_a_card_clears_a_stale_scenario() {
+        let mut world = world_with_select_state();
+        world.resource_mut::<CurrentScenarioId>().0 = Some("sp1".to_string());
+        world.spawn((SelectButton(Companion::Coax), Interaction::Pressed));
+
+        world
+            .run_system_once(handle_select_buttons)
+            .expect("select system runs");
+
+        assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Coax);
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 10);
+        assert_eq!(world.resource::<CurrentScenarioId>().0, None);
     }
 
     #[test]

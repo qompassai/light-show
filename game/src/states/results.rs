@@ -9,7 +9,7 @@ use super::{GameState, LevelOutcome};
 use crate::anim::TransitionRequest;
 use crate::board;
 use crate::fonts::FONT_SIZE_ADJUST;
-use crate::level::{CurrentLevelIndex, LevelDef};
+use crate::level::{self, CurrentLevelIndex, CurrentScenarioId, LevelDef};
 use crate::ui::{styled_button, ButtonPalette, BUTTON_BORDER};
 use crate::waifu::dialogue::DialogueBank;
 use crate::waifu::{Cores, SelectedCompanion};
@@ -381,10 +381,16 @@ fn show_results(
         "{:?} reached Results without a level track",
         selected.0
     );
-    let has_next_level = track_indices
-        .iter()
-        .position(|&i| i == index.0)
-        .is_some_and(|pos| pos + 1 < track_indices.len());
+    // Scenario (Field School) levels are out-of-track: they never offer
+    // an in-track Next, win or lose — the flow returns to companion
+    // select instead (the win branch below already routes a level with
+    // no next track step to `ReturnToSelect`).
+    let is_scenario = level::is_scenario_id(&level.id);
+    let has_next_level = !is_scenario
+        && track_indices
+            .iter()
+            .position(|&i| i == index.0)
+            .is_some_and(|pos| pos + 1 < track_indices.len());
 
     commands
         .spawn((
@@ -557,6 +563,15 @@ fn show_results(
                             "Retry",
                             Color::srgb(0.9, 0.4, 0.6),
                         );
+                        if is_scenario {
+                            // A failed scenario also returns to the
+                            // picker — there is no track step to take.
+                            push_button(
+                                ResultAction::ReturnToSelect,
+                                "Companion Select",
+                                Color::srgb(0.2, 0.2, 0.28),
+                            );
+                        }
                     }
                     push_button(
                         ResultAction::ReturnToMenu,
@@ -615,7 +630,14 @@ fn handle_result_buttons(
     mut request: ResMut<TransitionRequest>,
     sfx: Res<crate::audio::Sfx>,
     selected: Res<SelectedCompanion>,
+    level: Option<Res<LevelDef>>,
+    mut scenario: Option<ResMut<CurrentScenarioId>>,
 ) {
+    // The level just played decides routing: a scenario has no track
+    // step to advance to, whatever button a stale screen still shows.
+    let is_scenario = level
+        .as_ref()
+        .is_some_and(|def| level::is_scenario_id(&def.id));
     for (interaction, action) in &interactions {
         if *interaction != Interaction::Pressed {
             continue;
@@ -623,6 +645,13 @@ fn handle_result_buttons(
         sfx.play(&mut commands, crate::audio::SfxKind::Click);
         match action {
             ResultAction::ContinueNextLevel => {
+                if is_scenario {
+                    if let Some(scenario) = scenario.as_deref_mut() {
+                        scenario.0 = None;
+                    }
+                    request.0 = Some(GameState::CompanionSelect);
+                    continue;
+                }
                 let indices = selected.0.track_indices();
                 if let Some(pos) = indices.iter().position(|&i| i == index.0) {
                     if let Some(&next) = indices.get(pos + 1) {
@@ -632,13 +661,21 @@ fn handle_result_buttons(
                 request.0 = Some(GameState::Playing);
             }
             ResultAction::RetrySameLevel => {
+                // Retrying a scenario keeps `CurrentScenarioId` set, so
+                // `setup_level` reloads the same scenario level.
                 request.0 = Some(GameState::Playing);
             }
             ResultAction::ReturnToMenu => {
+                if let Some(scenario) = scenario.as_deref_mut() {
+                    scenario.0 = None;
+                }
                 index.0 = 0;
                 request.0 = Some(GameState::MainMenu);
             }
             ResultAction::ReturnToSelect => {
+                if let Some(scenario) = scenario.as_deref_mut() {
+                    scenario.0 = None;
+                }
                 request.0 = Some(GameState::CompanionSelect);
             }
         }
