@@ -3,8 +3,8 @@
 //! Each of Léa's 10 levels carries an inline `quiz` def with real NEC/WA-law
 //! questions. This file proves, per level:
 //! - the level parses and has a non-empty question set (validation),
-//! - every question has exactly 4 choices with a valid `correct_idx` and
-//!   a non-empty explanation (Léa's teaching moment),
+//! - every question has exactly 4 choices with a well-formed keyed
+//!   `correct_tag` and a non-empty explanation (Léa's teaching moment),
 //! - a perfect playthrough passes `quiz_passed` (completable),
 //! - an all-wrong playthrough fails (the gate is real),
 //! - the 70% threshold is enforced at the boundary (adversarial).
@@ -24,6 +24,15 @@ const LEA_LEVELS: [(usize, &str, usize); 10] = [
     (78, "lea9", 10),  // WA admin: WAC 296-46B
     (79, "lea10", 20), // Mock exam: pretest A+B
 ];
+
+/// The correct answers for a quiz, recovered from the keyed tags —
+/// possible only when this build's answer key matches the shipped
+/// tags. `None` means the key is absent or for another data set; the
+/// playthrough tests below then skip (the fail-closed gate itself
+/// lives in tests/answer_gates.rs).
+fn correct_answers(quiz: &light_show::level::QuizDef) -> Option<Vec<usize>> {
+    quiz.questions.iter().map(|q| q.reveal_correct()).collect()
+}
 
 #[test]
 fn lea_track_has_ten_quiz_levels_at_70_79() {
@@ -57,11 +66,13 @@ fn lea_questions_are_well_formed() {
                 q.id
             );
             assert!(
-                q.correct_idx < 4,
-                "{} {}: correct_idx {} out of range",
+                q.correct_tag.len() == 64
+                    && q.correct_tag
+                        .chars()
+                        .all(|c| c.is_ascii_hexdigit() && !c.is_uppercase()),
+                "{} {}: correct_tag is not a lowercase hex HMAC-SHA256",
                 expected_id,
-                q.id,
-                q.correct_idx
+                q.id
             );
             assert!(
                 !q.prompt.is_empty(),
@@ -94,8 +105,12 @@ fn lea_perfect_playthrough_passes_every_level() {
     for (idx, expected_id, _) in LEA_LEVELS {
         let level = load_level(idx);
         let quiz = level.quiz.as_ref().unwrap();
-        // Answer every question correctly.
-        let answers: Vec<usize> = quiz.questions.iter().map(|q| q.correct_idx).collect();
+        // Answer every question correctly (recovered from the tags;
+        // skips when this build's key does not match the shipped data).
+        let Some(answers) = correct_answers(quiz) else {
+            eprintln!("skipping {expected_id}: no matching answer key in this build");
+            continue;
+        };
         let (correct, total) = score_quiz(&quiz.questions, &answers);
         assert_eq!(
             correct, total,
@@ -114,11 +129,11 @@ fn lea_all_wrong_playthrough_fails_every_level() {
         let level = load_level(idx);
         let quiz = level.quiz.as_ref().unwrap();
         // Answer every question wrong (pick the next index cyclically).
-        let answers: Vec<usize> = quiz
-            .questions
-            .iter()
-            .map(|q| (q.correct_idx + 1) % 4)
-            .collect();
+        let Some(correct) = correct_answers(quiz) else {
+            eprintln!("skipping {expected_id}: no matching answer key in this build");
+            continue;
+        };
+        let answers: Vec<usize> = correct.iter().map(|a| (a + 1) % 4).collect();
         let (correct, _) = score_quiz(&quiz.questions, &answers);
         assert_eq!(correct, 0, "{expected_id}: all-wrong must score 0");
         assert!(
@@ -136,17 +151,21 @@ fn lea_pass_threshold_is_70_percent() {
     assert_eq!(quiz.questions.len(), 10);
     assert!((quiz.pass_pct - 0.70).abs() < f32::EPSILON);
 
-    let mut answers: Vec<usize> = quiz.questions.iter().map(|q| q.correct_idx).collect();
+    let Some(expected) = correct_answers(quiz) else {
+        eprintln!("skipping lea1 threshold: no matching answer key in this build");
+        return;
+    };
+    let mut answers: Vec<usize> = expected.clone();
     // Get exactly 7 right.
     for i in 7..10 {
-        answers[i] = (quiz.questions[i].correct_idx + 1) % 4;
+        answers[i] = (expected[i] + 1) % 4;
     }
     let (correct, _) = score_quiz(&quiz.questions, &answers);
     assert_eq!(correct, 7);
     assert!(quiz_passed(quiz, &answers), "7/10 = 70% must pass");
 
     // Get exactly 6 right.
-    answers[6] = (quiz.questions[6].correct_idx + 1) % 4;
+    answers[6] = (expected[6] + 1) % 4;
     let (correct, _) = score_quiz(&quiz.questions, &answers);
     assert_eq!(correct, 6);
     assert!(!quiz_passed(quiz, &answers), "6/10 = 60% must fail");

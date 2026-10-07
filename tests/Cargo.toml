@@ -39,6 +39,10 @@ name = "structural"
 path = "structural.rs"
 
 [[test]]
+name = "answer_gates"
+path = "answer_gates.rs"
+
+[[test]]
 name = "game_quiz"
 path = "game_quiz.rs"
 

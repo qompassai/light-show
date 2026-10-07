@@ -701,6 +701,18 @@ fn back_button_returns_to_menu_without_starting_a_track() {
 /// Start Clara's track at `index` without going through the picker
 /// (Clara has no picker card yet — see `Companion::ALL`). Mirrors
 /// `handle_select_buttons`: select companion, set level, request Playing.
+/// True when this build's answer key resolves the shipped tags.
+/// The API-driven playthroughs below drive real tagged levels and
+/// can only win with the matching key; without it they skip (the
+/// fail-closed behavior itself is gated in tests/answer_gates.rs).
+fn answer_key_matches_shipped_tags() -> bool {
+    let level = crate::level::load_level(44); // clara5
+    let Some(seq) = &level.api_sequence else {
+        return false;
+    };
+    seq.next_expected(&level.id, &[]).is_some()
+}
+
 fn start_clara_level(app: &mut App, index: usize) {
     settle(app);
     assert_eq!(
@@ -749,6 +761,10 @@ fn press_api_op(app: &mut App, op: crate::level::ApiOp) {
 #[test]
 fn clara_track_wins_all_ten_levels_through_real_input() {
     use crate::level::ApiOp;
+    if !answer_key_matches_shipped_tags() {
+        eprintln!("skipping clara track: no matching answer key in this build");
+        return;
+    }
     let mut app = playthrough_app_with_api();
 
     // clara1: 9 subscribers — only the 1:16 (slot 2 of 3) has the ports.
@@ -859,6 +875,10 @@ fn clara_track_wins_all_ten_levels_through_real_input() {
 fn clara_api_wrong_pick_raises_alarm_without_advancing() {
     use crate::level::ApiOp;
     use crate::states::api_console::ApiProgress;
+    if !answer_key_matches_shipped_tags() {
+        eprintln!("skipping clara api playthrough: no matching answer key in this build");
+        return;
+    }
     let mut app = playthrough_app_with_api();
     // clara5 is index 44.
     start_clara_level(&mut app, 44);

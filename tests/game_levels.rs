@@ -22,9 +22,10 @@ use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process;
 
+use light_show::answer_verify::{answer_key, tag_with_key};
 use light_show::level::{
-    load_level, load_scenario, ApiOp, LevelDef, MediumDef, LEVEL_SOURCES, SCENARIO_IDS,
-    SCENARIO_SOURCES,
+    load_level, load_scenario, serialize_alarm_order, serialize_api_ops, AlarmTriageDef, ApiOp,
+    ApiSequenceDef, LevelDef, MediumDef, LEVEL_SOURCES, SCENARIO_IDS, SCENARIO_SOURCES,
 };
 use light_show::waifu::Companion;
 
@@ -262,7 +263,7 @@ fn validate_structure(level: &LevelDef) -> Result<(), LevelError> {
         }
     }
     if let Some(seq) = &level.api_sequence {
-        if seq.expected.is_empty() {
+        if seq.expected_step_tags.is_empty() {
             return Err(invalid(level, "api_sequence has empty expected order"));
         }
         if seq.api != "nbi" && seq.api != "smx" && seq.api != "ams" && seq.api != "bxe" {
@@ -271,12 +272,17 @@ fn validate_structure(level: &LevelDef) -> Result<(), LevelError> {
                 format!("api_sequence has unknown api '{}'", seq.api),
             ));
         }
-        for op in &seq.expected {
-            if !seq.choices.contains(op) {
-                return Err(invalid(
-                    level,
-                    format!("api_sequence expects {op:?} not offered in choices"),
-                ));
+        // The expected ops themselves are keyed tags now; membership
+        // in choices is proven by reconstruction when this build's
+        // answer key matches the shipped tags.
+        if let Some(expected) = reconstruct_api_order(&level.id, seq) {
+            for op in &expected {
+                if !seq.choices.contains(op) {
+                    return Err(invalid(
+                        level,
+                        format!("api_sequence expects {op:?} not offered in choices"),
+                    ));
+                }
             }
         }
     }
@@ -293,6 +299,67 @@ fn validate_structure(level: &LevelDef) -> Result<(), LevelError> {
         }
     }
     Ok(())
+}
+
+/// Reconstruct an API level's expected order from its step tags by
+/// testing every offered choice at each step — possible only when
+/// this build's answer key matches the shipped tags. `None` means
+/// the key is absent or for another data set: answer-dependent
+/// assertions are then skipped (structural checks still run; the
+/// fail-closed gate lives in tests/answer_gates.rs).
+fn reconstruct_api_order(level_id: &str, seq: &ApiSequenceDef) -> Option<Vec<ApiOp>> {
+    let key = answer_key()?;
+    let mut placed: Vec<ApiOp> = Vec::new();
+    for step_tag in &seq.expected_step_tags {
+        let next = seq.choices.iter().copied().find(|&op| {
+            let mut candidate = placed.clone();
+            candidate.push(op);
+            tag_with_key(
+                key,
+                "api_sequence",
+                level_id,
+                &serialize_api_ops(&candidate),
+            ) == *step_tag
+        })?;
+        placed.push(next);
+    }
+    if tag_with_key(key, "api_sequence", level_id, &serialize_api_ops(&placed)) == seq.expected_tag
+    {
+        Some(placed)
+    } else {
+        None
+    }
+}
+
+/// Same reconstruction for an alarm ack order; the candidate pool is
+/// the level's own alarm ids.
+fn reconstruct_alarm_order(level_id: &str, triage: &AlarmTriageDef) -> Option<Vec<u8>> {
+    let key = answer_key()?;
+    let mut acked: Vec<u8> = Vec::new();
+    for step_tag in &triage.expected_step_tags {
+        let next = triage.alarms.iter().map(|a| a.id).find(|&id| {
+            let mut candidate = acked.clone();
+            candidate.push(id);
+            tag_with_key(
+                key,
+                "alarm_triage",
+                level_id,
+                &serialize_alarm_order(&candidate),
+            ) == *step_tag
+        })?;
+        acked.push(next);
+    }
+    if tag_with_key(
+        key,
+        "alarm_triage",
+        level_id,
+        &serialize_alarm_order(&acked),
+    ) == triage.expected_order_tag
+    {
+        Some(acked)
+    } else {
+        None
+    }
 }
 
 /// Win-condition plausibility: receive window ordered, finite, and inside
@@ -911,14 +978,25 @@ fn aino_triage_orders_are_valid_permutations() {
             continue;
         };
         let mut alarm_ids: Vec<u8> = triage.alarms.iter().map(|a| a.id).collect();
-        let mut expected = triage.expected_order.clone();
         alarm_ids.sort_unstable();
-        expected.sort_unstable();
+        // The order is stored as keyed tags: its length is always
+        // checkable, and the permutation property is proven by
+        // reconstruction when this build's key matches the tags.
         assert_eq!(
-            alarm_ids, expected,
-            "Aino level {} triage order is not a permutation of alarm ids",
+            triage.expected_step_tags.len(),
+            triage.alarms.len(),
+            "Aino level {} triage order length differs from alarm count",
             level.id
         );
+        if let Some(order) = reconstruct_alarm_order(&level.id, triage) {
+            let mut expected = order;
+            expected.sort_unstable();
+            assert_eq!(
+                alarm_ids, expected,
+                "Aino level {} triage order is not a permutation of alarm ids",
+                level.id
+            );
+        }
         // Summaries must be non-empty: the console shows them on buttons.
         for alarm in &triage.alarms {
             assert!(
@@ -980,22 +1058,24 @@ fn aino_api_sequences_use_ams_ops_and_valid_choices() {
             "Aino level {} must use the ams API",
             level.id
         );
-        for op in &seq.expected {
-            assert!(
-                ams_ops.contains(op),
-                "Aino level {} expected op {:?} is not an AMS op",
-                level.id,
-                op
-            );
-            assert!(
-                seq.choices.contains(op),
-                "Aino level {} choices missing expected op {:?}",
-                level.id,
-                op
-            );
+        if let Some(expected) = reconstruct_api_order(&level.id, seq) {
+            for op in &expected {
+                assert!(
+                    ams_ops.contains(op),
+                    "Aino level {} expected op {:?} is not an AMS op",
+                    level.id,
+                    op
+                );
+                assert!(
+                    seq.choices.contains(op),
+                    "Aino level {} choices missing expected op {:?}",
+                    level.id,
+                    op
+                );
+            }
         }
         assert!(
-            seq.choices.len() > seq.expected.len(),
+            seq.choices.len() > seq.expected_step_tags.len(),
             "Aino level {} needs distractor choices",
             level.id
         );
@@ -1053,22 +1133,24 @@ fn hikari_api_sequences_use_bxe_ops_and_valid_choices() {
             "Hikari level {} must use the bxe API",
             level.id
         );
-        for op in &seq.expected {
-            assert!(
-                bxe_ops.contains(op),
-                "Hikari level {} expected op {:?} is not a BxE op",
-                level.id,
-                op
-            );
-            assert!(
-                seq.choices.contains(op),
-                "Hikari level {} choices missing expected op {:?}",
-                level.id,
-                op
-            );
+        if let Some(expected) = reconstruct_api_order(&level.id, seq) {
+            for op in &expected {
+                assert!(
+                    bxe_ops.contains(op),
+                    "Hikari level {} expected op {:?} is not a BxE op",
+                    level.id,
+                    op
+                );
+                assert!(
+                    seq.choices.contains(op),
+                    "Hikari level {} choices missing expected op {:?}",
+                    level.id,
+                    op
+                );
+            }
         }
         assert!(
-            seq.choices.len() > seq.expected.len(),
+            seq.choices.len() > seq.expected_step_tags.len(),
             "Hikari level {} needs distractors in choices",
             level.id
         );
