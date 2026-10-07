@@ -9,6 +9,16 @@ in Rust with [Bevy](https://bevyengine.org/), for Android (Google Play +
 F-Droid), with a squad of anime-styled AI companions — one per access
 technology — who react to every splice you make.
 
+## Trailer
+
+<p align="center">
+  <a href="docs/media/light-show-trailer.mp4">
+    <img src="docs/media/light-show-trailer-preview.gif" alt="Light Show trailer — a light pulse races a fiber strand and draws the Light Show mark" width="720">
+  </a>
+</p>
+
+<p align="center"><em>Click the preview to watch the full trailer.</em></p>
+
 ## Quick start
 
 Grab a trial build for your platform — no toolchain needed:
