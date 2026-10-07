@@ -300,6 +300,21 @@ fn show_results(
         active_outage.outage.as_ref(),
     );
 
+    // Astra §2a: the results screen renders the same verification
+    // vector as the live ledger — per-state verdicts plus each
+    // failing state's own feedback line.
+    let state_lines = level.verification_states(
+        &live.graph,
+        live.tx_dbm,
+        live.wavelength.0,
+        active_outage.outage.as_ref(),
+        &crate::level::MechanicStates::default(),
+    );
+    let mut states_text = crate::level::states_summary(&state_lines);
+    for failure in crate::level::states_failures(&state_lines) {
+        states_text.push_str(&format!("\n{failure}"));
+    }
+
     let (banner_text, banner_color) = if outcome.won {
         ("SERVICE RESTORED", Color::srgb(0.4, 0.9, 0.5))
     } else {
@@ -476,6 +491,24 @@ fn show_results(
                     TextFont {
                         font: asset_server.load(crate::fonts::DISPLAY).into(),
                         font_size: FontSize::Px(16.0 * FONT_SIZE_ADJUST),
+                        ..default()
+                    },
+                    TextColor(color.with_alpha(0.0)),
+                    TextLayout::justify(Justify::Center),
+                ));
+            }
+            {
+                let color = Color::srgb(0.62, 0.68, 0.78);
+                parent.spawn((
+                    ResultEntrance {
+                        delay_secs: ENTRANCE_LEDGER_DELAY,
+                        elapsed_secs: 0.0,
+                        kind: EntranceKind::FadeIn { original: color },
+                    },
+                    Text::new(states_text.clone()),
+                    TextFont {
+                        font: asset_server.load(crate::fonts::DISPLAY).into(),
+                        font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
                         ..default()
                     },
                     TextColor(color.with_alpha(0.0)),

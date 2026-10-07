@@ -1548,6 +1548,15 @@ mod tests {
             api_sequence: None,
             alarm_triage: None,
             quiz: None,
+            identification: None,
+            defective_edge: None,
+            survey: None,
+            workbench: None,
+            static_config_v4: None,
+            static_config_v6: None,
+            intermittent: None,
+            handoff_required: false,
+            optional_objective: None,
         }
     }
 

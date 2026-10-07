@@ -48,8 +48,19 @@ fn update_ledger_text(
         live.wavelength.0,
         active_outage.outage.as_ref(),
     );
+    // Astra §2a: the independent verification states render from the
+    // same vector the results screen uses — one source, two surfaces.
+    // Mechanic states join this rendering as their slices land (the
+    // full mechanic-aware assembly lives in `crate::astra`).
+    let states = crate::level::states_summary(&level.verification_states(
+        &live.graph,
+        live.tx_dbm,
+        live.wavelength.0,
+        active_outage.outage.as_ref(),
+        &crate::level::MechanicStates::default(),
+    ));
     for mut text in &mut query {
-        text.0 = format!("{signal}{outage_suffix}  |  Cores: {}", cores.0);
+        text.0 = format!("{signal}{outage_suffix}  |  {states}  |  Cores: {}", cores.0);
     }
 }
 
