@@ -23,7 +23,7 @@ use crate::cheat_codes::UnlockedSpecialists;
 use crate::waifu::{Companion, Cores};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 /// Current save format version. Bump when `SaveData` changes shape and
@@ -102,6 +102,15 @@ pub struct SaveData {
     /// save's completions (there is no migration machinery).
     #[serde(default)]
     pub tutorials_seen: Vec<String>,
+    /// Astra badge bitmask per level id (see `crate::astra`:
+    /// Diagnosis / Workmanship-or-Configuration / Verification).
+    /// `serde(default)` keeps pre-Astra saves loading with no
+    /// badges — deliberately NO SAVE_VERSION bump and no migration
+    /// (coordinator ruling: a version bump would orphan every
+    /// existing save, since `load()` returns defaults on mismatch).
+    /// Follows the `owned_gear` precedent.
+    #[serde(default)]
+    pub level_badges: HashMap<String, u8>,
 }
 
 impl Default for SaveData {
@@ -118,6 +127,7 @@ impl Default for SaveData {
             warehouse_backdrop_bag: Vec::new(),
             warehouse_backdrop_current: 0,
             tutorials_seen: Vec::new(),
+            level_badges: HashMap::new(),
         }
     }
 }
@@ -135,6 +145,27 @@ impl SaveData {
     /// True if the level was completed in a previous session.
     pub fn is_completed(&self, level_id: &str) -> bool {
         self.completed_levels.iter().any(|id| id == level_id)
+    }
+
+    /// The Astra badge bitmask recorded for a level (0 = none).
+    pub fn badges_for(&self, level_id: &str) -> u8 {
+        self.level_badges.get(level_id).copied().unwrap_or(0) & BADGE_MASK
+    }
+
+    /// Merge newly earned badge bits into a level's record (badges
+    /// are never revoked). Returns true if the record changed.
+    pub fn record_badges(&mut self, level_id: &str, earned: u8) -> bool {
+        let earned = earned & BADGE_MASK;
+        if earned == 0 || level_id.is_empty() {
+            return false;
+        }
+        let entry = self.level_badges.entry(level_id.to_owned()).or_insert(0);
+        let merged = *entry | earned;
+        if merged == *entry {
+            return false;
+        }
+        *entry = merged;
+        true
     }
 
     /// Record a specialist unlock. Returns true if this is new.
@@ -406,7 +437,28 @@ fn validate(data: &mut SaveData) {
     if data.warehouse_backdrop_current >= backdrop_count {
         data.warehouse_backdrop_current = 0;
     }
+    // Astra badges: keys are level ids (same bounds as completions),
+    // values are bitmasks — unknown bits are masked off, empty
+    // records dropped, and the map is size-capped. Untrusted input,
+    // sanitized like everything else in this function.
+    data.level_badges
+        .retain(|id, mask| !id.is_empty() && id.len() <= 128 && (*mask & BADGE_MASK) != 0);
+    for mask in data.level_badges.values_mut() {
+        *mask &= BADGE_MASK;
+    }
+    if data.level_badges.len() > LEVEL_BADGES_MAX {
+        let mut keys: Vec<String> = data.level_badges.keys().cloned().collect();
+        keys.sort();
+        keys.truncate(LEVEL_BADGES_MAX);
+        data.level_badges.retain(|id, _| keys.contains(id));
+    }
 }
+
+/// The Astra badge bits a save record may hold (see `crate::astra`).
+pub const BADGE_MASK: u8 = 0b111;
+
+/// Upper bound on badge records: comfortably above the level count.
+const LEVEL_BADGES_MAX: usize = 512;
 
 /// Upper bound on carried consumables across all kinds: every shop
 /// consumable at its stack cap. Bounds a hand-edited save.
@@ -698,6 +750,62 @@ pub(crate) mod tests {
         assert_eq!(loaded.completed_levels.len(), 0);
         std::env::remove_var("LIGHTSHOW_SAVE_DIR");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pre_astra_save_loads_with_empty_badges_and_completions_intact() {
+        // Coordinator ruling: level_badges arrives via serde(default)
+        // with NO version bump — a save written before Astra (same
+        // version 1, no level_badges key) must load with its
+        // completions untouched and an empty badge map.
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-pre-astra");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join(SAVE_FILENAME),
+            r#"{"version":1,"completed_levels":["c1l1","m1l2"],"unlocked_specialists":[],"favor_points":25,"settings":{"master_volume":1.0,"music_volume":1.0,"sfx_volume":1.0}}"#,
+        )
+        .unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let loaded = load();
+        assert!(loaded.is_completed("c1l1"));
+        assert!(loaded.is_completed("m1l2"));
+        assert!(loaded.level_badges.is_empty());
+        assert_eq!(loaded.badges_for("c1l1"), 0);
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn badges_merge_by_or_and_round_trip() {
+        let mut s = SaveData::default();
+        assert!(s.record_badges("c1l5", 0b001));
+        assert!(!s.record_badges("c1l5", 0b001), "no change, no write");
+        assert!(s.record_badges("c1l5", 0b100));
+        assert_eq!(s.badges_for("c1l5"), 0b101);
+        assert!(!s.record_badges("c1l5", 0), "zero earns nothing");
+        assert!(!s.record_badges("", 0b111), "empty id rejected");
+        // Unknown bits are masked at the boundary: nothing records.
+        assert!(!s.record_badges("m1l2", 0b1111_1000));
+        assert_eq!(s.badges_for("m1l2"), 0);
+        // Persistence: badges survive a serialize/parse round trip.
+        let text = serde_json::to_string(&s).unwrap();
+        let back: SaveData = serde_json::from_str(&text).unwrap();
+        assert_eq!(back.badges_for("c1l5"), 0b101);
+    }
+
+    #[test]
+    fn validate_sanitizes_hostile_badge_records() {
+        // Adversarial: a hand-edited save cannot smuggle unknown
+        // bits, empty ids, or zero records past validate().
+        let mut s = SaveData::default();
+        s.level_badges.insert("c1l1".into(), 0b1111_1111);
+        s.level_badges.insert("".into(), 0b001);
+        s.level_badges.insert("ghost".into(), 0b1000_0000);
+        validate(&mut s);
+        assert_eq!(s.badges_for("c1l1"), 0b111);
+        assert!(!s.level_badges.contains_key(""));
+        assert!(!s.level_badges.contains_key("ghost"));
     }
 
     #[test]

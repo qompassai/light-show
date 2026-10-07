@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "Two 500 m hops, and someone left a 30 dB amplifier on the bench. Tempting \u2014 but an amplifier shouts the wreckage louder: it boosts noise with the signal, and the second 500 m hop buries it again. Only a regenerative repeater hands the far site a clean signal. Pick the power that lands in the window without overdriving it.",
+  "briefing": "Two 500 m hops, and someone left a 30 dB amplifier on the bench. Tempting — but an amplifier shouts the wreckage louder: it boosts noise with the signal, and the second 500 m hop buries it again. Only a regenerative repeater hands the far site a clean signal. Pick the power that lands in the window without overdriving it. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -90,5 +90,6 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -65.0,
   "window_min_dbm": -75.0,
-  "world": 3
+  "world": 3,
+  "min_snr_db": 10.0
 }

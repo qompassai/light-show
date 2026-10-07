@@ -162,10 +162,29 @@ pub enum ReactionTrigger {
     IdleNudge,
     /// A scripted outage just fired.
     OutageStart,
+    /// A wrong homerun was selected at the identification console
+    /// (Astra §2b). Fires only on Ondine's track; the key exists in
+    /// every main bank so resolution never falls through.
+    IdentificationWrong,
+    /// The Service (CNR) state failed while Carrier Level passed —
+    /// the C3 moment (Astra §2c). Fired by the astra attempt watcher.
+    ServiceStateFail,
+    /// A survey point failed its requirement (Astra §2d). Fired by
+    /// the astra attempt watcher.
+    SurveyPointFail,
+    /// A wrong diagnosis was committed at the survey console
+    /// (Astra §2d). Fires only on Linka's track.
+    DiagnosisWrong,
+    /// An uncaught workbench defect went live (Astra §2e). Fired by
+    /// the workbench console when the defective end completes.
+    WorkmanshipDefect,
+    /// A static-config Apply was rejected (Astra §2f). Fires only
+    /// on Linka's track.
+    ConfigMismatch,
 }
 
 impl ReactionTrigger {
-    pub const ALL: [ReactionTrigger; 8] = [
+    pub const ALL: [ReactionTrigger; 14] = [
         ReactionTrigger::FirstPlacement,
         ReactionTrigger::SegmentComplete,
         ReactionTrigger::TooHot,
@@ -174,6 +193,12 @@ impl ReactionTrigger {
         ReactionTrigger::LevelFailed,
         ReactionTrigger::IdleNudge,
         ReactionTrigger::OutageStart,
+        ReactionTrigger::IdentificationWrong,
+        ReactionTrigger::ServiceStateFail,
+        ReactionTrigger::SurveyPointFail,
+        ReactionTrigger::DiagnosisWrong,
+        ReactionTrigger::WorkmanshipDefect,
+        ReactionTrigger::ConfigMismatch,
     ];
 }
 
@@ -190,6 +215,12 @@ pub fn trigger_spec(trigger: ReactionTrigger) -> (&'static str, Emotion) {
         ReactionTrigger::LevelFailed => ("level_failed", Emotion::Sad),
         ReactionTrigger::IdleNudge => ("idle_nudge", Emotion::Playful),
         ReactionTrigger::OutageStart => ("outage_start", Emotion::Surprised),
+        ReactionTrigger::IdentificationWrong => ("identification_wrong", Emotion::Annoyed),
+        ReactionTrigger::ServiceStateFail => ("service_fail", Emotion::Worried),
+        ReactionTrigger::SurveyPointFail => ("survey_point_fail", Emotion::Worried),
+        ReactionTrigger::DiagnosisWrong => ("diagnosis_wrong", Emotion::Annoyed),
+        ReactionTrigger::WorkmanshipDefect => ("workmanship_defect", Emotion::Annoyed),
+        ReactionTrigger::ConfigMismatch => ("config_mismatch", Emotion::Annoyed),
     }
 }
 

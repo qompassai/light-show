@@ -33,6 +33,7 @@ fn update_ledger_text(
     level: Res<LevelDef>,
     active_outage: Res<ActiveOutage>,
     cores: Res<Cores>,
+    astra: crate::astra::AstraProgress,
     mut query: Query<&mut Text, With<LedgerText>>,
 ) {
     let outage_suffix = active_outage
@@ -48,8 +49,23 @@ fn update_ledger_text(
         live.wavelength.0,
         active_outage.outage.as_ref(),
     );
+    // Astra §2a: the independent verification states render from the
+    // same vector the results screen uses — one source, two surfaces.
+    // Mechanic states are assembled in `crate::astra` from the live
+    // progress resources.
+    let mechanics = crate::astra::mechanic_states(&level, &astra);
+    let states = crate::level::states_summary(&level.verification_states(
+        &live.graph,
+        live.tx_dbm,
+        live.wavelength.0,
+        active_outage.outage.as_ref(),
+        &mechanics,
+    ));
     for mut text in &mut query {
-        text.0 = format!("{signal}{outage_suffix}  |  Cores: {}", cores.0);
+        text.0 = format!(
+            "{signal}{outage_suffix}  |  {states}  |  Cores: {}",
+            cores.0
+        );
     }
 }
 

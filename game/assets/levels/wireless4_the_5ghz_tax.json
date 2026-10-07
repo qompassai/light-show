@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "The 5.8 GHz band is clear of interference, but physics charges a tax: free-space loss climbs with frequency. These 250 m hops lose about 96 dB each at 5.8 GHz \u2014 nearly 8 dB more than at 2.4. Don't use 2.4 GHz math on a 5.8 GHz link. Pick the repeater that closes it.",
+  "briefing": "The 5.8 GHz band is clear of interference, but physics charges a tax: free-space loss climbs with frequency. These 250 m hops lose about 96 dB each at 5.8 GHz — nearly 8 dB more than at 2.4. Don't use 2.4 GHz math on a 5.8 GHz link. Pick the repeater that closes it. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -90,5 +90,6 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -70.0,
   "window_min_dbm": -80.0,
-  "world": 3
+  "world": 3,
+  "min_snr_db": 10.0
 }

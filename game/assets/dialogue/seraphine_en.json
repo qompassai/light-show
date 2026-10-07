@@ -132,5 +132,23 @@
   ],
   "sp_wrap": [
     "Tray closed, every drop lit by its own fiber. That's the whole craft in one sentence: identity before neatness, the pair before the light. The next tray you open alone will have worse lighting and no one narrating. You'll hear the sequence anyway."
+  ],
+  "identification_wrong": [
+    "That tone reads on the wrong fiber. Label discipline exists so the next tech doesn't inherit our guesses."
+  ],
+  "service_fail": [
+    "Light's in window and the service still fails — read the budget again. The failure is in the plant, not the launch."
+  ],
+  "survey_point_fail": [
+    "A survey point failed its requirement. One dark corner is enough — coverage is a promise per point, not an average."
+  ],
+  "diagnosis_wrong": [
+    "Wrong diagnosis. Compare the old reading to the new one; the quantity that changed is the culprit."
+  ],
+  "workmanship_defect": [
+    "The inspection found a defect in the finished end. Precision is the job — rebuild it to the card, not to memory."
+  ],
+  "config_mismatch": [
+    "Apply rejected. A configuration is a budget like any other: every field accounted, or it doesn't close."
   ]
 }

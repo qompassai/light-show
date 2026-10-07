@@ -295,6 +295,42 @@ impl DialogueBank {
                     "Tray closed, every drop lit by its own fiber. That's the whole craft in one sentence: identity before neatness, the pair before the light. The next tray you open alone will have worse lighting and no one narrating. You'll hear the sequence anyway.",
                 ],
             ),
+            (
+                "identification_wrong",
+                &[
+                    "That tone reads on the wrong fiber. Label discipline exists so the next tech doesn't inherit our guesses.",
+                ],
+            ),
+            (
+                "service_fail",
+                &[
+                    "Light's in window and the service still fails — read the budget again. The failure is in the plant, not the launch.",
+                ],
+            ),
+            (
+                "survey_point_fail",
+                &[
+                    "A survey point failed its requirement. One dark corner is enough — coverage is a promise per point, not an average.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong diagnosis. Compare the old reading to the new one; the quantity that changed is the culprit.",
+                ],
+            ),
+            (
+                "workmanship_defect",
+                &[
+                    "The inspection found a defect in the finished end. Precision is the job — rebuild it to the card, not to memory.",
+                ],
+            ),
+            (
+                "config_mismatch",
+                &[
+                    "Apply rejected. A configuration is a budget like any other: every field accounted, or it doesn't close.",
+                ],
+            ),
         ])
     }
 
@@ -463,6 +499,72 @@ impl DialogueBank {
                 "tutorial_wrap",
                 &[
                     "Unity gain is the whole philosophy, so say it with me: what the plant takes, the cascade returns — no more, no less. Balance first, bravado never. Now go balance your first cascade.",
+                ],
+            ),
+            (
+                "identification_wrong",
+                &[
+                    "That mapper reading doesn't match the work order. Wrong run — test them, don't trust handwriting.",
+                ],
+            ),
+            (
+                "service_fail",
+                &[
+                    "Continuity's fine, the level's fine — and service is still drowning. That's not a gain problem, that's a bad piece of plant. Find it and swap it.",
+                ],
+            ),
+            (
+                "survey_point_fail",
+                &[
+                    "One point's under its line. Out here that's the far end of the drop — passing at the distribution point isn't passing at the modem.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong call. Look at what the tones said then and what they say now — the delta names the fault.",
+                ],
+            ),
+            (
+                "workmanship_defect",
+                &[
+                    "Inspection caught what your eyes waved through. A defect you ship is a callback you schedule — rebuild the end and test it like you mean it.",
+                ],
+            ),
+            (
+                "config_mismatch",
+                &[
+                    "Rejected at apply. Out here the worksheet is the tone sheet — the value on paper is the value that ships, not the one that looks close.",
+                ],
+            ),
+            (
+                "tutorial_workbench",
+                &[
+                    "The bench is a state machine, not a vibe: strip to the card, fold the braid back, seat it flush, compress once. A mistake the card catches costs a connector. A mistake it can't — shielding, seating, the short test — ships. Work the card, in order, every end.",
+                ],
+            ),
+            (
+                "tutorial_intermittent",
+                &[
+                    "A drop that blinks when the cabinet's disturbed isn't a signal problem — it's a connection moving. Don't chase gain. Reproduce it, inspect the run, tighten the loose one to the card, then disturb it again and make it prove it holds. Rerouting around a loose fitting just schedules the callback.",
+                ],
+            ),
+            (
+                "tutorial_handoff_closeout",
+                &[
+                    "Last tech on site owns the story: verify the handoff at the demarc with the customer watching the same readings you are, then close the ticket out loud — complaint, what you found, what you changed, what you re-tested. A job isn't done when it works. It's done when the record proves it works.",
+                ],
+            ),
+            (
+                "tutorial_identification",
+                &[
+                    "New bench rule: identify before you amplify. Attach the remote at the drop, test every candidate in the closet, and let the mapper — not a handwritten label — tell you which run is ours.",
+                ],
+            ),
+            (
+                "tutorial_service_vs_continuity",
+                &[
+                    "See it? Continuity's green, the level's in window — and service is failing anyway. Continuity is not service. A carrier can be loud and still drown in noise: read the CNR line on its own, not just the level line.",
                 ],
             ),
         ])
@@ -638,6 +740,72 @@ impl DialogueBank {
                     "Close the link, keep the margin, respect the noise floor. That's the whole religion. Now — two sites, one field, no cable to save you. Show me a link budget.",
                 ],
             ),
+            (
+                "identification_wrong",
+                &[
+                    "Wrong run selected. In my world that's associating to the neighbor's AP — same lesson: verify the ID before you trust the link.",
+                ],
+            ),
+            (
+                "service_fail",
+                &[
+                    "RSSI healthy, SNR failing — loud is not clear. Something is raising your floor, and more power won't fix it.",
+                ],
+            ),
+            (
+                "survey_point_fail",
+                &[
+                    "That point is below its line — the design passed at the desk and failed at the shelf. Survey the room you're serving, not the room you wish you had.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong cause. The history is right there — what actually moved between then and now? Chase evidence, not hunches.",
+                ],
+            ),
+            (
+                "workmanship_defect",
+                &[
+                    "A defect went live in that termination. In RF that's a return-loss story — rebuild it and re-measure; hope isn't a test set.",
+                ],
+            ),
+            (
+                "config_mismatch",
+                &[
+                    "Rejected. Read the verdict, not your hopes: one field disagrees with the worksheet. Availability comes from the inventory — the DHCP pool is a rumor, not a rule.",
+                ],
+            ),
+            (
+                "tutorial_static_ipv4",
+                &[
+                    "Static IPv4, worksheet discipline: the assigned address is the one in the inventory under the printer's name. In the DHCP pool doesn't mean available, and out of the pool doesn't mean free — the inventory is the only truth. Gateway and DNS come off the same sheet.",
+                ],
+            ),
+            (
+                "tutorial_static_ipv6",
+                &[
+                    "IPv6 adds one trap: a link-local gateway, fe80::, is only meaningful scoped to its interface. Right address, wrong interface, no route — the apply will tell you exactly that, in exactly those words.",
+                ],
+            ),
+            (
+                "tutorial_dual_stack",
+                &[
+                    "Dual-stack means two verdicts, always: IPv4 passing tells you nothing about IPv6. Run both families against their own worksheets, read both acceptance lines, and don't let a green v4 talk you out of checking v6.",
+                ],
+            ),
+            (
+                "tutorial_history_diagnosis",
+                &[
+                    "Read the history like a tech, not a fortune-teller: same RSSI then and now, SNR down — the signal didn't move, the noise did. That's interference, every time.",
+                ],
+            ),
+            (
+                "tutorial_survey",
+                &[
+                    "A design that passes at one point is a hypothesis. Survey every named point against its own line — the shelf in the back doesn't care about your average.",
+                ],
+            ),
         ])
     }
 
@@ -805,6 +973,42 @@ impl DialogueBank {
                 "tutorial_wrap",
                 &[
                     "One hundred metres. Full bandwidth. Inside the power budget. Three sentences, whole career. Now — the IDF is sixty-five metres from the closet and the desk is sixty-five past that. Do the arithmetic before you touch the bench.",
+                ],
+            ),
+            (
+                "identification_wrong",
+                &[
+                    "Wrong drop. A mislabeled run is exactly how a neighbor's port gets pulled — verify before you disconnect anything.",
+                ],
+            ),
+            (
+                "service_fail",
+                &[
+                    "Link light's green and the service still fails. Continuity is not acceptance — test the service, not just the wire.",
+                ],
+            ),
+            (
+                "survey_point_fail",
+                &[
+                    "That point's below spec. A jack that links in the office and dies at the desk isn't done — check the point, not the switch.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong cause. Diff the history against today — one number moved. Follow the one that moved.",
+                ],
+            ),
+            (
+                "workmanship_defect",
+                &[
+                    "That termination failed inspection. A bad crimp passes a tug and fails a certifier — rebuild it and certify it.",
+                ],
+            ),
+            (
+                "config_mismatch",
+                &[
+                    "Rejected at apply. Check the inventory before the pool, and the worksheet before both — that's the order the network believes.",
                 ],
             ),
         ])

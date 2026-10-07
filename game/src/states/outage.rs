@@ -448,6 +448,8 @@ fn check_outage_resolution(
     sfx: Res<crate::audio::Sfx>,
     api_progress: Res<crate::states::api_console::ApiProgress>,
     triage_progress: Res<crate::states::triage_console::TriageProgress>,
+    astra: crate::astra::AstraProgress,
+    placed: Option<Res<crate::board::PlacedChoices>>,
     mut gate: Option<ResMut<crate::anim::ResultsGate>>,
     mut reaction_inbox: Option<ResMut<crate::waifu::reactions::ReactionInbox>>,
 ) {
@@ -489,15 +491,34 @@ fn check_outage_resolution(
         Some(triage) => triage_progress.is_complete(&triage.expected_order),
         None => true,
     };
+    // Astra mechanic gates — same conjunction as the plain win check.
+    let astra_ok = crate::astra::astra_gates_pass(&level, &astra)
+        && crate::astra::survey_gate_pass(&level, &live.graph, live.tx_dbm, Some(&outage));
+    // §2e composition (c1l6): beside the shipped backup-path win, the
+    // repair path also resolves the level — fitting repaired and
+    // re-verified, and the primary build passing on a graph rebuilt
+    // with the outage's cut lifted (the repaired plant conducts).
+    // Clearing via the backup edge instead forfeits the Diagnosis
+    // badge; badge evaluation reads that from the placed choices.
+    let repair_ok = match (&level.intermittent, astra.intermittent(), placed.as_deref()) {
+        (Some(_), Some(progress), Some(placed)) if progress.repair_path_complete() => {
+            let mut healed = osp_sim::PathGraph::default();
+            crate::board::rebuild_live_graph(&level, placed, None, &mut healed);
+            level.is_win_state(&healed, live.tx_dbm, live.wavelength.0)
+        }
+        _ => false,
+    };
     if !transition_pending
-        && api_ok
-        && triage_ok
-        && level.is_win_state_with_outage(
-            &live.graph,
-            live.tx_dbm,
-            live.wavelength.0,
-            Some(&outage),
-        )
+        && (repair_ok
+            || (api_ok
+                && triage_ok
+                && astra_ok
+                && level.is_win_state_with_outage(
+                    &live.graph,
+                    live.tx_dbm,
+                    live.wavelength.0,
+                    Some(&outage),
+                )))
     {
         if let Some(active_outage) = active.outage.as_mut() {
             active_outage.resolved = true;
@@ -598,6 +619,15 @@ mod tests {
             alarm_triage: None,
             quiz: None,
             splice_work_orders: None,
+            identification: None,
+            defective_edge: None,
+            survey: None,
+            workbench: None,
+            static_config_v4: None,
+            static_config_v6: None,
+            intermittent: None,
+            handoff_required: false,
+            optional_objective: None,
         }
     }
 

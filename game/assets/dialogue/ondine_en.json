@@ -93,5 +93,38 @@
   ],
   "tutorial_wrap": [
     "Unity gain is the whole philosophy, so say it with me: what the plant takes, the cascade returns — no more, no less. Balance first, bravado never. Now go balance your first cascade."
+  ],
+  "identification_wrong": [
+    "That mapper reading doesn't match the work order. Wrong run — test them, don't trust handwriting."
+  ],
+  "tutorial_identification": [
+    "New bench rule: identify before you amplify. Attach the remote at the drop, test every candidate in the closet, and let the mapper — not a handwritten label — tell you which run is ours."
+  ],
+  "service_fail": [
+    "Continuity's fine, the level's fine — and service is still drowning. That's not a gain problem, that's a bad piece of plant. Find it and swap it."
+  ],
+  "survey_point_fail": [
+    "One point's under its line. Out here that's the far end of the drop — passing at the distribution point isn't passing at the modem."
+  ],
+  "diagnosis_wrong": [
+    "Wrong call. Look at what the tones said then and what they say now — the delta names the fault."
+  ],
+  "workmanship_defect": [
+    "Inspection caught what your eyes waved through. A defect you ship is a callback you schedule — rebuild the end and test it like you mean it."
+  ],
+  "tutorial_workbench": [
+    "The bench is a state machine, not a vibe: strip to the card, fold the braid back, seat it flush, compress once. A mistake the card catches costs a connector. A mistake it can't — shielding, seating, the short test — ships. Work the card, in order, every end."
+  ],
+  "config_mismatch": [
+    "Rejected at apply. Out here the worksheet is the tone sheet — the value on paper is the value that ships, not the one that looks close."
+  ],
+  "tutorial_intermittent": [
+    "A drop that blinks when the cabinet's disturbed isn't a signal problem — it's a connection moving. Don't chase gain. Reproduce it, inspect the run, tighten the loose one to the card, then disturb it again and make it prove it holds. Rerouting around a loose fitting just schedules the callback."
+  ],
+  "tutorial_handoff_closeout": [
+    "Last tech on site owns the story: verify the handoff at the demarc with the customer watching the same readings you are, then close the ticket out loud — complaint, what you found, what you changed, what you re-tested. A job isn't done when it works. It's done when the record proves it works."
+  ],
+  "tutorial_service_vs_continuity": [
+    "See it? Continuity's green, the level's in window — and service is failing anyway. Continuity is not service. A carrier can be loud and still drown in noise: read the CNR line on its own, not just the level line."
   ]
 }

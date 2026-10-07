@@ -2,7 +2,7 @@
   "id": "c1l10",
   "title": "Ingress Storm",
   "world": 6,
-  "briefing": "Final exam. 700 meters of plant, 10 dB tap, headend at +48 — and the shield is gone. The 10 dB amp starts you in the [4, 12] window, but ingress climbs a decibel every ten seconds. You will rebalance twice before the clock runs out. Watch the ledger like your job depends on it.",
+  "briefing": "Final exam. 700 meters of plant, 10 dB tap, distribution point at +48 — and the shield is gone. The 10 dB amp starts you in the [4, 12] window, but ingress climbs a decibel every ten seconds. You will rebalance twice before the clock runs out. Watch the ledger like your job depends on it. Service acceptance for this G.fast drop: the carrier must land in the window with CNR at or above 25 dB against the −35 dBmV noise floor.",
   "medium": "Coax",
   "wavelength": "Nm1490",
   "tx_dbm": 48.0,
@@ -33,5 +33,170 @@
     "edge_to": 2,
     "fires_after_seconds": 10.0,
     "kind": "IngressNoise"
-  }
+  },
+  "identification":   {
+      "remote_id": "ID-9",
+      "expected_port": "Port 4",
+      "candidates": [
+          {
+              "id": "run-a",
+              "closet_label": "Port 1",
+              "handwritten_label": "Storm backup - Suite 12",
+              "is_service_run": false,
+              "mapper_id": "ID-3"
+          },
+          {
+              "id": "run-b",
+              "closet_label": "Port 2",
+              "handwritten_label": null,
+              "is_service_run": false,
+              "mapper_id": "ID-6"
+          },
+          {
+              "id": "run-c",
+              "closet_label": "Port 3",
+              "handwritten_label": null,
+              "is_service_run": false,
+              "mapper_id": "ID-8"
+          },
+          {
+              "id": "run-d",
+              "closet_label": "Port 4",
+              "handwritten_label": null,
+              "is_service_run": true,
+              "mapper_id": "ID-9"
+          }
+      ]
+  },
+  "workbench":   {
+      "card_title": "RG-6 compression termination \u2014 capstone card",
+      "card_lines": [
+          "Strip: 6 mm dielectric exposed, 6 mm center conductor.",
+          "Braid: fold back evenly; no strand may cross the window.",
+          "Seat: dielectric flush with the mandrel face before compression.",
+          "Test: continuity AND short, every end \u2014 this ticket closes only on a full record."
+      ],
+      "steps": [
+          {
+              "prompt": "Cut the drop to length.",
+              "options": [
+                  "Angled cut \u2014 close enough",
+                  "Crush cut with pliers",
+                  "Square cut with the cable cutter"
+              ],
+              "correct": 2,
+              "failure_mode": "Crushed end \u2014 strands splayed before the strip.",
+              "critical": false
+          },
+          {
+              "prompt": "Strip the jacket to the card dimension.",
+              "options": [
+                  "Strip to the card: 6 mm dielectric, 6 mm conductor exposed",
+                  "Strip long \u2014 extra conductor is harmless",
+                  "Strip short and force the fit"
+              ],
+              "correct": 0,
+              "failure_mode": "Braid contacts the center conductor.",
+              "critical": true
+          },
+          {
+              "prompt": "Dress the braid.",
+              "options": [
+                  "Trim the braid flush at the strip",
+                  "Fold the braid back evenly over the jacket",
+                  "Leave the braid forward under the connector"
+              ],
+              "correct": 1,
+              "failure_mode": "Braid folded forward \u2014 shield gap at the connector.",
+              "critical": true
+          },
+          {
+              "prompt": "Trim the dielectric.",
+              "options": [
+                  "Leave the dielectric proud by 2 mm",
+                  "Shave the dielectric to half thickness",
+                  "Trim the dielectric flush with the braid fold"
+              ],
+              "correct": 2,
+              "failure_mode": "Dielectric proud \u2014 the connector seats on foam, not braid.",
+              "critical": false
+          },
+          {
+              "prompt": "Seat the connector.",
+              "options": [
+                  "Push on until the dielectric is flush with the mandrel face",
+                  "Seat it most of the way \u2014 compression will close the gap",
+                  "Twist it on until it feels tight"
+              ],
+              "correct": 0,
+              "failure_mode": "Connector under-seated \u2014 intermittent contact under flex.",
+              "critical": true
+          },
+          {
+              "prompt": "Compress the connector.",
+              "options": [
+                  "Two half strokes, checking between",
+                  "One full compression stroke with the compression tool",
+                  "Crimp it with the hex die instead"
+              ],
+              "correct": 1,
+              "failure_mode": "Under-compressed \u2014 the connector walks off under pull.",
+              "critical": true
+          },
+          {
+              "prompt": "Tug test.",
+              "options": [
+                  "Skip it; the compression looked right",
+                  "Twist while pulling to seat it harder",
+                  "Firm straight pull \u2014 the connector must not move"
+              ],
+              "correct": 2,
+              "failure_mode": "No tug test \u2014 a loose end ships untested.",
+              "critical": false
+          },
+          {
+              "prompt": "Inspect the braid window.",
+              "options": [
+                  "Check the window: braid even, no strand across the center",
+                  "Glance at it under the bench light, no magnification",
+                  "Skip \u2014 the tug test already passed"
+              ],
+              "correct": 0,
+              "failure_mode": "Braid strand across the window \u2014 a short waiting for vibration.",
+              "critical": true
+          },
+          {
+              "prompt": "Meter test.",
+              "options": [
+                  "Continuity only \u2014 shorts show up in service",
+                  "Tone it out and call it tested",
+                  "Continuity + short test on the meter, both ends"
+              ],
+              "correct": 2,
+              "failure_mode": "No short test \u2014 a braid whisker ships live.",
+              "critical": true
+          },
+          {
+              "prompt": "Label and dress.",
+              "options": [
+                  "Label both ends and dress the run with slack",
+                  "Label the distribution-point end only",
+                  "Dress it tight \u2014 slack is sloppy"
+              ],
+              "correct": 0,
+              "failure_mode": "Unlabeled end \u2014 the next tech guesses.",
+              "critical": false
+          }
+      ],
+      "ends": 2,
+      "workmanship_loss_db": 3.0
+  },
+  "handoff_required": true,
+  "optional_objective":   {
+      "description": "Clean bench \u2014 finish both ends with zero wasted connectors",
+      "cores": 8,
+      "kind": "ZeroWastedConnectors"
+  },
+  "coax_noise_floor_dbmv": -35.0,
+  "min_carrier_to_noise_db": 25.0
 }

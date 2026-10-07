@@ -534,6 +534,368 @@ pub struct SpliceWorkOrdersDef {
     #[serde(default)]
     pub briefing_chart_text: Option<String>,
 }
+/// A degraded fixed plant piece (Astra §2c, the C3 anchor): while
+/// this edge's defect is in place, the coax noise floor an evaluation
+/// runs against rises by `floor_penalty_dbmv` — game-side, in
+/// `LevelDef::coax_noise_floor_with_defect`, so no amp choice can
+/// out-gain it (gain raises the carrier and the penalty together).
+/// The fix is substitution: the player swaps in a known-good spare
+/// through the jumper console; the evaluator never learns any of it.
+#[derive(Debug, Clone, Deserialize)]
+pub struct DefectiveEdgeDef {
+    /// The fixed edge carrying the degraded jumper.
+    pub from: u32,
+    pub to: u32,
+    /// Floor penalty in dBmV while the defect is in place. Authored
+    /// large enough that no available gain clears it (proven by the
+    /// exhaustive sweep test in the jumper module).
+    pub floor_penalty_dbmv: f64,
+    /// Work-order label of the known-good spare in the kit.
+    pub spare_label: String,
+}
+
+/// One survey test point (Astra §2d): a named area whose live RSSI is
+/// read by running `evaluate_wireless` from the source to `node` over
+/// the shared placed graph. Historical readings are authored
+/// constants displayed beside the live ones — data, never simulated.
+#[derive(Debug, Clone, Deserialize)]
+pub struct SurveyPointDef {
+    /// Stable id, e.g. "stockroom" (used in Coverage state ids).
+    pub id: String,
+    /// Display label, e.g. "Stockroom".
+    pub label: String,
+    /// Board node the point's reading is taken at.
+    pub node: u32,
+    /// Extra authored loss (dB) applied to the point's RSSI only —
+    /// models an obstruction the node graph does not. SNR is never
+    /// adjusted: level and noise stay independent (§3 guardrail 2).
+    #[serde(default)]
+    pub extra_loss_db: f64,
+    /// The point's acceptance requirement, in dBm.
+    pub required_rssi_dbm: f64,
+    /// Optional per-point SNR requirement; unset uses the level's
+    /// effective minimum.
+    #[serde(default)]
+    pub required_snr_db: Option<f64>,
+    /// The previous survey's RSSI at this point (authored constant).
+    pub historical_rssi_dbm: f64,
+    /// The previous survey's SNR at this point, where recorded.
+    #[serde(default)]
+    pub historical_snr_db: Option<f64>,
+}
+
+/// The diagnosis pick on a survey level (Astra §2d, the W2 anchor):
+/// the player names what moved — RSSI, noise, or plant — and the pick
+/// is scored against the authored truth. `trap_option` is the named
+/// trap (e.g. "wrong channel"); picking it fires the DiagnosisWrong
+/// reaction and denies the Diagnosis badge.
+#[derive(Debug, Clone, Deserialize)]
+pub struct DiagnosisDef {
+    pub options: Vec<String>,
+    /// Index into `options` of the correct cause.
+    pub correct: usize,
+    /// Index of the trap option, when one is authored.
+    #[serde(default)]
+    pub trap_option: Option<usize>,
+}
+
+/// Multi-point survey block (Astra §2d). When present, per-point
+/// Coverage states join the verification vector, and (on the anchor
+/// levels) the win gate requires every point to pass.
+#[derive(Debug, Clone, Deserialize)]
+pub struct SurveyDef {
+    pub points: Vec<SurveyPointDef>,
+    #[serde(default)]
+    pub diagnosis: Option<DiagnosisDef>,
+    /// Anchor levels (m1l9, m1l10) require every point to pass for
+    /// the win; elsewhere the survey is display + badge evidence.
+    #[serde(default)]
+    pub required_for_win: bool,
+}
+
+/// Cable identification block (Astra §2b): the closet holds several
+/// candidate homeruns; exactly one is the work order's service run.
+/// Exactly one *other* candidate carries the misleading handwritten
+/// label (the trap). Identification is a state machine over this
+/// authored data, not a simulated mapper instrument.
+#[derive(Debug, Clone, Deserialize)]
+pub struct IdentificationDef {
+    pub candidates: Vec<IdentificationCandidate>,
+    /// The mapper ID the correct run must read.
+    pub remote_id: String,
+    /// The work order's recorded port for the service run.
+    pub expected_port: String,
+}
+
+/// One candidate homerun in the closet.
+#[derive(Debug, Clone, Deserialize)]
+pub struct IdentificationCandidate {
+    /// Stable id, e.g. "run-c".
+    pub id: String,
+    /// Printed closet label, e.g. "Port 3".
+    pub closet_label: String,
+    /// The handwritten label, when one is taped to this run.
+    #[serde(default)]
+    pub handwritten_label: Option<String>,
+    /// True for exactly one candidate: the work order's service run.
+    pub is_service_run: bool,
+    /// What the cable mapper reads when this run is tested.
+    pub mapper_id: String,
+}
+
+/// Well-formedness of an identification block (fail-closed): exactly
+/// one service run whose mapper reads the expected remote id, and
+/// the handwritten label — when present — sits on a different run.
+/// Malformed authored data must never make Identity passable.
+pub fn identification_is_well_formed(def: &IdentificationDef) -> bool {
+    let service: Vec<&IdentificationCandidate> =
+        def.candidates.iter().filter(|c| c.is_service_run).collect();
+    if service.len() != 1 {
+        return false;
+    }
+    let service = service[0];
+    if service.mapper_id != def.remote_id {
+        return false;
+    }
+    let labelled: Vec<&IdentificationCandidate> = def
+        .candidates
+        .iter()
+        .filter(|c| c.handwritten_label.is_some())
+        .collect();
+    labelled.len() <= 1 && labelled.iter().all(|c| !c.is_service_run)
+}
+
+/// Connector workbench block (Astra §2e): an ordered sequence console
+/// in the `api_console` idiom. The instruction card (`card_lines`)
+/// carries every dimension/seating reference the steps test — card
+/// data only, never a global constant (§3 guardrail 1).
+#[derive(Debug, Clone, Deserialize)]
+pub struct WorkbenchDef {
+    /// Instruction-card title, e.g. "RG-6 compression termination".
+    pub card_title: String,
+    /// The card's printed lines (dimensions, references, torque).
+    pub card_lines: Vec<String>,
+    /// The ordered steps; the sequence runs once per cable end.
+    pub steps: Vec<WorkbenchStepDef>,
+    /// How many ends the player terminates (both ends = 2).
+    #[serde(default = "default_workbench_ends")]
+    pub ends: u8,
+    /// Authored loss (dB) an uncaught defect adds to the terminated
+    /// span, applied game-side in the verification states until the
+    /// end is rebuilt.
+    pub workmanship_loss_db: f64,
+}
+
+fn default_workbench_ends() -> u8 {
+    2
+}
+
+/// One workbench step: pick the instruction-card action among
+/// `options`; `correct` is the card's answer. A wrong pick at a
+/// `critical` step leaves an uncaught defect in the finished end; a
+/// wrong pick anywhere else is caught at inspection/test and costs
+/// a wasted connector.
+#[derive(Debug, Clone, Deserialize)]
+pub struct WorkbenchStepDef {
+    pub prompt: String,
+    pub options: Vec<String>,
+    /// Index into `options` of the correct action.
+    pub correct: usize,
+    /// The named failure mode a wrong pick records, verbatim from
+    /// the report's table (e.g. "Braid contacts the center conductor.").
+    pub failure_mode: String,
+    /// Critical steps are the ones whose mistake survives into the
+    /// finished termination (shielding, seating, compression,
+    /// inspection, continuity test).
+    #[serde(default)]
+    pub critical: bool,
+}
+
+/// Static address family for a config block (Astra §2f). A level may
+/// carry one block per family; families never share a verdict.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub enum ConfigFamily {
+    V4,
+    V6,
+}
+
+/// One inventory line: an address and who holds it.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AllocationDef {
+    pub address: String,
+    pub holder: String,
+}
+
+/// Static IPv4/IPv6 configuration block (Astra §2f): configure the
+/// device from the worksheet by choosing candidate values per field
+/// (no free-text entry — the console idiom, and it keeps the
+/// adversarial surface testable). `initial` is the fault-injected
+/// starting configuration.
+#[derive(Debug, Clone, Deserialize)]
+pub struct StaticConfigDef {
+    pub family: ConfigFamily,
+    /// The device being configured, e.g. "Office printer".
+    pub device_label: String,
+    pub worksheet_address: String,
+    pub worksheet_prefix_len: u32,
+    pub worksheet_gateway: String,
+    /// V6 only: the interface the link-local gateway is scoped to.
+    #[serde(default)]
+    pub worksheet_gateway_interface: Option<String>,
+    pub worksheet_dns: String,
+    /// Interfaces the gateway may be scoped to (V6).
+    #[serde(default)]
+    pub interfaces: Vec<String>,
+    /// V4 only: the DHCP pool bounds — displayed, and *never* the
+    /// availability rule (guardrail: availability is inventory only).
+    #[serde(default)]
+    pub dhcp_pool: Option<(String, String)>,
+    /// The address inventory: who holds what.
+    #[serde(default)]
+    pub allocations: Vec<AllocationDef>,
+    pub initial_address: String,
+    pub initial_prefix_len: u32,
+    pub initial_gateway: String,
+    #[serde(default)]
+    pub initial_gateway_interface: Option<String>,
+    pub initial_dns: String,
+    /// Candidate values offered per field; each list must contain
+    /// the worksheet value plus the authored traps.
+    pub address_candidates: Vec<String>,
+    pub prefix_candidates: Vec<u32>,
+    pub gateway_candidates: Vec<String>,
+    pub dns_candidates: Vec<String>,
+}
+
+/// Address-availability rule (Astra §2f guardrail): a candidate is
+/// rejected iff it appears in the inventory under another holder or
+/// collides with the gateway — never for being in or out of the
+/// DHCP pool, and never from a reachability probe.
+pub fn address_availability(def: &StaticConfigDef, address: &str) -> Result<(), &'static str> {
+    if address == def.worksheet_gateway {
+        return Err("address collides with the gateway");
+    }
+    if def
+        .allocations
+        .iter()
+        .any(|a| a.address == address && a.holder != def.device_label)
+    {
+        return Err("address is allocated to another device");
+    }
+    Ok(())
+}
+
+/// Verdict of one config Apply, per family: every field must match
+/// the worksheet and the address must be available. Returns the
+/// first failing field's feedback string (report §6 wording), or
+/// `Ok(())` when the family passes in full.
+#[allow(clippy::too_many_arguments)]
+pub fn config_apply_verdict(
+    def: &StaticConfigDef,
+    address: &str,
+    prefix_len: u32,
+    gateway: &str,
+    gateway_interface: Option<&str>,
+    dns: &str,
+) -> Result<(), String> {
+    if let Err(why) = address_availability(def, address) {
+        return Err(format!(
+            "Address {address} is not available: {why} — availability comes from the inventory, not the DHCP pool."
+        ));
+    }
+    if address != def.worksheet_address {
+        return Err(format!(
+            "{} address does not match the assigned worksheet ({}).",
+            match def.family {
+                ConfigFamily::V4 => "IPv4",
+                ConfigFamily::V6 => "IPv6",
+            },
+            def.worksheet_address
+        ));
+    }
+    if prefix_len != def.worksheet_prefix_len {
+        return Err(format!(
+            "Prefix /{prefix_len} does not match the worksheet (/{}) — a close mask is still a wrong mask.",
+            def.worksheet_prefix_len
+        ));
+    }
+    if gateway != def.worksheet_gateway {
+        return Err(format!(
+            "{} gateway does not match the assigned worksheet ({}).",
+            match def.family {
+                ConfigFamily::V4 => "IPv4",
+                ConfigFamily::V6 => "IPv6",
+            },
+            def.worksheet_gateway
+        ));
+    }
+    if def.worksheet_gateway_interface.as_deref() != gateway_interface {
+        return Err("IPv6 default route uses the wrong outgoing interface.".to_string());
+    }
+    if dns != def.worksheet_dns {
+        return Err(format!(
+            "DNS server does not match the assigned worksheet ({}).",
+            def.worksheet_dns
+        ));
+    }
+    Ok(())
+}
+
+/// The intermittent-connection block (Astra §2b/§2e composition,
+/// c1l6): the drop drops when the cabinet is disturbed. The player
+/// reproduces the drop, isolates the loose fitting among the path's
+/// connections, tightens it to the card reference, and re-verifies
+/// with a post-repair disturb that must hold.
+#[derive(Debug, Clone, Deserialize)]
+pub struct IntermittentDef {
+    /// The path's connections; exactly one is loose.
+    pub connections: Vec<IntermittentConnectionDef>,
+    /// The instruction-card tightening reference (card data only).
+    pub repair_reference: String,
+    /// The open edge (from, to) of the backup path — building it
+    /// instead of repairing is a valid clear that forfeits the
+    /// Diagnosis badge.
+    pub backup_edge: (u32, u32),
+}
+
+/// One connection on the intermittent path.
+#[derive(Debug, Clone, Deserialize)]
+pub struct IntermittentConnectionDef {
+    pub id: String,
+    pub label: String,
+    /// True for exactly one connection: the loose fitting.
+    pub is_loose: bool,
+}
+
+/// Well-formedness of an intermittent block (fail-closed): exactly
+/// one loose connection.
+pub fn intermittent_is_well_formed(def: &IntermittentDef) -> bool {
+    def.connections.iter().filter(|c| c.is_loose).count() == 1
+}
+
+/// Which optional-objective a mapped level pays Cores for (Astra
+/// §2g: badges pay nothing; optional objectives pay). Evaluated from
+/// attempt telemetry at results.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub enum ObjectiveKind {
+    /// Identification completed with zero neighbor disruptions.
+    ZeroNeighborDisruptions,
+    /// Workbench completed with zero wasted connectors.
+    ZeroWastedConnectors,
+    /// c1l6 resolved by repair, not by reroute.
+    RepairNotReroute,
+    /// No wrong selections anywhere (identification/diagnosis/config).
+    ZeroWrongSelections,
+}
+
+/// An optional objective on a mapped level: a briefing-level goal
+/// that pays `cores` on a win when its condition holds.
+#[derive(Debug, Clone, Deserialize)]
+pub struct OptionalObjectiveDef {
+    pub description: String,
+    pub cores: u32,
+    pub kind: ObjectiveKind,
+}
 
 #[derive(Debug, Clone, Deserialize, Resource)]
 pub struct LevelDef {
@@ -608,6 +970,41 @@ pub struct LevelDef {
     /// [`SpliceWorkOrdersDef`] for why the data lands before its UI.
     #[serde(default)]
     pub splice_work_orders: Option<SpliceWorkOrdersDef>,
+    /// Cable identification (Astra §2b): when present, the Identity
+    /// state joins the win gate (except on the intermittent level,
+    /// where the §2e composition supersedes it — see `intermittent`).
+    #[serde(default)]
+    pub identification: Option<IdentificationDef>,
+    /// Defective fixed edge (Astra §2c): while the defect is in
+    /// place, the Service (CNR) state is measured against a raised
+    /// floor. See `DefectiveEdgeDef`.
+    #[serde(default)]
+    pub defective_edge: Option<DefectiveEdgeDef>,
+    /// Multi-point survey + historical diagnosis (Astra §2d).
+    #[serde(default)]
+    pub survey: Option<SurveyDef>,
+    /// Connector workbench (Astra §2e).
+    #[serde(default)]
+    pub workbench: Option<WorkbenchDef>,
+    /// Static IPv4 configuration (Astra §2f). Per-family blocks:
+    /// a level may carry either or both; families never share a
+    /// verdict.
+    #[serde(default)]
+    pub static_config_v4: Option<StaticConfigDef>,
+    /// Static IPv6 configuration (Astra §2f).
+    #[serde(default)]
+    pub static_config_v6: Option<StaticConfigDef>,
+    /// Intermittent-connection composition (Astra §2b/§2e, c1l6).
+    #[serde(default)]
+    pub intermittent: Option<IntermittentDef>,
+    /// Capstone Ethernet handoff gate (Astra §2a/§1.1 c1l10): after
+    /// the coax states pass, the player verifies the Ethernet
+    /// handoff before the level counts as won.
+    #[serde(default)]
+    pub handoff_required: bool,
+    /// Optional objective that pays Cores on a win (Astra §2g).
+    #[serde(default)]
+    pub optional_objective: Option<OptionalObjectiveDef>,
     /// Optional dialogue hook keys fired on enter/win/fail — looked up in
     /// the Séraphine dialogue bank.
     pub on_enter_line: Option<String>,
@@ -1098,6 +1495,596 @@ impl LevelDef {
             }
         }
     }
+
+    /// Independent verification states for this attempt (Astra §2a):
+    /// the board's verdict split into per-state lines, each with its
+    /// own status and one-line feedback. Pure derivation from the
+    /// evaluators' outputs — no `osp_sim` change — so the live ledger
+    /// and the results screen render the same vector and can never
+    /// disagree about *why* a level stands where it stands.
+    ///
+    /// `mechanics` carries the states owned by the optional mechanic
+    /// blocks (identity, workbench, config, …) as `(status, feedback)`
+    /// pairs assembled by the caller from the live progress resources;
+    /// a `None` entry means the mechanic is not in play on this level
+    /// and its line is omitted. `service_defect_present` is the
+    /// defective-jumper flag (§2c): while set, the Service state is
+    /// measured against the defect-raised floor.
+    pub fn verification_states(
+        &self,
+        graph: &PathGraph,
+        tx_dbm: f64,
+        wavelength: Wavelength,
+        outage: Option<&Outage>,
+        mechanics: &MechanicStates,
+    ) -> Vec<StateLine> {
+        let mut lines: Vec<StateLine> = Vec::new();
+        match self.medium() {
+            Medium::Coax => {
+                let (_, min_cnr_db) = self.coax_params();
+                let floor = self.coax_noise_floor_with_defect(outage, mechanics);
+                match graph.evaluate_coax(
+                    self.source_node,
+                    self.target_node,
+                    tx_dbm,
+                    self.receive_window(),
+                    floor,
+                    min_cnr_db,
+                ) {
+                    Ok(eval) => {
+                        lines.push(StateLine::new(
+                            StateId::Continuity,
+                            StateStatus::Pass,
+                            "Continuity passes — the path resolves end to end.".to_string(),
+                        ));
+                        // §2e: a live workmanship defect attenuates
+                        // the measured carrier (CNR is unaffected —
+                        // carrier and ingress drop together).
+                        let measured_dbmv = eval.received_dbmv - mechanics.workmanship_loss_db;
+                        let in_window = self.receive_window().contains(measured_dbmv);
+                        lines.push(StateLine::new(
+                            StateId::CarrierLevel,
+                            if in_window {
+                                StateStatus::Pass
+                            } else {
+                                StateStatus::Fail
+                            },
+                            format!(
+                                "Carrier level {:.1} dBmV vs window [{:.0}, {:.0}] dBmV.",
+                                measured_dbmv, self.window_min_dbm, self.window_max_dbm
+                            ),
+                        ));
+                        let cnr_ok = eval.carrier_to_noise_db >= min_cnr_db;
+                        let feedback = if cnr_ok {
+                            format!(
+                                "CNR {:.1} dB clears the {:.0} dB service requirement.",
+                                eval.carrier_to_noise_db, min_cnr_db
+                            )
+                        } else if in_window {
+                            format!(
+                                "Continuity passes, but service acceptance still fails: CNR {:.1} dB vs {:.0} dB required.",
+                                eval.carrier_to_noise_db, min_cnr_db
+                            )
+                        } else {
+                            format!(
+                                "CNR {:.1} dB vs {:.0} dB required.",
+                                eval.carrier_to_noise_db, min_cnr_db
+                            )
+                        };
+                        lines.push(StateLine::new(
+                            StateId::ServiceCnr,
+                            if cnr_ok {
+                                StateStatus::Pass
+                            } else {
+                                StateStatus::Fail
+                            },
+                            feedback,
+                        ));
+                    }
+                    Err(_) => {
+                        lines.push(StateLine::new(
+                            StateId::Continuity,
+                            StateStatus::Fail,
+                            "Continuity fails — no complete path to the drop.".to_string(),
+                        ));
+                        lines.push(StateLine::new(
+                            StateId::CarrierLevel,
+                            StateStatus::Pending,
+                            "No carrier to measure until the path is complete.".to_string(),
+                        ));
+                        lines.push(StateLine::new(
+                            StateId::ServiceCnr,
+                            StateStatus::Pending,
+                            "Service cannot be accepted on an open path.".to_string(),
+                        ));
+                    }
+                }
+            }
+            Medium::Wireless => {
+                let required_snr_db = self.effective_wireless_min_snr_db(outage);
+                match graph.evaluate_wireless(
+                    self.source_node,
+                    self.target_node,
+                    tx_dbm,
+                    self.receive_window(),
+                    required_snr_db,
+                ) {
+                    Ok(eval) => {
+                        lines.push(StateLine::new(
+                            StateId::Continuity,
+                            StateStatus::Pass,
+                            "Link closes end to end.".to_string(),
+                        ));
+                        let in_window = self.receive_window().contains(eval.received_dbm);
+                        lines.push(StateLine::new(
+                            StateId::LinkLevel,
+                            if in_window {
+                                StateStatus::Pass
+                            } else {
+                                StateStatus::Fail
+                            },
+                            format!(
+                                "RSSI {:.1} dBm vs window [{:.0}, {:.0}] dBm (fade margin {:.1} dB).",
+                                eval.received_dbm,
+                                self.window_min_dbm,
+                                self.window_max_dbm,
+                                eval.fade_margin_db
+                            ),
+                        ));
+                        let snr_ok = eval.snr_db >= required_snr_db;
+                        lines.push(StateLine::new(
+                            StateId::LinkSnr,
+                            if snr_ok {
+                                StateStatus::Pass
+                            } else {
+                                StateStatus::Fail
+                            },
+                            if snr_ok {
+                                format!(
+                                    "SNR {:.1} dB clears the {:.0} dB requirement.",
+                                    eval.snr_db, required_snr_db
+                                )
+                            } else if in_window {
+                                format!(
+                                    "Loud is not clear: level is in window but SNR {:.1} dB vs {:.0} dB required.",
+                                    eval.snr_db, required_snr_db
+                                )
+                            } else {
+                                format!(
+                                    "SNR {:.1} dB vs {:.0} dB required.",
+                                    eval.snr_db, required_snr_db
+                                )
+                            },
+                        ));
+                        let interference = outage.is_some_and(|o| {
+                            !o.resolved && o.kind == OutageKind::WirelessInterference
+                        });
+                        lines.push(StateLine::new(
+                            StateId::NoiseChannel,
+                            if !interference {
+                                StateStatus::NotApplicable
+                            } else if snr_ok {
+                                StateStatus::Pass
+                            } else {
+                                StateStatus::Fail
+                            },
+                            if interference {
+                                format!(
+                                    "Interference is active: the SNR requirement has risen to {:.0} dB.",
+                                    required_snr_db
+                                )
+                            } else {
+                                "No interference event on this link.".to_string()
+                            },
+                        ));
+                        // Per-point survey states (§2d) ride the same
+                        // vector: one Coverage line per authored point.
+                        if let Some(survey) = &self.survey {
+                            for point in &survey.points {
+                                match self.survey_point_reading(graph, tx_dbm, outage, point) {
+                                    Some((rssi_dbm, snr_db)) => {
+                                        let snr_req =
+                                            point.required_snr_db.unwrap_or(required_snr_db);
+                                        let ok = rssi_dbm >= point.required_rssi_dbm
+                                            && snr_db >= snr_req;
+                                        lines.push(StateLine::new(
+                                            StateId::Coverage(point.id.clone()),
+                                            if ok {
+                                                StateStatus::Pass
+                                            } else {
+                                                StateStatus::Fail
+                                            },
+                                            if ok {
+                                                format!(
+                                                    "Coverage ({}): {:.1} dBm clears the {:.0} dBm requirement.",
+                                                    point.label, rssi_dbm, point.required_rssi_dbm
+                                                )
+                                            } else {
+                                                format!(
+                                                    "Coverage ({}): {:.1} dBm vs {:.0} dBm required — this point remains below this mission's requirement.",
+                                                    point.label, rssi_dbm, point.required_rssi_dbm
+                                                )
+                                            },
+                                        ));
+                                    }
+                                    None => {
+                                        lines.push(StateLine::new(
+                                            StateId::Coverage(point.id.clone()),
+                                            StateStatus::Pending,
+                                            format!(
+                                                "Coverage ({}): no reading yet — the path to this point is open.",
+                                                point.label
+                                            ),
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        lines.push(StateLine::new(
+                            StateId::Continuity,
+                            StateStatus::Fail,
+                            "Link does not close — no complete path.".to_string(),
+                        ));
+                        lines.push(StateLine::new(
+                            StateId::LinkLevel,
+                            StateStatus::Pending,
+                            "No RSSI to measure until the link closes.".to_string(),
+                        ));
+                        lines.push(StateLine::new(
+                            StateId::LinkSnr,
+                            StateStatus::Pending,
+                            "SNR cannot be carried on an open link.".to_string(),
+                        ));
+                    }
+                }
+            }
+            Medium::Ethernet => {
+                let (max_segment_m, poe_draw_w, required_bw) = self.ethernet_params();
+                match graph.evaluate_ethernet(
+                    self.source_node,
+                    self.target_node,
+                    max_segment_m,
+                    poe_draw_w,
+                    required_bw,
+                ) {
+                    Ok(eval) => {
+                        lines.push(StateLine::new(
+                            StateId::Continuity,
+                            StateStatus::Pass,
+                            "Run is continuous end to end.".to_string(),
+                        ));
+                        lines.push(StateLine::new(
+                            StateId::Application,
+                            if eval.passes() {
+                                StateStatus::Pass
+                            } else {
+                                StateStatus::Fail
+                            },
+                            if eval.passes() {
+                                "All Ethernet constraints hold (segment, PoE, bandwidth)."
+                                    .to_string()
+                            } else {
+                                format!(
+                                    "{} constraint violation(s) on this run.",
+                                    eval.violations.len()
+                                )
+                            },
+                        ));
+                    }
+                    Err(_) => {
+                        lines.push(StateLine::new(
+                            StateId::Continuity,
+                            StateStatus::Fail,
+                            "Run is open — no complete path.".to_string(),
+                        ));
+                        lines.push(StateLine::new(
+                            StateId::Application,
+                            StateStatus::Pending,
+                            "Constraints cannot be checked on an open run.".to_string(),
+                        ));
+                    }
+                }
+            }
+            _ => {
+                // Fiber (and the Study fallback): the optical budget's
+                // verdicts rendered through the same vector.
+                if self.quiz.is_some() {
+                    // Quiz levels own no board states at all.
+                } else {
+                    match graph.compute_link_budget_with_outage(
+                        self.source_node,
+                        self.target_node,
+                        tx_dbm,
+                        wavelength,
+                        self.receive_window(),
+                        outage,
+                    ) {
+                        Ok(result) => {
+                            lines.push(StateLine::new(
+                                StateId::Continuity,
+                                StateStatus::Pass,
+                                "Path resolves end to end.".to_string(),
+                            ));
+                            lines.push(StateLine::new(
+                                StateId::CarrierLevel,
+                                if result.in_window {
+                                    StateStatus::Pass
+                                } else {
+                                    StateStatus::Fail
+                                },
+                                format!(
+                                    "Received {:.1} {} vs window [{:.0}, {:.0}] {}.",
+                                    result.received_dbm,
+                                    self.units_label(),
+                                    self.window_min_dbm,
+                                    self.window_max_dbm,
+                                    self.units_label()
+                                ),
+                            ));
+                        }
+                        Err(_) => {
+                            lines.push(StateLine::new(
+                                StateId::Continuity,
+                                StateStatus::Fail,
+                                "Path is open — no complete route.".to_string(),
+                            ));
+                            lines.push(StateLine::new(
+                                StateId::CarrierLevel,
+                                StateStatus::Pending,
+                                "No reading until the route is complete.".to_string(),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+        // Mechanic-owned states merge into the same vector (§2a: one
+        // source, two surfaces). Order is fixed so the ledger and the
+        // results screen always read identically.
+        let mechanic_lines = [
+            (StateId::Identity, &mechanics.identity),
+            (StateId::Inspection, &mechanics.inspection),
+            (StateId::Workmanship, &mechanics.workmanship),
+            (StateId::Ipv4Config, &mechanics.ipv4),
+            (StateId::Ipv6Config, &mechanics.ipv6),
+            (StateId::Dns, &mechanics.dns),
+            (StateId::Application, &mechanics.application),
+            (StateId::Handoff, &mechanics.handoff),
+            (StateId::Documentation, &mechanics.documentation),
+        ];
+        for (id, entry) in mechanic_lines {
+            if let Some((status, feedback)) = entry {
+                // The Ethernet arm already emitted an Application line;
+                // a mechanic Application entry only joins media that
+                // did not.
+                if id == StateId::Application && lines.iter().any(|l| l.id == StateId::Application)
+                {
+                    continue;
+                }
+                lines.push(StateLine::new(id, *status, feedback.clone()));
+            }
+        }
+        lines
+    }
+
+    /// The coax noise floor an evaluation actually runs against,
+    /// including the defective-jumper penalty (§2c) while the defect
+    /// is in place. The clean path (defect swapped out, or no defect
+    /// authored) is exactly `effective_coax_noise_floor_dbmv` — the
+    /// pinned c1l5 arithmetic (28.5 dB at full accrual) is measured
+    /// on it and must never move.
+    pub fn coax_noise_floor_with_defect(
+        &self,
+        outage: Option<&Outage>,
+        mechanics: &MechanicStates,
+    ) -> f64 {
+        let floor = self.effective_coax_noise_floor_dbmv(outage);
+        match &self.defective_edge {
+            Some(defect) if mechanics.service_defect_present => floor + defect.floor_penalty_dbmv,
+            _ => floor,
+        }
+    }
+
+    /// True while this level's defective edge (§2c) is in the live
+    /// plant: a defect is authored and the known-good spare has not
+    /// been swapped in.
+    pub fn defect_present(&self, spare_swapped: bool) -> bool {
+        self.defective_edge.is_some() && !spare_swapped
+    }
+
+    /// One survey point's live reading (§2d): `evaluate_wireless`
+    /// from the source to the point's node over the shared placed
+    /// graph (the evaluator is pure; N points = N calls), with the
+    /// point's authored extra loss (an obstruction the graph does not
+    /// model) applied to RSSI only — SNR is returned as carried, so a
+    /// point's level and noise states stay independent. `None` when
+    /// the path to the point does not resolve.
+    pub fn survey_point_reading(
+        &self,
+        graph: &PathGraph,
+        tx_dbm: f64,
+        outage: Option<&Outage>,
+        point: &SurveyPointDef,
+    ) -> Option<(f64, f64)> {
+        let eval = graph
+            .evaluate_wireless(
+                self.source_node,
+                point.node,
+                tx_dbm,
+                self.receive_window(),
+                self.effective_wireless_min_snr_db(outage),
+            )
+            .ok()?;
+        Some((eval.received_dbm - point.extra_loss_db, eval.snr_db))
+    }
+
+    /// True when every authored survey point currently passes its
+    /// RSSI (and SNR, where authored) requirement. Levels without a
+    /// survey block pass vacuously. Fail-closed: an unresolvable
+    /// point is a failing point.
+    pub fn survey_points_pass(
+        &self,
+        graph: &PathGraph,
+        tx_dbm: f64,
+        outage: Option<&Outage>,
+    ) -> bool {
+        let Some(survey) = &self.survey else {
+            return true;
+        };
+        if survey.points.is_empty() {
+            return false;
+        }
+        let required_snr_db = self.effective_wireless_min_snr_db(outage);
+        survey.points.iter().all(|point| {
+            match self.survey_point_reading(graph, tx_dbm, outage, point) {
+                Some((rssi_dbm, snr_db)) => {
+                    rssi_dbm >= point.required_rssi_dbm
+                        && snr_db >= point.required_snr_db.unwrap_or(required_snr_db)
+                }
+                None => false,
+            }
+        })
+    }
+}
+
+/// One independent verification state (Astra §2a). States are derived,
+/// never stored as truth: the same vector renders on the live ledger
+/// and the results screen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StateStatus {
+    Pending,
+    Pass,
+    Fail,
+    NotApplicable,
+}
+
+impl StateStatus {
+    /// Ledger verdict word for this status.
+    pub fn word(self) -> &'static str {
+        match self {
+            StateStatus::Pending => "PENDING",
+            StateStatus::Pass => "PASS",
+            StateStatus::Fail => "FAIL",
+            StateStatus::NotApplicable => "N/A",
+        }
+    }
+}
+
+/// Identity of one verification state. `Coverage` carries the survey
+/// point's authored id — points are data, not a fixed enum.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StateId {
+    Continuity,
+    CarrierLevel,
+    ServiceCnr,
+    LinkLevel,
+    LinkSnr,
+    Coverage(String),
+    NoiseChannel,
+    Identity,
+    Inspection,
+    Workmanship,
+    Handoff,
+    Ipv4Config,
+    Ipv6Config,
+    Dns,
+    Application,
+    Documentation,
+}
+
+impl StateId {
+    /// Display label for ledger/results rendering.
+    pub fn label(&self) -> String {
+        match self {
+            StateId::Continuity => "Continuity".to_string(),
+            StateId::CarrierLevel => "Carrier Level".to_string(),
+            StateId::ServiceCnr => "Service (CNR)".to_string(),
+            StateId::LinkLevel => "Link Level".to_string(),
+            StateId::LinkSnr => "Link SNR".to_string(),
+            StateId::Coverage(point_id) => format!("Coverage ({point_id})"),
+            StateId::NoiseChannel => "Noise Channel".to_string(),
+            StateId::Identity => "Identity".to_string(),
+            StateId::Inspection => "Inspection".to_string(),
+            StateId::Workmanship => "Workmanship".to_string(),
+            StateId::Handoff => "Handoff".to_string(),
+            StateId::Ipv4Config => "IPv4 Config".to_string(),
+            StateId::Ipv6Config => "IPv6 Config".to_string(),
+            StateId::Dns => "DNS".to_string(),
+            StateId::Application => "Application".to_string(),
+            StateId::Documentation => "Documentation".to_string(),
+        }
+    }
+}
+
+/// One rendered verification-state line: the state, its status, and
+/// its own one-line feedback (measured value + requirement, never a
+/// bare "failed").
+#[derive(Debug, Clone, PartialEq)]
+pub struct StateLine {
+    pub id: StateId,
+    pub status: StateStatus,
+    pub feedback: String,
+}
+
+impl StateLine {
+    pub fn new(id: StateId, status: StateStatus, feedback: String) -> Self {
+        Self {
+            id,
+            status,
+            feedback,
+        }
+    }
+}
+
+/// Mechanic-owned verification states, assembled by the caller from
+/// the live progress resources (see `crate::astra`). Each entry is a
+/// `(status, feedback)` pair; `None` omits the line entirely.
+#[derive(Debug, Clone, Default)]
+pub struct MechanicStates {
+    pub identity: Option<(StateStatus, String)>,
+    pub inspection: Option<(StateStatus, String)>,
+    pub workmanship: Option<(StateStatus, String)>,
+    pub handoff: Option<(StateStatus, String)>,
+    pub ipv4: Option<(StateStatus, String)>,
+    pub ipv6: Option<(StateStatus, String)>,
+    pub dns: Option<(StateStatus, String)>,
+    pub application: Option<(StateStatus, String)>,
+    pub documentation: Option<(StateStatus, String)>,
+    /// §2c: the defective jumper is still in the live plant.
+    pub service_defect_present: bool,
+    /// §2e: authored loss (dB) a live workmanship defect applies to
+    /// the measured carrier level (level states only — the defect
+    /// attenuates carrier and ingress together, so CNR is unchanged).
+    pub workmanship_loss_db: f64,
+}
+
+/// One-line summary of a state vector for compact surfaces (the live
+/// ledger): `Continuity PASS · Service (CNR) FAIL · …`. NotApplicable
+/// lines are omitted — they carry no signal at ledger width.
+pub fn states_summary(lines: &[StateLine]) -> String {
+    lines
+        .iter()
+        .filter(|l| l.status != StateStatus::NotApplicable)
+        .map(|l| format!("{} {}", l.id.label(), l.status.word()))
+        .collect::<Vec<_>>()
+        .join(" · ")
+}
+
+/// The feedback strings of every failing state, in vector order —
+/// the results screen's per-state explanation block.
+pub fn states_failures(lines: &[StateLine]) -> Vec<String> {
+    lines
+        .iter()
+        .filter(|l| l.status == StateStatus::Fail)
+        .map(|l| l.feedback.clone())
+        .collect()
+}
+
+/// Look up one state's line in a vector.
+pub fn state_line<'a>(lines: &'a [StateLine], id: &StateId) -> Option<&'a StateLine> {
+    lines.iter().find(|l| &l.id == id)
 }
 
 /// Verdict word for a completed route: inside the receive window, or
@@ -2568,5 +3555,344 @@ mod tests {
             serde_json::from_value(value).expect("sp1 without the block parses");
         assert!(stripped.splice_work_orders.is_none());
         assert_eq!(stripped.id, "sp1");
+    }
+
+    // ---- Astra §2a: independent verification states ----
+
+    fn status_of(lines: &[StateLine], id: &StateId) -> StateStatus {
+        state_line(lines, id)
+            .unwrap_or_else(|| panic!("state {id:?} must be present"))
+            .status
+    }
+
+    #[test]
+    fn verification_states_split_coax_verdicts() {
+        // c1l1 winner: every coax state passes independently.
+        let level = load_level(10);
+        let amp = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 5.0))
+            .expect("c1l1 must offer a 5 dB amp");
+        let graph = graph_with_single_placement(&level, amp);
+        let lines = level.verification_states(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+            &MechanicStates::default(),
+        );
+        assert_eq!(status_of(&lines, &StateId::Continuity), StateStatus::Pass);
+        assert_eq!(status_of(&lines, &StateId::CarrierLevel), StateStatus::Pass);
+        assert_eq!(status_of(&lines, &StateId::ServiceCnr), StateStatus::Pass);
+        let summary = states_summary(&lines);
+        assert!(summary.contains("Service (CNR) PASS"), "got: {summary}");
+        assert!(states_failures(&lines).is_empty());
+    }
+
+    #[test]
+    fn verification_states_show_the_c3_precondition() {
+        // The C3 lesson's precondition, as a state vector: carrier in
+        // window while service fails (hostile floor on c1l2, the same
+        // setup as the evaluator-disagreement test).
+        let mut level = load_level(11);
+        level.coax_noise_floor_dbmv = Some(-10.0);
+        let amp = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 3.0))
+            .expect("c1l2 must offer a 3 dB amp")
+            .clone();
+        let graph = graph_with_single_placement(&level, &amp);
+        let lines = level.verification_states(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+            &MechanicStates::default(),
+        );
+        assert_eq!(status_of(&lines, &StateId::Continuity), StateStatus::Pass);
+        assert_eq!(status_of(&lines, &StateId::CarrierLevel), StateStatus::Pass);
+        assert_eq!(status_of(&lines, &StateId::ServiceCnr), StateStatus::Fail);
+        let failures = states_failures(&lines);
+        assert_eq!(failures.len(), 1);
+        assert!(
+            failures[0].contains("Continuity passes, but service acceptance still fails"),
+            "the three-state readout must name the split, got: {}",
+            failures[0]
+        );
+    }
+
+    #[test]
+    fn verification_states_split_wireless_level_from_snr() {
+        // m1l1 winner: level and SNR pass independently.
+        let level = load_level(20);
+        let rpt = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 20.0))
+            .expect("m1l1 must offer a 20 dBm repeater");
+        let graph = graph_with_single_placement(&level, rpt);
+        let lines = level.verification_states(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+            &MechanicStates::default(),
+        );
+        assert_eq!(status_of(&lines, &StateId::LinkLevel), StateStatus::Pass);
+        assert_eq!(status_of(&lines, &StateId::LinkSnr), StateStatus::Pass);
+
+        // The amp-chain trap (same synthetic graph as the
+        // disagreement test): level in window, SNR wrecked — "loud
+        // is not clear" as a state vector.
+        let mut graph = PathGraph::default();
+        for node in &level.nodes {
+            graph.add_node(node.id, node.label.clone());
+        }
+        graph.connect(
+            0,
+            1,
+            Component::WirelessHop {
+                distance_m: 1000.0,
+                frequency_mhz: 2400.0,
+            },
+        );
+        graph.connect(1, 2, Component::Amplifier { gain_db: 90.0 });
+        graph.connect(
+            2,
+            3,
+            Component::WirelessHop {
+                distance_m: 100.0,
+                frequency_mhz: 2400.0,
+            },
+        );
+        let lines = level.verification_states(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+            &MechanicStates::default(),
+        );
+        assert_eq!(status_of(&lines, &StateId::LinkLevel), StateStatus::Pass);
+        assert_eq!(status_of(&lines, &StateId::LinkSnr), StateStatus::Fail);
+    }
+
+    #[test]
+    fn verification_states_fail_closed_on_an_open_path() {
+        // Nothing placed: continuity fails and the measured states
+        // stay Pending — never a spurious Pass on an open route.
+        let level = load_level(10);
+        let mut graph = PathGraph::default();
+        for node in &level.nodes {
+            graph.add_node(node.id, node.label.clone());
+        }
+        for edge in &level.fixed_edges {
+            graph.connect(edge.from, edge.to, edge.component.clone());
+        }
+        let lines = level.verification_states(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+            &MechanicStates::default(),
+        );
+        assert_eq!(status_of(&lines, &StateId::Continuity), StateStatus::Fail);
+        assert_eq!(
+            status_of(&lines, &StateId::CarrierLevel),
+            StateStatus::Pending
+        );
+        assert_eq!(
+            status_of(&lines, &StateId::ServiceCnr),
+            StateStatus::Pending
+        );
+    }
+
+    #[test]
+    fn astra_registry_card_data_matches_shipped_json() {
+        // §3.1 registry: across all 20 mapped coax/wireless levels,
+        // the acceptance fields are explicit in the JSON (never
+        // silently defaulted), the briefing states the acceptance
+        // numbers, and no briefing keeps CATV plant vocabulary
+        // (G.fast ruling: distribution point, not headend).
+        let raws: Vec<serde_json::Value> = LEVEL_SOURCES
+            .iter()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .collect();
+        let defs: Vec<LevelDef> = LEVEL_SOURCES
+            .iter()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .collect();
+        let mut coax = 0;
+        let mut wireless = 0;
+        for (raw, def) in raws.iter().zip(&defs) {
+            let is_coax = def.id.starts_with("c1l");
+            let is_wireless = def.id.starts_with("m1l");
+            if !is_coax && !is_wireless {
+                continue;
+            }
+            assert!(
+                !def.briefing.contains("headend") && !def.briefing.contains("Headend"),
+                "{} briefing keeps CATV vocabulary",
+                def.id
+            );
+            if is_coax {
+                coax += 1;
+                assert_eq!(
+                    raw["coax_noise_floor_dbmv"].as_f64(),
+                    Some(-35.0),
+                    "{}",
+                    def.id
+                );
+                assert_eq!(
+                    raw["min_carrier_to_noise_db"].as_f64(),
+                    Some(25.0),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    def.briefing.contains("25 dB"),
+                    "{} briefing must state CNR",
+                    def.id
+                );
+                assert!(
+                    def.briefing.contains("35 dBmV"),
+                    "{} briefing must state the floor",
+                    def.id
+                );
+            } else {
+                wireless += 1;
+                assert_eq!(raw["min_snr_db"].as_f64(), Some(10.0), "{}", def.id);
+                assert!(
+                    def.briefing.contains("10 dB"),
+                    "{} briefing must state SNR",
+                    def.id
+                );
+            }
+            // Card == JSON: every authored block is well-formed
+            // against the shipped data itself.
+            if let Some(ident) = &def.identification {
+                assert!(identification_is_well_formed(ident), "{}", def.id);
+            }
+            if let Some(inter) = &def.intermittent {
+                assert!(intermittent_is_well_formed(inter), "{}", def.id);
+            }
+            if let Some(wb) = &def.workbench {
+                assert!(!wb.card_title.is_empty(), "{}", def.id);
+                assert!(!wb.card_lines.is_empty(), "{}", def.id);
+                assert_eq!(wb.steps.len(), 10, "{}", def.id);
+                for step in &wb.steps {
+                    assert!(step.correct < step.options.len(), "{}", def.id);
+                }
+            }
+            for cfg in [&def.static_config_v4, &def.static_config_v6]
+                .into_iter()
+                .flatten()
+            {
+                assert!(
+                    cfg.address_candidates.contains(&cfg.worksheet_address),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    cfg.gateway_candidates.contains(&cfg.worksheet_gateway),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    cfg.dns_candidates.contains(&cfg.worksheet_dns),
+                    "{}",
+                    def.id
+                );
+                assert!(
+                    address_availability(cfg, &cfg.worksheet_address).is_ok(),
+                    "{} worksheet address must be available to its own device",
+                    def.id
+                );
+            }
+            if let Some(survey) = &def.survey {
+                assert!(!survey.points.is_empty(), "{}", def.id);
+                if let Some(d) = &survey.diagnosis {
+                    assert!(d.correct < d.options.len(), "{}", def.id);
+                }
+            }
+        }
+        assert_eq!(coax, 10);
+        assert_eq!(wireless, 10);
+    }
+
+    #[test]
+    fn m1l10_capstone_survey_gates_on_the_measured_winner() {
+        // Measured on the shipped data: the 25 dBm repeater reads
+        // -78.28 dBm / SNR 16.72 at Site B and passes every point;
+        // the amplifier trap fails the survey outright.
+        let level: LevelDef = LEVEL_SOURCES
+            .iter()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .find(|l: &LevelDef| l.id == "m1l10")
+            .unwrap();
+        assert!(level.handoff_required == false);
+        let winner = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 25.0))
+            .unwrap();
+        let graph = graph_with_single_placement(&level, winner);
+        assert!(crate::astra::survey_gate_pass(
+            &level,
+            &graph,
+            level.tx_dbm,
+            None
+        ));
+        let trap = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { .. }))
+            .unwrap();
+        let graph = graph_with_single_placement(&level, trap);
+        assert!(!crate::astra::survey_gate_pass(
+            &level,
+            &graph,
+            level.tx_dbm,
+            None
+        ));
+    }
+
+    #[test]
+    fn verification_states_merge_mechanic_lines_in_fixed_order() {
+        let level = load_level(10);
+        let amp = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 5.0))
+            .expect("c1l1 must offer a 5 dB amp");
+        let graph = graph_with_single_placement(&level, amp);
+        let mechanics = MechanicStates {
+            identity: Some((StateStatus::Fail, "Mapper reads remote ID-5.".to_string())),
+            documentation: Some((StateStatus::Pending, "Closeout open.".to_string())),
+            ..MechanicStates::default()
+        };
+        let lines = level.verification_states(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+            &mechanics,
+        );
+        assert_eq!(status_of(&lines, &StateId::Identity), StateStatus::Fail);
+        assert_eq!(
+            status_of(&lines, &StateId::Documentation),
+            StateStatus::Pending
+        );
+        // Mechanic lines come after the board states.
+        let identity_pos = lines
+            .iter()
+            .position(|l| l.id == StateId::Identity)
+            .unwrap();
+        let service_pos = lines
+            .iter()
+            .position(|l| l.id == StateId::ServiceCnr)
+            .unwrap();
+        assert!(identity_pos > service_pos);
     }
 }

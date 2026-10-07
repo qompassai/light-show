@@ -92,5 +92,23 @@
   ],
   "tutorial_wrap": [
     "One hundred metres. Full bandwidth. Inside the power budget. Three sentences, whole career. Now — the IDF is sixty-five metres from the closet and the desk is sixty-five past that. Do the arithmetic before you touch the bench."
+  ],
+  "identification_wrong": [
+    "Wrong drop. A mislabeled run is exactly how a neighbor's port gets pulled — verify before you disconnect anything."
+  ],
+  "service_fail": [
+    "Link light's green and the service still fails. Continuity is not acceptance — test the service, not just the wire."
+  ],
+  "survey_point_fail": [
+    "That point's below spec. A jack that links in the office and dies at the desk isn't done — check the point, not the switch."
+  ],
+  "diagnosis_wrong": [
+    "Wrong cause. Diff the history against today — one number moved. Follow the one that moved."
+  ],
+  "workmanship_defect": [
+    "That termination failed inspection. A bad crimp passes a tug and fails a certifier — rebuild it and certify it."
+  ],
+  "config_mismatch": [
+    "Rejected at apply. Check the inventory before the pool, and the worksheet before both — that's the order the network believes."
   ]
 }

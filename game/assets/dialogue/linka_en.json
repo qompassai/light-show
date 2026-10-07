@@ -93,5 +93,38 @@
   ],
   "tutorial_wrap": [
     "Close the link, keep the margin, respect the noise floor. That's the whole religion. Now — two sites, one field, no cable to save you. Show me a link budget."
+  ],
+  "identification_wrong": [
+    "Wrong run selected. In my world that's associating to the neighbor's AP — same lesson: verify the ID before you trust the link."
+  ],
+  "service_fail": [
+    "RSSI healthy, SNR failing — loud is not clear. Something is raising your floor, and more power won't fix it."
+  ],
+  "survey_point_fail": [
+    "That point is below its line — the design passed at the desk and failed at the shelf. Survey the room you're serving, not the room you wish you had."
+  ],
+  "diagnosis_wrong": [
+    "Wrong cause. The history is right there — what actually moved between then and now? Chase evidence, not hunches."
+  ],
+  "tutorial_history_diagnosis": [
+    "Read the history like a tech, not a fortune-teller: same RSSI then and now, SNR down — the signal didn't move, the noise did. That's interference, every time."
+  ],
+  "tutorial_survey": [
+    "A design that passes at one point is a hypothesis. Survey every named point against its own line — the shelf in the back doesn't care about your average."
+  ],
+  "workmanship_defect": [
+    "A defect went live in that termination. In RF that's a return-loss story — rebuild it and re-measure; hope isn't a test set."
+  ],
+  "config_mismatch": [
+    "Rejected. Read the verdict, not your hopes: one field disagrees with the worksheet. Availability comes from the inventory — the DHCP pool is a rumor, not a rule."
+  ],
+  "tutorial_static_ipv4": [
+    "Static IPv4, worksheet discipline: the assigned address is the one in the inventory under the printer's name. In the DHCP pool doesn't mean available, and out of the pool doesn't mean free — the inventory is the only truth. Gateway and DNS come off the same sheet."
+  ],
+  "tutorial_static_ipv6": [
+    "IPv6 adds one trap: a link-local gateway, fe80::, is only meaningful scoped to its interface. Right address, wrong interface, no route — the apply will tell you exactly that, in exactly those words."
+  ],
+  "tutorial_dual_stack": [
+    "Dual-stack means two verdicts, always: IPv4 passing tells you nothing about IPv6. Run both families against their own worksheets, read both acceptance lines, and don't let a green v4 talk you out of checking v6."
   ]
 }

@@ -3,14 +3,20 @@
 
 pub mod api_console;
 pub mod companion_select;
+pub mod config_console;
 pub mod credits;
+pub mod identification;
+pub mod intermittent;
+pub mod jumper;
 pub mod menu;
 pub mod outage;
 pub mod playing;
 pub mod quiz;
 pub mod results;
+pub mod survey;
 pub mod triage_console;
 pub mod warehouse;
+pub mod workbench;
 
 use bevy::prelude::*;
 

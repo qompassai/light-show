@@ -2,7 +2,7 @@
   "id": "c1l7",
   "title": "Hot Headend",
   "world": 2,
-  "briefing": "The headend is screaming at +45 dBmV and the customer is only 100 meters away — every amplifier in your kit would overdrive the drop into distortion. Sometimes the answer isn't more gain, it's more cable. Use a long coax run as a pad.",
+  "briefing": "The distribution point is screaming at +45 dBmV and the customer is only 100 meters away — every amplifier in your kit would overdrive the drop into distortion. Sometimes the answer isn't more gain, it's more cable. Use a long coax run as a pad. Service acceptance for this G.fast drop: the carrier must land in the window with CNR at or above 25 dB against the −35 dBmV noise floor.",
   "medium": "Coax",
   "wavelength": "Nm1490",
   "tx_dbm": 45.0,
@@ -28,5 +28,7 @@
   "on_enter_line": "clean_splice",
   "on_win_line": "level_win",
   "on_fail_line": "level_fail_cold",
-  "scripted_outage": null
+  "scripted_outage": null,
+  "coax_noise_floor_dbmv": -35.0,
+  "min_carrier_to_noise_db": 25.0
 }

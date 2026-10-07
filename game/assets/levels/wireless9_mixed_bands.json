@@ -28,7 +28,7 @@
       "to": 2
     }
   ],
-  "briefing": "First hop: 300 m at 2.4 GHz. Second hop: 200 m at 5.8 GHz. Different bands, different loss \u2014 you can't use one number for both. Run each hop's path loss separately, then pick the repeater that closes the 5.8 GHz leg into the window.",
+  "briefing": "First hop: 300 m at 2.4 GHz. Second hop: 200 m at 5.8 GHz. Different bands, different loss — you can't use one number for both. Run each hop's path loss separately, then pick the repeater that closes the 5.8 GHz leg into the window. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.",
   "fixed_edges": [
     {
       "component": {
@@ -90,5 +90,29 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -70.0,
   "window_min_dbm": -75.0,
-  "world": 4
+  "world": 4,
+  "survey":   {
+      "required_for_win": true,
+      "points": [
+          {
+              "id": "front",
+              "label": "Front Desk",
+              "node": 3,
+              "extra_loss_db": 0.0,
+              "required_rssi_dbm": -75.0,
+              "historical_rssi_dbm": -79.0,
+              "historical_snr_db": 14.0
+          },
+          {
+              "id": "stockroom",
+              "label": "Stockroom",
+              "node": 3,
+              "extra_loss_db": 4.0,
+              "required_rssi_dbm": -79.0,
+              "historical_rssi_dbm": -83.0,
+              "historical_snr_db": 14.0
+          }
+      ]
+  },
+  "min_snr_db": 10.0
 }
