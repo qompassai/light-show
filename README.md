@@ -56,7 +56,7 @@ splices, outages, and level results in her own voice.
 
 | | | | |
 |---|---|---|---|
-| ![Séraphine (mature)](assets/art/companions/seraphine_animated_mature.gif)<br>**Séraphine** — Fiber<br>*mature* | ![Ondine (mature)](assets/art/companions/ondine_animated_mature.gif)<br>**Ondine** — Coax<br>*mature* | ![Linka (mature)](assets/art/companions/linka_animated_base.gif)<br>**Linka** — Wireless<br>*mature* | ![Lattice (mature)](assets/art/companions/lattice_animated_mature.gif)<br>**Lattice** — Wired<br>*mature* |
+| ![Séraphine (mature)](assets/art/seraphine/companions/seraphine_animated_mature.gif)<br>**Séraphine** — Fiber<br>*mature* | ![Ondine (mature)](assets/art/ondine/companions/ondine_animated_mature.gif)<br>**Ondine** — Coax<br>*mature* | ![Linka (mature)](assets/art/linka/companions/linka_animated_base.gif)<br>**Linka** — Wireless<br>*mature* | ![Lattice (mature)](assets/art/lattice/companions/lattice_animated_mature.gif)<br>**Lattice** — Wired<br>*mature* |
 
 Full character briefs, palettes, and mood-sheet specs live in
 [`docs/ART_STYLE.md`](docs/ART_STYLE.md).
@@ -108,7 +108,7 @@ game/assets/levels/    Level definitions (JSON)
 game/assets/dialogue/  Per-companion dialogue banks (JSON, localizable)
 game/assets/sprites/   In-engine sprite sheets, incl. companion mood sheets
 game/assets/audio/     Chiptune music loops + win/fail jingles (.ogg)
-assets/art/companions/ Source portraits, animated profile GIFs, app icon art
+assets/art/<name>/    Per-companion art: source portraits, expressions, animated profile GIFs; app icon art stays in assets/art/companions/
 art/aseprite/          Aseprite-ready sprite sources + headless import script
 art/unreal/            Content-only Unreal preview project (Paper2D) for the same art
 docs/                  Design, art direction, asset pipeline, build, and F-Droid docs

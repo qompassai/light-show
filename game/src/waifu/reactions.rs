@@ -484,8 +484,8 @@ pub struct BubbleState {
     face_speaker: Option<PillSpeaker>,
     /// Canonical emotion slug of the current line (faces layout key).
     face_emotion: &'static str,
-    /// Probed `art/faces` availability (empty until probed / when the
-    /// tree does not exist yet — portraits serve as faces then).
+    /// Probed per-character faces availability (empty until probed /
+    /// when the tree does not exist yet — portraits serve as faces then).
     face_available: std::collections::HashSet<String>,
     face_probed: bool,
 }
@@ -1050,7 +1050,7 @@ fn tick_bubble(
                 variant,
                 &bubble.face_available,
             );
-            if path.contains("art/faces/") && bubble.face_path.as_deref() != Some(path.as_str()) {
+            if path.contains("/faces/") && bubble.face_path.as_deref() != Some(path.as_str()) {
                 bubble.face_path = Some(path.clone());
                 if let Ok(mut image) = face_images.get_mut(ui.face) {
                     image.image = asset_server.load(path);
@@ -1692,7 +1692,7 @@ mod tests {
         let active = bubble.active().expect("pill line must be up");
         assert_eq!(active.line, "Howdy.");
         let pres = crate::waifu::pill::present(PillSpeaker::Host(crate::warehouse::HostId::Tessa), "x");
-        assert_eq!(pres.face_path, "art/companions/tessa_portrait.jpg");
+        assert_eq!(pres.face_path, "art/tessa/companions/tessa_portrait.jpg");
         assert_eq!(pres.speaker_name, "Tessa");
     }
 

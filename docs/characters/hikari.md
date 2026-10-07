@@ -22,7 +22,7 @@ callback waiting to happen. Pick a clean one."*
 
 ## Appearance
 
-From her shipped portrait (`art/companions/hikari_portrait.jpg`):
+From her shipped portrait (`art/hikari/companions/hikari_portrait.jpg`):
 black hair in a high ponytail threaded with glowing fiber strands,
 brown eyes, clear safety glasses, and an orange hi-vis OSP vest
 (patched HIKARI — OSP FIBER TECH) over a dark shirt, holding a small
@@ -41,9 +41,9 @@ the backhoe. Design detail in `docs/OSP_DFN_GUIDE.md`.
 
 ## Assets
 
-- Portraits: `game/assets/art/companions/hikari_portrait.jpg` +
+- Portraits: `game/assets/art/hikari/companions/hikari_portrait.jpg` +
   `hikari_portrait_mature.jpg`, mirrored under
-  `assets/art/companions/` (1280×1920; the dialogue box loads the
+  `assets/art/hikari/companions/` (1280×1920; the dialogue box loads the
   mature portrait by default).
 - Sprite sheet: **missing** — the code loads
   `game/assets/sprites/hikari/hikari_sheet_fullbody.png`

@@ -82,7 +82,7 @@ hand — the expression-forward, gesture-forward house style.
 Each companion's outfit and color story stay stable across all promotional
 art, store listing screenshots, and in-game sprites for brand consistency.
 Source portraits and animated README profile GIFs live in
-`assets/art/companions/`; see [`docs/CREDITS.md`](CREDITS.md) for
+`assets/art/<name>/companions/` (one folder per companion); see [`docs/CREDITS.md`](CREDITS.md) for
 AI-generation tooling and license attribution.
 
 ## Companion Picker Presentation
@@ -151,7 +151,7 @@ Board furniture, all Aseprite-authored:
   art.
 - `tools/gen_companion_art.py` builds each companion's real in-engine sprite
   sheet and README animated profile GIF from a single AI-generated anime
-  portrait per character (`assets/art/companions/<name>_portrait.jpg`).
+  portrait per character (`assets/art/<name>/companions/<name>_portrait.jpg`).
 - `tools/gen_app_icon.py` builds the Android launcher icon set (legacy
   mipmap densities + adaptive icon foreground/background) from the
   four-companion group portrait at `assets/art/companions/app_icon_group.jpg`.

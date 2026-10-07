@@ -60,11 +60,11 @@ Exact paths the game or the repo conventions expect, in priority order.
    `game/assets/sprites/picker/{clara,aino,hikari,lea}_select_{0..5}.png`
    plus each `{stem}_select_strip.png`.
 3. **Specialist expression portraits** (painterly keeper convention,
-   `assets/art/expressions/media-generation-{name}-{mood}-0-*.webp`):
+   `assets/art/{name}/expressions/media-generation-{name}-{mood}-0-*.webp`):
    Clara, Aino, Hikari, and Léa × {alarmed, blush, celebrate, pout, wink}.
    None exist yet.
 4. **Profile/README art for specialists and hosts**:
-   `assets/art/companions/{clara,aino,hikari,lea,bianca,tessa}_animated.gif`
+   `assets/art/<name>/companions/<name>_animated.gif`
    family and `{name}_profile_64.png`. Promotional only; no runtime use.
 5. **Warehouse host expressions**: Bianca and Tessa ship a single static
    portrait each. No code path expects more today; listed so the gap is a
@@ -78,7 +78,7 @@ neutral, embarrassed, fun/playful, annoyed, happy, and surprised. The
 remaining canonical emotions (angry, sad, worried, determined, smug) have
 no assets for any character, and the dialogue UI's `Expression` enum
 currently implements Neutral only: the painterly expression portraits
-under `assets/art/expressions/` are a source-art library awaiting
+under `assets/art/<name>/expressions/` are a source-art library awaiting
 plumbing, not a runtime feature.
 
 ## Notes
@@ -93,8 +93,8 @@ plumbing, not a runtime feature.
    keeper generation (the "librarian look": chestnut bun, round glasses,
    burgundy cardigan, quiz tablet and study book, Swiss flag pin),
    converted to the repo's 1280×1920 portrait format. Before that, the
-   code path `art/companions/lea_portrait.jpg` was a documented
+   code path `art/lea/companions/lea_portrait.jpg` was a documented
    placeholder with no file behind it.
 3. Séraphine's five painterly expression keepers were pulled into
-   `assets/art/expressions/` on 2026-10-06, completing the four mains'
+   `assets/art/seraphine/expressions/` on 2026-10-06, completing the four mains'
    sets; hers had previously existed only in the art working folders.

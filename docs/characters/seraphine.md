@@ -19,7 +19,7 @@ fault (starved receiver, overdriven photodiode) and the actual fix.
 
 ## Appearance
 
-From her canonical portrait (`art/companions/seraphine_portrait.jpg`):
+From her canonical portrait (`art/seraphine/companions/seraphine_portrait.jpg`):
 long magenta-pink hair in a high side ponytail with a glowing fiber-motif
 braid, pink eyes, clear light-pipe visor glasses, and a white utility vest
 over a hoodie with pink accents and a LUMENET patch. `docs/ART_STYLE.md`
@@ -36,8 +36,8 @@ School."*
 
 ## Assets
 
-- Portrait: `game/assets/art/companions/seraphine_portrait.jpg` and
-  `assets/art/companions/seraphine_portrait.jpg` (1024×1536). No separate
+- Portrait: `game/assets/art/seraphine/companions/seraphine_portrait.jpg` and
+  `assets/art/seraphine/companions/seraphine_portrait.jpg` (1024×1536). No separate
   mature portrait — her mature art lives in the sprite sheet.
 - Sprite sheets: `game/assets/sprites/seraphine/seraphine_sheet.png`
   (256×384), `seraphine_sheet_fullbody.png` (384×1152), and the active
@@ -45,12 +45,13 @@ School."*
   `.aseprite` source and folder READMEs. All six moods × 4 frames.
 - Picker: `game/assets/sprites/picker/seraphine_select_{0..5}.png` +
   strip + source.
-- Expression portraits: `assets/art/expressions/` — alarmed, blush,
+- Expression portraits: `assets/art/seraphine/expressions/` — alarmed, blush,
   celebrate, pout, wink (painterly keepers; pulled into the repo
   2026-10-06, completing the mains' sets).
-- Idle/profile: `assets/art/companions/seraphine_animated.gif` (byte-duplicate of the mature GIF; quarantined 2026-10-07),
-  `_animated_base.gif`, `_animated_mature.gif`, `_animated_mature.png`,
-  `_profile_64.png`.
+- Idle/profile: `assets/art/seraphine/companions/seraphine_animated_base.gif`,
+  `seraphine_animated_mature.gif`, `seraphine_profile_64.png`.
+  (A plain `seraphine_animated.gif`, byte-duplicate of the mature GIF,
+  was quarantined out of the tree on 2026-10-07.)
 - Dialogue: `game/assets/dialogue/seraphine_en.json` (full bank).
 - Music: `game/assets/music/themes/seraphine.ogg`,
   `game/assets/music/ambience/seraphine_hum.ogg`. Footage under

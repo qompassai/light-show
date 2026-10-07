@@ -52,8 +52,8 @@ pub enum PillSpeaker {
 }
 
 impl PillSpeaker {
-    /// Directory stem under `art/faces/` (the art program's canonical
-    /// layout): lowercase character name.
+    /// Directory stem naming the character's directory under `art/`
+    /// (the art program's canonical layout): lowercase character name.
     pub fn face_stem(self) -> &'static str {
         match self {
             PillSpeaker::Companion(c) => c.picker_stem(),
@@ -162,11 +162,11 @@ impl FaceVariant {
 }
 
 /// Canonical face asset path for a speaker/emotion/variant, per the
-/// art program's layout: `art/faces/<character>/<emotion>[_talk|
+/// art program's layout: `art/<character>/faces/<emotion>[_talk|
 /// _blink].webp` (`emotion` is the canonical slug, e.g. "neutral").
 pub fn face_asset_path(speaker: PillSpeaker, emotion_slug: &str, variant: FaceVariant) -> String {
     format!(
-        "art/faces/{}/{}{}.webp",
+        "art/{}/faces/{}{}.webp",
         speaker.face_stem(),
         emotion_slug,
         variant.suffix()
@@ -197,20 +197,21 @@ pub fn resolve_face_path(
     speaker.face_path().to_string()
 }
 
-/// Probe a faces tree (asset root + `art/faces`) into the availability
-/// set [`resolve_face_path`] consumes. Missing tree → empty set →
+/// Probe the per-character faces trees (asset root +
+/// `art/<character>/faces`) into the availability set
+/// [`resolve_face_path`] consumes. Missing trees → empty set →
 /// every face resolves to the shipped portrait.
 pub fn probe_faces(asset_root: &std::path::Path) -> std::collections::HashSet<String> {
     let mut out = std::collections::HashSet::new();
-    let base = asset_root.join("art/faces");
+    let base = asset_root.join("art");
     if let Ok(chars) = std::fs::read_dir(&base) {
         for ch in chars.flatten() {
-            if let Ok(files) = std::fs::read_dir(ch.path()) {
+            if let Ok(files) = std::fs::read_dir(ch.path().join("faces")) {
                 for f in files.flatten() {
                     if let Some(name) = f.file_name().to_str() {
                         if name.ends_with(".webp") {
                             out.insert(format!(
-                                "art/faces/{}/{}",
+                                "art/{}/faces/{}",
                                 ch.file_name().to_string_lossy(),
                                 name
                             ));
@@ -429,15 +430,15 @@ mod tests {
         let sp = PillSpeaker::Companion(Companion::Fiber);
         assert_eq!(
             face_asset_path(sp, "happy", FaceVariant::Base),
-            "art/faces/seraphine/happy.webp"
+            "art/seraphine/faces/happy.webp"
         );
         assert_eq!(
             face_asset_path(sp, "happy", FaceVariant::Talk),
-            "art/faces/seraphine/happy_talk.webp"
+            "art/seraphine/faces/happy_talk.webp"
         );
         assert_eq!(
             face_asset_path(PillSpeaker::Host(HostId::Tessa), "neutral", FaceVariant::Blink),
-            "art/faces/tessa/neutral_blink.webp"
+            "art/tessa/faces/neutral_blink.webp"
         );
     }
 
@@ -451,22 +452,22 @@ mod tests {
             sp.face_path()
         );
         // Emotion base lands: variants fall back to it.
-        avail.insert("art/faces/ondine/happy.webp".to_string());
+        avail.insert("art/ondine/faces/happy.webp".to_string());
         assert_eq!(
             resolve_face_path(sp, "happy", FaceVariant::Blink, &avail),
-            "art/faces/ondine/happy.webp"
+            "art/ondine/faces/happy.webp"
         );
         // Blink frame lands: it wins for the blink variant.
-        avail.insert("art/faces/ondine/happy_blink.webp".to_string());
+        avail.insert("art/ondine/faces/happy_blink.webp".to_string());
         assert_eq!(
             resolve_face_path(sp, "happy", FaceVariant::Blink, &avail),
-            "art/faces/ondine/happy_blink.webp"
+            "art/ondine/faces/happy_blink.webp"
         );
         // Missing emotion falls back to the neutral set.
-        avail.insert("art/faces/ondine/neutral.webp".to_string());
+        avail.insert("art/ondine/faces/neutral.webp".to_string());
         assert_eq!(
             resolve_face_path(sp, "angry", FaceVariant::Base, &avail),
-            "art/faces/ondine/neutral.webp"
+            "art/ondine/faces/neutral.webp"
         );
     }
 

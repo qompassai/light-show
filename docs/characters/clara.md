@@ -21,7 +21,7 @@ that defines her track: *"Count the ports before you count the decibels
 
 ## Appearance
 
-From her shipped portrait (`art/companions/clara_portrait.jpg`):
+From her shipped portrait (`art/clara/companions/clara_portrait.jpg`):
 shoulder-length auburn waves, amber eyes, clear safety glasses, and a
 grey-white provisioning uniform with gold-orange accents, holding a
 holographic network tablet against the line's magenta backdrop.
@@ -44,8 +44,8 @@ Design detail in `docs/CALIX_PROVISIONING.md`.
 
 ## Assets
 
-- Portraits: `game/assets/art/companions/clara_portrait.jpg` +
-  `clara_portrait_mature.jpg`, mirrored under `assets/art/companions/`
+- Portraits: `game/assets/art/clara/companions/clara_portrait.jpg` +
+  `clara_portrait_mature.jpg`, mirrored under `assets/art/clara/companions/`
   (1280×1920; the dialogue box loads the mature portrait by default).
 - Sprite sheet: **missing** — the code loads
   `game/assets/sprites/clara/clara_sheet_fullbody.png`

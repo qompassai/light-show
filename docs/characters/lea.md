@@ -24,7 +24,7 @@ requirements every telecom tech needs cold. Score 70% to move on."*
 
 ## Appearance
 
-From her canonical portrait (`art/companions/lea_portrait.jpg`, pulled
+From her canonical portrait (`art/lea/companions/lea_portrait.jpg`, pulled
 into the repo 2026-10-06 from the locked "librarian look" keeper):
 chestnut hair in a low bun, round librarian glasses, hazel-amber eyes,
 a burgundy cable-knit cardigan over a cream blouse with a Swiss flag
@@ -43,8 +43,8 @@ the final boss.
 
 ## Assets
 
-- Portrait: `game/assets/art/companions/lea_portrait.jpg` and
-  `assets/art/companions/lea_portrait.jpg` (1280×1920) — **added
+- Portrait: `game/assets/art/lea/companions/lea_portrait.jpg` and
+  `assets/art/lea/companions/lea_portrait.jpg` (1280×1920) — **added
   2026-10-06**. Before that, `Companion::portrait_path` pointed at
   this path as a documented placeholder with no file behind it; the
   locked keeper generation had never been pulled in. No mature

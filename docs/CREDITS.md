@@ -28,7 +28,7 @@ copyrightable expression.
   — see `docs/ASSET_PIPELINE.md`.
 - **Companion portraits and derived art** (Séraphine, Ondine, Linka,
   Lattice): the four source portraits
-  (`assets/art/companions/<name>_portrait.jpg`), the four-companion group
+  (`assets/art/<name>/companions/<name>_portrait.jpg`), the four-companion group
   portrait used for the app icon (`assets/art/companions/app_icon_group.jpg`),
   and everything derived from them (64x64 in-engine sprite sheets under
   `game/assets/sprites/<name>/`, animated README profile GIFs, and the

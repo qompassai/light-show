@@ -306,14 +306,14 @@ impl Companion {
     /// generated yet — the path is a placeholder until her art lands.
     pub fn portrait_path(&self) -> &'static str {
         match self {
-            Companion::Fiber => "art/companions/seraphine_portrait.jpg",
-            Companion::Coax => "art/companions/ondine_portrait.jpg",
-            Companion::Mobile => "art/companions/linka_portrait.jpg",
-            Companion::Ethernet => "art/companions/lattice_portrait.jpg",
-            Companion::Clara => "art/companions/clara_portrait_mature.jpg",
-            Companion::Aino => "art/companions/aino_portrait_mature.jpg",
-            Companion::Hikari => "art/companions/hikari_portrait_mature.jpg",
-            Companion::Lea => "art/companions/lea_portrait.jpg",
+            Companion::Fiber => "art/seraphine/companions/seraphine_portrait.jpg",
+            Companion::Coax => "art/ondine/companions/ondine_portrait.jpg",
+            Companion::Mobile => "art/linka/companions/linka_portrait.jpg",
+            Companion::Ethernet => "art/lattice/companions/lattice_portrait.jpg",
+            Companion::Clara => "art/clara/companions/clara_portrait_mature.jpg",
+            Companion::Aino => "art/aino/companions/aino_portrait_mature.jpg",
+            Companion::Hikari => "art/hikari/companions/hikari_portrait_mature.jpg",
+            Companion::Lea => "art/lea/companions/lea_portrait.jpg",
         }
     }
 

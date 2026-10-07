@@ -10,7 +10,7 @@ third-party audio (see `docs/CREDITS.md` and
 
 | Asset class | Generator | Ships to | Editable source for further iteration |
 |---|---|---|---|
-| Companion sprite sheets, profile stills, animated GIFs | `tools/gen_companion_art.py` | `game/assets/sprites/*/`, `assets/art/companions/` | `art/aseprite/*_sheet.png` + `art/aseprite/import_sheet.lua` (slices into tagged `.aseprite` docs) |
+| Companion sprite sheets, profile stills, animated GIFs | `tools/gen_companion_art.py` | `game/assets/sprites/*/`, `assets/art/<name>/companions/` | `art/aseprite/*_sheet.png` + `art/aseprite/import_sheet.lua` (slices into tagged `.aseprite` docs) |
 | OSP component icons | `tools/gen_placeholder_art.py` | `game/assets/sprites/components/*.png` | `art/aseprite/component_icons/*.png` (single-frame, open directly in Aseprite) |
 | Chiptune music (menu/playing/outage loops, win/fail jingles) | `tools/gen_chiptune_music.py` | *(retired — no longer shipped; see below)* | Regenerate by editing the note-event `Channel` lists in the script itself — see its module docstring for the NES-2A03-inspired 4-channel model (2 pulse + 1 triangle + 1 noise) |
 

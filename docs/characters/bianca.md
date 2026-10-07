@@ -27,14 +27,14 @@ tool, whose facts she vouches for.
 The `Host.look` record in code: *"Tall. Long black hair in a blunt
 hime cut, grey eyes, beauty mark under the left eye. Black tee: 'COME
 AT ME PRINCESS'."* Her shipped portrait
-(`art/companions/bianca_portrait.jpg`, 1376×1824) matches it: hime
+(`art/bianca/companions/bianca_portrait.jpg`, 1376×1824) matches it: hime
 cut, grey eyes, the beauty mark, and the tee, against the Warehouse's
 own shelves of cable spools and test gear.
 
 ## Assets
 
-- Portrait: `game/assets/art/companions/bianca_portrait.jpg` and
-  `assets/art/companions/bianca_portrait.jpg`. (File mode normalized
+- Portrait: `game/assets/art/bianca/companions/bianca_portrait.jpg` and
+  `assets/art/bianca/companions/bianca_portrait.jpg`. (File mode normalized
   to 0644 on 2026-10-06 to match the other portraits.)
 - Shared backdrop: `game/assets/art/warehouse_backdrop.jpg`.
 - Sprite sheet / picker frames / expression portraits / idle GIF:

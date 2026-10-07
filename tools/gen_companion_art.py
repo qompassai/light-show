@@ -36,7 +36,7 @@ FRAMES_PER_MOOD = 4
 # (companion_key, source_portrait_filename, mood_tint_color)
 #
 # Portrait filenames match what's actually committed at
-# assets/art/companions/<key>_portrait.jpg (see docs/CREDITS.md) --
+# assets/art/<key>/companions/<key>_portrait.jpg (see docs/CREDITS.md) --
 # this must stay in sync with that directory or the pipeline silently
 # can't find its own source art.
 COMPANIONS = [
@@ -177,10 +177,10 @@ def build_profile_gif(base: Image.Image, tint: tuple, out_path: Path, scale: int
 
 def main() -> None:
     sprites_dir = ROOT / "game" / "assets" / "sprites"
-    art_dir = ROOT / "assets" / "art" / "companions"
-    art_dir.mkdir(parents=True, exist_ok=True)
 
     for key, portrait_name, tint in COMPANIONS:
+        art_dir = ROOT / "assets" / "art" / key / "companions"
+        art_dir.mkdir(parents=True, exist_ok=True)
         portrait_path = art_dir / portrait_name
         if not portrait_path.exists():
             raise FileNotFoundError(

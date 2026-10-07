@@ -41,7 +41,7 @@ pub const HOSTS: [Host; 2] = [
     Host {
         id: HostId::Bianca,
         name: "Bianca",
-        portrait: "art/companions/bianca_portrait.jpg",
+        portrait: "art/bianca/companions/bianca_portrait.jpg",
         look: "Tall. Long black hair in a blunt hime cut, grey eyes, beauty mark under \
                the left eye. Black tee: \"COME AT ME PRINCESS\".",
         side: "Test bench",
@@ -53,7 +53,7 @@ pub const HOSTS: [Host; 2] = [
     Host {
         id: HostId::Tessa,
         name: "Tessa",
-        portrait: "art/companions/tessa_portrait.jpg",
+        portrait: "art/tessa/companions/tessa_portrait.jpg",
         look: "Short. Brown ponytail, cowgirl boots, jeans with more holes than a \
                punch-down block.",
         side: "Field",

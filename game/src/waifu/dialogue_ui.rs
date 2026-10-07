@@ -611,11 +611,11 @@ mod tests {
         // Mature portraits are the default where they exist.
         assert_eq!(
             Expression::Neutral.portrait_path(Companion::Clara),
-            "art/companions/clara_portrait_mature.jpg"
+            "art/clara/companions/clara_portrait_mature.jpg"
         );
         assert_eq!(
             Expression::Neutral.portrait_path(Companion::Fiber),
-            "art/companions/seraphine_portrait.jpg"
+            "art/seraphine/companions/seraphine_portrait.jpg"
         );
     }
 }

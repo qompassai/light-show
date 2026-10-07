@@ -20,7 +20,7 @@ the wreckage louder."*
 
 ## Appearance
 
-From her canonical portrait (`art/companions/linka_portrait.jpg`):
+From her canonical portrait (`art/linka/companions/linka_portrait.jpg`):
 purple hair with an antenna-fin side ponytail, signal-bar hair clips,
 purple eyes, a holographic visor with a signal-bar HUD overlay, and a
 white-and-blue tech jacket patched with CELL LINK and LINKA insignia.
@@ -36,8 +36,8 @@ amplifying noise. Interference is her outage hazard.
 
 ## Assets
 
-- Portrait: `game/assets/art/companions/linka_portrait.jpg` and
-  `assets/art/companions/linka_portrait.jpg` (1024×1536). No separate
+- Portrait: `game/assets/art/linka/companions/linka_portrait.jpg` and
+  `assets/art/linka/companions/linka_portrait.jpg` (1024×1536). No separate
   mature portrait — her mature art lives in the sprite sheet.
 - Sprite sheets: `game/assets/sprites/linka/linka_sheet.png` (256×384),
   `linka_sheet_fullbody.png` (384×1152), and the active
@@ -45,11 +45,10 @@ amplifying noise. Interference is her outage hazard.
   `.aseprite` source and folder READMEs. All six moods × 4 frames.
 - Picker: `game/assets/sprites/picker/linka_select_{0..5}.png` +
   strip + source.
-- Expression portraits: `assets/art/expressions/` — alarmed, blush,
+- Expression portraits: `assets/art/linka/expressions/` — alarmed, blush,
   celebrate, pout, wink.
-- Idle/profile: `assets/art/companions/linka_animated.gif`,
-  `_animated_base.gif`, `_animated_mature.gif`, `_animated_mature.png`,
-  `_profile_64.png`.
+- Idle/profile: `assets/art/linka/companions/linka_animated_base.gif`,
+  `linka_profile_64.png`.
 - Dialogue: `game/assets/dialogue/linka_en.json` (full bank).
 - Music: `game/assets/music/themes/linka.ogg`,
   `game/assets/music/ambience/linka_hum.ogg`. Footage under

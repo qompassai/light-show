@@ -25,15 +25,15 @@ because it sounds like a callback she has already lived through.
 
 The `Host.look` record in code: *"Short. Brown ponytail, cowgirl
 boots, jeans with more holes than a punch-down block."* Her shipped
-portrait (`art/companions/tessa_portrait.jpg`, 1280×1920) matches the
+portrait (`art/tessa/companions/tessa_portrait.jpg`, 1280×1920) matches the
 ponytail and the jeans, and adds what the record doesn't mention:
 freckles, a red plaid flannel over a black tee, and a belt-mounted
 tester, against the Warehouse shelves.
 
 ## Assets
 
-- Portrait: `game/assets/art/companions/tessa_portrait.jpg` and
-  `assets/art/companions/tessa_portrait.jpg`. (File mode normalized
+- Portrait: `game/assets/art/tessa/companions/tessa_portrait.jpg` and
+  `assets/art/tessa/companions/tessa_portrait.jpg`. (File mode normalized
   to 0644 on 2026-10-06 to match the other portraits.)
 - Shared backdrop: `game/assets/art/warehouse_backdrop.jpg`.
 - Sprite sheet / picker frames / expression portraits / idle GIF:

@@ -23,7 +23,7 @@ fiber cut. Click it to acknowledge — that's the whole job tonight."*
 
 ## Appearance
 
-From her shipped portrait (`art/companions/aino_portrait.jpg`):
+From her shipped portrait (`art/aino/companions/aino_portrait.jpg`):
 platinum-blonde hair in a long side braid, blue eyes, light freckles,
 a NOC headset with boom mic, and a dark navy operations uniform with
 cyan circuit accents, arms crossed, against the line's magenta
@@ -41,8 +41,8 @@ windows. Design detail in `docs/NOC_CONSOLE.md`.
 
 ## Assets
 
-- Portraits: `game/assets/art/companions/aino_portrait.jpg` +
-  `aino_portrait_mature.jpg`, mirrored under `assets/art/companions/`
+- Portraits: `game/assets/art/aino/companions/aino_portrait.jpg` +
+  `aino_portrait_mature.jpg`, mirrored under `assets/art/aino/companions/`
   (1280×1920; the dialogue box loads the mature portrait by default).
 - Sprite sheet: **missing** — the code loads
   `game/assets/sprites/aino/aino_sheet_fullbody.png`

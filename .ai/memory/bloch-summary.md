@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791402941
-Git HEAD: 7810c2479fa83414b14313ace1f140ac589ea3af
+Generated: 1791403455
+Git HEAD: 4909abf2b300887b3ecc79ff46eeb2f6d74c51ed
 
 ## Files: 6421 total
 
@@ -11,31 +11,31 @@ Git HEAD: 7810c2479fa83414b14313ace1f140ac589ea3af
 - markdown: 163 files
 - json: 112 files
 - rust: 71 files
-- lock: 24 files
 - rmeta: 24 files
+- lock: 24 files
 - bash: 12 files
-- txt: 10 files
 - tag: 10 files
+- txt: 10 files
 - lua: 9 files
 - toml: 8 files
 - python: 7 files
 - text: 6 files
 - xml: 5 files
-- wgsl: 4 files
 - kotlin: 4 files
+- wgsl: 4 files
 - properties: 2 files
 - yaml: 1 files
+- uproject: 1 files
+- bat: 1 files
 - nix: 1 files
 - cff: 1 files
-- css: 1 files
 - html: 1 files
-- bat: 1 files
-- uproject: 1 files
+- css: 1 files
 
 ## Top definitions by probability
 
 1. mod `game/src/lib.rs::states` (p=0.052)
-2. struct `game/src/level.rs::LevelDef` (p=0.044)
+2. struct `game/src/level.rs::LevelDef` (p=0.043)
 3. mod `game/src/lib.rs::audio` (p=0.038)
 4. mod `game/src/lib.rs::level` (p=0.036)
 5. mod `game/src/lib.rs::waifu` (p=0.033)

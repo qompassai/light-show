@@ -18,7 +18,7 @@ cascade is a balancing act."*
 
 ## Appearance
 
-From her canonical portrait (`art/companions/ondine_portrait.jpg`): dark
+From her canonical portrait (`art/ondine/companions/ondine_portrait.jpg`): dark
 skin, silver-grey coiled braids gathered in a high ponytail — the coils
 are coax, tipped with F-connectors — teal eyes, a retro CATV-style
 headset with a round numbered channel dial, an F-connector necklace, and
@@ -35,8 +35,8 @@ over-driving (distortion) as hard as under-driving (snow).
 
 ## Assets
 
-- Portrait: `game/assets/art/companions/ondine_portrait.jpg` and
-  `assets/art/companions/ondine_portrait.jpg` (1024×1536). No separate
+- Portrait: `game/assets/art/ondine/companions/ondine_portrait.jpg` and
+  `assets/art/ondine/companions/ondine_portrait.jpg` (1024×1536). No separate
   mature portrait — her mature art lives in the sprite sheet. Her mature
   redesign went through extra pixel-cleanup passes before it locked;
   the shipped sheet below is the result.
@@ -46,11 +46,11 @@ over-driving (distortion) as hard as under-driving (snow).
   `.aseprite` source and folder READMEs. All six moods × 4 frames.
 - Picker: `game/assets/sprites/picker/ondine_select_{0..5}.png` +
   strip + source.
-- Expression portraits: `assets/art/expressions/` — alarmed, blush,
+- Expression portraits: `assets/art/ondine/expressions/` — alarmed, blush,
   celebrate, pout, wink.
-- Idle/profile: `assets/art/companions/ondine_animated.gif`,
-  `_animated_base.gif`, `_animated_mature.gif`, `_animated_mature.png`,
-  `_profile_64.png`.
+- Idle/profile: `assets/art/ondine/companions/ondine_animated.gif`,
+  `ondine_animated_mature.gif`, `ondine_animated_mature.png` (an APNG
+  despite the extension), `ondine_profile_64.png`.
 - Dialogue: `game/assets/dialogue/ondine_en.json` (full bank).
 - Music: `game/assets/music/themes/ondine.ogg`,
   `game/assets/music/ambience/ondine_hum.ogg`. Footage under
