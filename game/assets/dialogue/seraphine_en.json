@@ -66,5 +66,71 @@
   "idle_nudge": [
     "Still thinking it over? The window isn't moving — trust your worst splice.",
     "Take your time. The light's patient, even if the outage clock isn't."
+  ],
+  "tutorial_briefing_gestures": [
+    "The bench is simple: tap an open span between two points, then pick the component that fills it — a splice, a span, a splitter. Placed something wrong? Tap it again and swap it. Nothing is final until the light adds up.",
+    "Watch the path light up as you build. A finished route from OLT to ONT is a route I can measure — and I will measure it, out loud, every time."
+  ],
+  "tutorial_briefing_math": [
+    "Here's the only math that matters: launch power, minus every loss on the path, equals receive power. Fiber eats about 0.28 dB per kilometre at 1490. A fusion splice costs 0.075 dB, a mechanical one 0.4 — cheap now, expensive across forty splices.",
+    "And when you meet a splitter, respect it: a 1x4 takes 7.3 dB off the top before your signal does anything else. Splitters are where budgets go to be humbled."
+  ],
+  "tutorial_briefing_objective": [
+    "Welcome to Splice School — I'm Séraphine, and I teach fiber. Every level I give you works the same way: light leaves the OLT at a launch power, the plant takes its cut, and what's left has to land inside the ONT's receive window.",
+    "Too little light and the receiver starves — TOO LOW. Too much and you cook the photodiode — TOO HOT. Your whole job is the number in between. Route the light, hit the window."
+  ],
+  "tutorial_first_outage": [
+    "Storm school, one lesson early: spans fail. Aerial plant takes wind damage, buried plant takes backhoes. When light dies mid-level, don't panic and don't rebuild — reroute onto the protection path and restore service first. The post-mortem can wait; the customer can't."
+  ],
+  "tutorial_first_placement": [
+    "First splice placed — good. See how the ledger updated? Every component you place writes a line: what it is, what it cost. That ledger is the OTDR's diary. Read it and you'll never guess at a fault again."
+  ],
+  "tutorial_first_verdict": [
+    "There's your first verdict, and the ledger underneath tells you WHY — which span ate what, down to the tenth of a dB. TOO LOW means add light or cut loss; TOO HOT means pad it down. Never argue with a verdict. Follow the loss."
+  ],
+  "tutorial_scoring_cores": [
+    "One more thing before you run solo: parts you fry — components that go TOO HOT — come back as cores at results. The Warehouse trades in dead parts, so even a cooked amplifier isn't a total loss. Bank them, spend them, and try not to make a habit of cooking my inventory."
+  ],
+  "tutorial_wrap": [
+    "Last thing, and it will matter more than anything I taught today: fiber has a name, and the name is a color pair — the tube it rides in, and its own color inside the tube. Blue tube, orange strand is a different fiber from orange tube, blue strand. When we reach the splice tray, that pair is the only identity a strand has. Verify the pair, then verify the light."
+  ],
+  "fj_coda_cat3": [
+    "One more call before we roll: the neighbor's landline is dead. Don't guess — test. The Klein tester condemns the Cat 3 run in one pass: BAD CABLE. Swap the run, retest, dial tone. The tester verdict, not hope, is what condemns a cable. Write it in the notes and go home clean."
+  ],
+  "fj_demarc_trap": [
+    "Survey skepticism, free of charge: the obvious box on the south wall belongs to the legacy carrier and it is NOT the demarc. The real demarc is on the roof, where the aerial path has been telling you to look all along. Verify the demarc. The obvious box lies."
+  ],
+  "fj_partial_warning": [
+    "Stop and read the ledger before you call that done. You fixed one fault and left the other — the bleed and the dead splitter are separate line items, and the meter grades the whole path, not your effort. Both repairs, then re-measure."
+  ],
+  "fj_survey_ports": [
+    "Ports one through four: about -25.00, every one. When all four legs read the same weak number, the fault is upstream and shared — the feed — not four coincidentally identical legs. Uniform readings indict the common path. Remember that shape."
+  ],
+  "fj_survey_sb": [
+    "Meter at the SB: -25.45 dBm. For this plant that's a whisper — the receiver is straining to hear it. Write it down. A survey you can't quote from memory is a survey you'll redo from a ladder."
+  ],
+  "fj_survey_vfl": [
+    "VFL out. There — light bleeding at the splice, and again in the white feed at the center block. Two faults, both visible, both in the ledger the moment you know where to look. This is why we measure before we touch: the plant was confessing the whole time."
+  ],
+  "fj_swap_done": [
+    "New 1x4 in, tails redressed, port four capped — a capped port is a port that can't collect water, dirt, or regrets. Putty the vault and the handhole, tag the drop, and re-measure everything. The job isn't the repair. The job is the proof."
+  ],
+  "sp_beat1_clear": [
+    "One tube down. Notice you never counted strands — you matched colors and the colors told the truth, because inside one tube they can't repeat. Hold onto how easy that felt. It's about to stop being true."
+  ],
+  "sp_beat2_trap": [
+    "Stop. Look at fibers 2 and 13 before you touch anything: blue-orange and orange-blue. Same two colors, opposite chairs. If your hands splice by color memory here, you will light the wrong house beautifully. Pair first. Always."
+  ],
+  "sp_beat3_numbers": [
+    "Numbers only now. Decode before you reach: fiber 26 — green tube, orange strand. The chart is not a crutch, it's the work order's other half. Fluency is just the chart, memorized by your hands."
+  ],
+  "sp_chart_handover": [
+    "Before the tray opens, the chart — I'm putting it in your hands, not on a poster. Twelve colors, one sequence: blue, orange, green, brown, slate, white, red, black, yellow, violet, rose, aqua. Tubes wear it. Strands wear it again. A fiber's name is where the two cross."
+  ],
+  "sp_damaged_strand": [
+    "That strand is crushed — see the tray-edge damage? Do not force a match that isn't there. Exclude it, take the designated spare, and write the swap on the work order so the next tech's chart matches the tray. A splice tray is a document. Author it like one."
+  ],
+  "sp_wrap": [
+    "Tray closed, every drop lit by its own fiber. That's the whole craft in one sentence: identity before neatness, the pair before the light. The next tray you open alone will have worse lighting and no one narrating. You'll hear the sequence anyway."
   ]
 }

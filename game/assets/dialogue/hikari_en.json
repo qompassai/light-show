@@ -1,0 +1,35 @@
+{
+  "greeting": [
+    "Hikari here. Measure twice, splice once — that's the field rule.",
+    "OSP kit's packed. Let's build this plant right."
+  ],
+  "level_win": [
+    "Plant built to spec. The light budget balances.",
+    "Clean handoff, documented splits. A proper build."
+  ],
+  "tutorial_briefing_gestures": [
+    "Out here the bench is the last hundred meters: the drop, the slack, the ONT, your meter. Place each run like you're the one who'll re-enter this closure in February, in the rain, with a headlamp dying. Dress your slack. Label your work. Future you is also a person."
+  ],
+  "tutorial_briefing_math": [
+    "Field math is the fiber budget with mud on it: the feeder is already lit and already spent its dB getting here. What's left at the drop is what you have — measure it at the ONT before you commit to anything. A reading in window is a promise you can keep. A reading you didn't take is a callback you're scheduling."
+  ],
+  "tutorial_briefing_objective": [
+    "Hikari — field installations. Séraphine teaches the physics of light; my track is where light meets a customer's actual house. Your job: the drop install, done to standard, measured at the ONT, certified before you leave the driveway.",
+    "My mentor's rule, and now yours: nobody certifies a number they didn't measure. We start there."
+  ],
+  "tutorial_first_outage": [
+    "Out here 'outage' has a smell: a dirty drop, a bend in the wall, a connector somebody's thumb lived on. When a reading dies on my track, check the last thing human hands touched before you blame the plant. It's the hands. It's always the hands."
+  ],
+  "tutorial_first_placement": [
+    "First run placed. Look at the slack you left and the bend you didn't — that neatness is not vanity, it's the next tech's troubleshooting time, bought in advance."
+  ],
+  "tutorial_first_verdict": [
+    "There's your first field verdict, and it came from a measurement, not an opinion: in window, or it isn't. If it isn't, the ledger walks the loss back to the exact run that ate it. Field rule: believe the meter, then fix the meter's story."
+  ],
+  "tutorial_scoring_cores": [
+    "Kill a part in the field — cook it, crack it, contaminate it past cleaning — and it banks as a core at results. The Warehouse pays either way, but a clean install record pays better: callbacks are the only debt this job charges interest on."
+  ],
+  "tutorial_wrap": [
+    "Fresh drop, lit feeder, one house that wants its internet. Measure at the ONT, certify what you measured, and leave the closure prettier than you found it. Go."
+  ]
+}

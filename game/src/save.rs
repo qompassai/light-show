@@ -94,6 +94,14 @@ pub struct SaveData {
     /// Backdrop index on screen at the last Warehouse visit.
     #[serde(default)]
     pub warehouse_backdrop_current: u8,
+    /// Companions whose first-level tutorial has been seen (marked
+    /// on her level-1 first clear), by picker stem (`"seraphine"`).
+    /// `serde(default)` keeps pre-tutorial saves loading — and
+    /// `SAVE_VERSION` is deliberately NOT bumped for this field: a
+    /// version mismatch loads defaults and orphans every existing
+    /// save's completions (there is no migration machinery).
+    #[serde(default)]
+    pub tutorials_seen: Vec<String>,
 }
 
 impl Default for SaveData {
@@ -109,6 +117,7 @@ impl Default for SaveData {
             consumables: Vec::new(),
             warehouse_backdrop_bag: Vec::new(),
             warehouse_backdrop_current: 0,
+            tutorials_seen: Vec::new(),
         }
     }
 }
@@ -136,6 +145,21 @@ impl SaveData {
         }
         self.unlocked_specialists.push(name);
         true
+    }
+
+    /// Record a companion's tutorial as seen (by picker stem).
+    /// Returns true if this is new.
+    pub fn mark_tutorial_seen(&mut self, companion_stem: &str) -> bool {
+        if self.tutorials_seen.iter().any(|s| s == companion_stem) {
+            return false;
+        }
+        self.tutorials_seen.push(companion_stem.to_owned());
+        true
+    }
+
+    /// True if the companion's tutorial was marked seen.
+    pub fn is_tutorial_seen(&self, companion_stem: &str) -> bool {
+        self.tutorials_seen.iter().any(|s| s == companion_stem)
     }
 
     /// Specialists in this save, as a set (unknown names dropped).
@@ -356,6 +380,13 @@ fn validate(data: &mut SaveData) {
         .retain(|n| !n.is_empty() && n.len() <= 32);
     data.unlocked_specialists.sort();
     data.unlocked_specialists.dedup();
+    // Tutorial stems: same sanitizing as specialist names —
+    // non-empty, bounded length, deduplicated (sorted for a stable
+    // on-disk shape; the sequencer only does membership checks).
+    data.tutorials_seen
+        .retain(|s| !s.is_empty() && s.len() <= 32);
+    data.tutorials_seen.sort();
+    data.tutorials_seen.dedup();
     // Warehouse ids: same bounds. Gear and passed quizzes are sets;
     // consumables are a multiset, so they are only length-capped.
     for list in [&mut data.owned_gear, &mut data.warehouse_quiz_passed] {
@@ -516,6 +547,77 @@ pub(crate) mod tests {
         let set = s.unlocked_set();
         assert!(set.contains(&Companion::Clara));
         assert_eq!(set.len(), 1);
+    }
+
+    #[test]
+    fn mark_tutorial_seen_dedups() {
+        let mut s = SaveData::default();
+        assert!(s.mark_tutorial_seen("seraphine"));
+        assert!(!s.mark_tutorial_seen("seraphine"));
+        assert!(s.is_tutorial_seen("seraphine"));
+        assert!(!s.is_tutorial_seen("clara"));
+    }
+
+    #[test]
+    fn validate_sanitizes_tutorials_seen() {
+        // Adversarial: duplicate and garbage stems from a hand-edited
+        // save are dropped/deduped, never trusted as-is.
+        let mut s = SaveData {
+            tutorials_seen: vec![
+                "seraphine".into(),
+                "seraphine".into(),
+                "".into(),
+                "x".repeat(33),
+                "clara".into(),
+            ],
+            ..SaveData::default()
+        };
+        validate(&mut s);
+        assert_eq!(
+            s.tutorials_seen,
+            vec!["clara".to_owned(), "seraphine".to_owned()]
+        );
+    }
+
+    #[test]
+    fn old_format_save_without_tutorials_seen_loads_with_completions_intact() {
+        // A save written before the tutorial pass has no
+        // `tutorials_seen` field at all: serde(default) must load it
+        // with completions intact (no SAVE_VERSION bump — a bump
+        // would orphan this save entirely).
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-pre-tutorial");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join(SAVE_FILENAME),
+            r#"{"version":1,"completed_levels":["w1l1"],"unlocked_specialists":[],"favor_points":7,"settings":{"master_volume":1.0,"music_volume":1.0,"sfx_volume":1.0}}"#,
+        )
+        .unwrap();
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let loaded = load();
+        assert!(loaded.is_completed("w1l1"));
+        assert_eq!(loaded.cores, 7);
+        assert!(loaded.tutorials_seen.is_empty());
+        assert!(!loaded.is_tutorial_seen("seraphine"));
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn tutorials_seen_round_trips() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let dir = std::env::temp_dir().join("light-show-save-tutorials-seen");
+        std::env::set_var("LIGHTSHOW_SAVE_DIR", &dir);
+        let mut s = SaveData::default();
+        assert!(s.mark_tutorial_seen("seraphine"));
+        assert!(s.mark_tutorial_seen("lea"));
+        save(&s).expect("save should succeed");
+        let loaded = load();
+        assert!(loaded.is_tutorial_seen("seraphine"));
+        assert!(loaded.is_tutorial_seen("lea"));
+        std::env::remove_var("LIGHTSHOW_SAVE_DIR");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

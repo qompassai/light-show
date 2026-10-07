@@ -1,0 +1,35 @@
+{
+  "greeting": [
+    "Bonjour! I'm Léa. Know the code, pass the test, own the network.",
+    "Study session starts now. NEC first, then Washington law."
+  ],
+  "level_win": [
+    "Article mastered. You're thinking like a telecom administrator.",
+    "Timed retrieval, clean answer. The exam won't know what hit it."
+  ],
+  "tutorial_briefing_gestures": [
+    "The controls are a question, four answers, and your judgment. No bench, no components — the component under test is you. Answer, get the reasoning, and let the reasoning argue back. That argument is where the learning lives."
+  ],
+  "tutorial_briefing_math": [
+    "There is no budget math here — there is something less forgiving: thresholds. Seventy percent to pass, because the field does not grade on a curve and neither does the exam. The Articles are the budget: Article 90 tells you what the Code is FOR, Article 100 gives you the words — and in this trade, the words are load-bearing — and Article 110 tells you how work gets approved and done."
+  ],
+  "tutorial_briefing_objective": [
+    "Léa. Study hall. My track is the theory underneath everyone else's hands: the National Electrical Code as it applies to communications work — grounding, wiring methods, hazardous locations, the law of the state you'll pull permits in.",
+    "The others teach you to do the work. I teach you why the work is legal, safe, and insurable. Both halves are the trade."
+  ],
+  "tutorial_first_outage": [
+    "When a question 'goes down' — when you're sure and the answer says otherwise — that is your outage, and the repair is the same as theirs: find the root. Which definition did you skim? Which exception did you miss? The Code rewards the reader who checks the exception before the rule finishes loading."
+  ],
+  "tutorial_first_placement": [
+    "First answer in. Notice I give you the reasoning either way — a correct guess and a correct understanding score identically today and diverge completely on the exam. We're building the second one."
+  ],
+  "tutorial_first_verdict": [
+    "Your verdicts here are scores, and a score is a map: it shows which Article is load-bearing and which is drywall. Fail a section and the map tells you where to study — that is a kinder diagnostic than any meter the others own."
+  ],
+  "tutorial_scoring_cores": [
+    "No hardware dies in study hall, so cores here are simpler: pass cleanly and the Warehouse honors the scholarship. The real salvage is different — every wrong answer you repair now is a violation you don't install later."
+  ],
+  "tutorial_wrap": [
+    "Articles 90, 100, 110 — purpose, definitions, requirements. Ten questions, seventy percent, no timer but mine. Open the book in your head, and begin."
+  ]
+}

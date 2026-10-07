@@ -26,6 +26,7 @@
 //! the module report); the mechanism here consumes them unchanged if
 //! they land, because [`FaceFrame`] is asset-agnostic.
 
+use super::reactions::Emotion;
 use super::Companion;
 use crate::warehouse::HostId;
 use bevy::prelude::*;
@@ -107,17 +108,35 @@ pub struct PillPresentation {
     pub face_path: &'static str,
     pub text: String,
     pub talking: bool,
+    /// The emotion the line is delivered with: the pill renderer
+    /// offers the line at this emotion and shows the matching face
+    /// (see `reactions::process_pill_lines`). Producers that do not
+    /// carry an emotion default to [`Emotion::Neutral`] — the
+    /// pre-tutorial behaviour for results and quiz lines.
+    pub emotion: Emotion,
 }
 
 /// Resolve a line to its pill presentation. Total over speakers: this
 /// cannot fail, so no call site ever needs a bare-text fallback.
+/// The line carries [`Emotion::Neutral`]; use
+/// [`present_with_emotion`] for emotion-aware producers (tutorials).
 pub fn present(speaker: PillSpeaker, text: impl Into<String>) -> PillPresentation {
+    present_with_emotion(speaker, text, Emotion::Neutral)
+}
+
+/// Resolve a line to its pill presentation at a carried emotion.
+pub fn present_with_emotion(
+    speaker: PillSpeaker,
+    text: impl Into<String>,
+    emotion: Emotion,
+) -> PillPresentation {
     PillPresentation {
         speaker,
         speaker_name: speaker.name(),
         face_path: speaker.face_path(),
         text: text.into(),
         talking: true,
+        emotion,
     }
 }
 
@@ -232,6 +251,27 @@ impl PillInbox {
         self.push(PillLine {
             presentation: present(speaker, text),
         });
+    }
+
+    /// Queue a line at a carried emotion (tutorial segments). All
+    /// other producers use [`PillInbox::push_line`], which defaults
+    /// to [`Emotion::Neutral`].
+    pub fn push_line_with_emotion(
+        &mut self,
+        speaker: PillSpeaker,
+        text: impl Into<String>,
+        emotion: Emotion,
+    ) {
+        self.push(PillLine {
+            presentation: present_with_emotion(speaker, text, emotion),
+        });
+    }
+
+    /// Lines currently buffered (bounded by [`PILL_INBOX_CAPACITY`]).
+    /// The tutorial sequencer reads this to feed the inbox only as
+    /// capacity allows, never dumping a whole briefing block at once.
+    pub fn len(&self) -> usize {
+        self.pending.len()
     }
 
     pub fn drain(&mut self) -> Vec<PillLine> {
@@ -428,6 +468,36 @@ mod tests {
             resolve_face_path(sp, "angry", FaceVariant::Base, &avail),
             "art/faces/ondine/neutral.webp"
         );
+    }
+
+    #[test]
+    fn present_defaults_to_neutral_and_with_emotion_carries_it() {
+        let neutral = present(PillSpeaker::Companion(Companion::Fiber), "check");
+        assert_eq!(neutral.emotion, Emotion::Neutral);
+        let smug = present_with_emotion(
+            PillSpeaker::Companion(Companion::Ethernet),
+            "check",
+            Emotion::Smug,
+        );
+        assert_eq!(smug.emotion, Emotion::Smug);
+        assert_eq!(smug.speaker, PillSpeaker::Companion(Companion::Ethernet));
+    }
+
+    #[test]
+    fn inbox_push_line_defaults_neutral_and_emotion_push_carries() {
+        let mut inbox = PillInbox::default();
+        inbox.push_line(PillSpeaker::Companion(Companion::Fiber), "plain");
+        inbox.push_line_with_emotion(
+            PillSpeaker::Companion(Companion::Fiber),
+            "carried",
+            Emotion::Determined,
+        );
+        assert_eq!(inbox.len(), 2);
+        let drained = inbox.drain();
+        assert_eq!(drained[0].presentation.emotion, Emotion::Neutral);
+        assert_eq!(drained[1].presentation.emotion, Emotion::Determined);
+        assert_eq!(drained[1].presentation.text, "carried");
+        assert_eq!(inbox.len(), 0);
     }
 
     #[test]

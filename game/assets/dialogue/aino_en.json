@@ -1,0 +1,35 @@
+{
+  "greeting": [
+    "Aino, NOC shift lead. The alarms never lie — let's learn to read them.",
+    "AMS console is live. Show me your triage discipline."
+  ],
+  "level_win": [
+    "Alarms acknowledged, severity correct, dispatch clean. Solid shift.",
+    "Cascading fault contained before it spread. That's the job."
+  ],
+  "tutorial_briefing_gestures": [
+    "Your controls are the board itself: click an alarm to acknowledge it, work it, clear it. Acknowledging is a promise, not a dismissal — an acked alarm is an alarm with your name on it. Choose your promises like a professional."
+  ],
+  "tutorial_briefing_math": [
+    "The math of a NOC is triage arithmetic: severity times scope, divided by time. A critical alarm on one card is a ticket. The same alarm on forty elements is a fiber cut with good PR. Count what's actually down before you decide what's loudest — the cascade always points back to one root that is quieter than its children."
+  ],
+  "tutorial_briefing_objective": [
+    "Welcome to the NOC — Aino. My track is the alarm board: everything the network feels, it reports here, all at once, at 3 a.m., in red. Your job is not to fix plant — the crews do that. Your job is to know, faster than anyone, WHAT broke, WHERE, and what can safely wait until morning.",
+    "One alarm on the board tonight. That restraint will not last. Nothing on this board ever stays at one."
+  ],
+  "tutorial_first_outage": [
+    "There — the board just lit up. This is a cascade: one root fault, a dozen child alarms, all shouting at once. Do not work them top to bottom. Find the parent — the cut, the card, the power event — acknowledge THAT, and watch half the board explain itself."
+  ],
+  "tutorial_first_placement": [
+    "Acknowledged — correctly, and on the root. See how the board settles when the first action is the right one? A NOC runs on exactly that: the discipline to diagnose before motion."
+  ],
+  "tutorial_first_verdict": [
+    "Your first verdict on my track is a judgment call graded like math: cleared, escalated, or safely deferred. All three are legitimate — at the right time, for the right alarm. The board remembers which you chose and why."
+  ],
+  "tutorial_scoring_cores": [
+    "Cores, NOC edition: when field crews cook hardware on a repair, the dead parts bank as cores at results. Your contribution to that economy is simpler — the faster you name the root, the fewer parts die looking for it."
+  ],
+  "tutorial_wrap": [
+    "The alarms never sleep, so we learn to. Triage calmly, acknowledge honestly, chase roots instead of noise. Your first shift starts now — one alarm, for now."
+  ]
+}

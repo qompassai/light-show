@@ -284,7 +284,18 @@ fn show_results(
         let mut first_clear = false;
         if let (Some(mut save), Some(mut writer)) = (save, save_writer) {
             first_clear = save.complete_level(&level.id);
-            if first_clear {
+            // Tutorial seen flag: clearing the selected companion's
+            // level-1 (her track start) marks her tutorial seen, so
+            // the sequencer suppresses its briefing block on replay.
+            // This rides the same first-clear SaveRequest write; it
+            // also marks (and writes) when a pre-tutorial save clears
+            // the level again — `complete_level` is not first-clear
+            // then, but the tutorial has genuinely been seen now.
+            let mut dirty = first_clear;
+            if level.id == crate::tutorial::level_one_id(selected.0) {
+                dirty |= save.mark_tutorial_seen(selected.0.picker_stem());
+            }
+            if dirty {
                 writer.write(crate::save::SaveRequest);
             }
         }

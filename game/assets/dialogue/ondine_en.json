@@ -66,5 +66,32 @@
   "idle_nudge": [
     "Meter's waiting on you. Ingress loves an idle line, you know.",
     "Still mapping it out? Start from the tap and work back."
+  ],
+  "tutorial_briefing_gestures": [
+    "Same bench, different plant: tap an open run, pick what fills it — coax span, tap, amplifier. Amplifiers are the fun ones: place one and the level jumps, but so does everything wrong with the signal.",
+    "Swap freely while you learn. A cascade is a chain of decisions, and I would rather you experiment on my bench than on a live node at 2 a.m."
+  ],
+  "tutorial_briefing_math": [
+    "Coax math: RG-6 eats roughly 5.5 dB per hundred metres, and it eats more at high frequencies than low — that's tilt, and it will matter. An amplifier gives you its gain in dB back, minus honesty: every amp adds its noise figure to the noise floor.",
+    "Which brings us to the number that runs my whole track: carrier-to-noise. CNR is your signal measured against the noise riding with it. Levels can be perfect while CNR fails — a loud, dirty signal is still a failed signal."
+  ],
+  "tutorial_briefing_objective": [
+    "Ondine, coax. Forget everything fiber taught you about light — here we move RF, and we measure it in dBmV: decibels relative to one millivolt across 75 ohms. The headend launches hot, the plant bleeds level with distance, and the customer's tap has to land in its window.",
+    "Your job on my levels: balance the cascade. Every amplifier you place adds gain AND noise. Level is easy to buy. Clean level is the craft."
+  ],
+  "tutorial_first_outage": [
+    "Ingress. Learn the word. A cracked shield, a loose connector, a corroded fitting — every breach lets the outside world's RF leak INTO my plant, and it all lands on the return path. When an ingress storm starts, your noise floor climbs about a dB every ten seconds. The fix is never a bigger amplifier. Amplify ingress and you've built a louder problem."
+  ],
+  "tutorial_first_placement": [
+    "Placed. Now read the ledger the coax way: it tracks your level in dBmV AND your carrier-to-noise, hop by hop. When a reading confuses you, the hop where the numbers bent is the hop that did it."
+  ],
+  "tutorial_first_verdict": [
+    "First verdict. On coax you get three ways to fail: TOO LOW is starvation, TOO HOT is distortion — an overdriven amp smears the signal across itself — and CNR TOO LOW means the carrier is drowning in noise even at a healthy level. The verdict names which one. Believe it."
+  ],
+  "tutorial_scoring_cores": [
+    "House rules: overdrive an amplifier into distortion and it comes back as a core at results — the Warehouse pays for dead parts, and Ondine's rule is that a core earned is a lesson learned. Earn a few while the stakes are fake. Out there, that amp is a truck roll."
+  ],
+  "tutorial_wrap": [
+    "Unity gain is the whole philosophy, so say it with me: what the plant takes, the cascade returns — no more, no less. Balance first, bravado never. Now go balance your first cascade."
   ]
 }

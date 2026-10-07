@@ -66,5 +66,32 @@
   "idle_nudge": [
     "Still scanning? Trust the RSSI trend, not the first pretty number.",
     "Quiet air's deceptive. Pick your channel and commit."
+  ],
+  "tutorial_briefing_gestures": [
+    "The bench, RF edition: tap an open hop and fill it — a wireless hop, an amplifier, or a repeater. The repeater is the one to watch: it doesn't boost what it hears, it retransmits fresh at its own power. Completely different animal from an amp.",
+    "Distances are printed on every hop. Geometry is a component too — sometimes the best part you can place is a shorter path."
+  ],
+  "tutorial_briefing_math": [
+    "Wireless math starts with the cruel one: free-space path loss. Double the distance at 2.4 GHz and you pay about 6 dB for it. Four hundred metres costs you roughly 92 dB before weather, walls, or bad luck get a vote.",
+    "Then the number I actually grade: SNR. Your receiver hears signal and noise together; what matters is the gap between them. I'll quote you RSSI all day, but a strong RSSI with a stronger noise floor is a failing link wearing a costume."
+  ],
+  "tutorial_briefing_objective": [
+    "Linka. I run wireless, which means I run the discipline of RSSI: received signal strength, in dBm, measured at the far end of a hop that would love to fail. Your job on my levels: close the link — land the receive level inside the window with a signal-to-noise ratio that holds.",
+    "Anyone can shout across a field. We engineer links that still work when the band gets crowded and the weather turns."
+  ],
+  "tutorial_first_outage": [
+    "That's interference arriving. A co-channel network, a noisy neighbor AP, a microwave with a death wish — interference raises the effective noise floor and your SNR margin evaporates even though your RSSI never moved. When it starts: don't just add power. Change the geometry, change the channel plan in your head, or bridge the bad stretch with a repeater and reset the fight on your terms."
+  ],
+  "tutorial_first_placement": [
+    "Hop placed. Read the ledger my way: per-hop RSSI and the running SNR. The hop where SNR sags is where your link budget went — find it before it finds you at install time."
+  ],
+  "tutorial_first_verdict": [
+    "First verdict, RF rules: TOO LOW means the receiver can't hear you — path loss won. TOO HOT means you're blasting the front end into compression. And SNR TOO LOW is the subtle one: plenty of signal, not enough of it standing above the noise. Three different diseases, three different cures. The verdict tells you which patient you have."
+  ],
+  "tutorial_scoring_cores": [
+    "Salvage rules, wireless edition: cook a receiver front end with a TOO HOT blast and the dead radio comes back as a core at results. The Warehouse pays, I learn what you did, and somewhere a WASPy little access point gets a second life. Still — measure twice, transmit once."
+  ],
+  "tutorial_wrap": [
+    "Close the link, keep the margin, respect the noise floor. That's the whole religion. Now — two sites, one field, no cable to save you. Show me a link budget."
   ]
 }

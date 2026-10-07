@@ -193,6 +193,93 @@ pub fn trigger_spec(trigger: ReactionTrigger) -> (&'static str, Emotion) {
     }
 }
 
+/// One stage of a companion's first-level tutorial, as authored in
+/// `tutorial_segments.json` (the authoring source; this table is its
+/// compiled form — see [`tutorial_spec`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TutorialStage {
+    BriefingObjective,
+    BriefingGestures,
+    BriefingBudgetMath,
+    FirstPlacement,
+    FirstVerdict,
+    FirstOutage,
+    ScoringAndCores,
+    Wrap,
+}
+
+impl TutorialStage {
+    pub const ALL: [TutorialStage; 8] = [
+        TutorialStage::BriefingObjective,
+        TutorialStage::BriefingGestures,
+        TutorialStage::BriefingBudgetMath,
+        TutorialStage::FirstPlacement,
+        TutorialStage::FirstVerdict,
+        TutorialStage::FirstOutage,
+        TutorialStage::ScoringAndCores,
+        TutorialStage::Wrap,
+    ];
+
+    /// The dialogue-bank key every companion carries for this stage.
+    pub fn key(self) -> &'static str {
+        match self {
+            TutorialStage::BriefingObjective => "tutorial_briefing_objective",
+            TutorialStage::BriefingGestures => "tutorial_briefing_gestures",
+            TutorialStage::BriefingBudgetMath => "tutorial_briefing_math",
+            TutorialStage::FirstPlacement => "tutorial_first_placement",
+            TutorialStage::FirstVerdict => "tutorial_first_verdict",
+            TutorialStage::FirstOutage => "tutorial_first_outage",
+            TutorialStage::ScoringAndCores => "tutorial_scoring_cores",
+            TutorialStage::Wrap => "tutorial_wrap",
+        }
+    }
+}
+
+/// The tutorial table, transcribed from `tutorial_segments.json`:
+/// `(companion, stage) -> (bank key, Emotion)`. Unlike
+/// [`trigger_spec`], the emotion is per companion — the segments file
+/// voices the same stage differently per girl (e.g. `scoring_cores`
+/// is `Playful` for six companions, `Smug` for Lattice, `Neutral`
+/// for Clara) — so no single per-stage row can express it. The key
+/// is uniform per stage (see [`TutorialStage::key`]).
+pub fn tutorial_spec(companion: Companion, stage: TutorialStage) -> (&'static str, Emotion) {
+    use Companion as C;
+    use Emotion as E;
+    let emotion = match stage {
+        TutorialStage::BriefingObjective => match companion {
+            C::Fiber | C::Hikari => E::Happy,
+            C::Coax | C::Mobile => E::Determined,
+            C::Ethernet | C::Clara | C::Aino | C::Lea => E::Neutral,
+        },
+        TutorialStage::BriefingGestures => E::Neutral,
+        TutorialStage::BriefingBudgetMath => match companion {
+            C::Mobile => E::Neutral,
+            _ => E::Determined,
+        },
+        TutorialStage::FirstPlacement => E::Happy,
+        TutorialStage::FirstVerdict => match companion {
+            C::Coax | C::Aino | C::Lea => E::Neutral,
+            _ => E::Determined,
+        },
+        TutorialStage::FirstOutage => match companion {
+            C::Fiber | C::Mobile | C::Aino | C::Lea => E::Surprised,
+            C::Coax | C::Clara | C::Hikari => E::Worried,
+            C::Ethernet => E::Annoyed,
+        },
+        TutorialStage::ScoringAndCores => match companion {
+            C::Ethernet => E::Smug,
+            C::Clara => E::Neutral,
+            _ => E::Playful,
+        },
+        TutorialStage::Wrap => match companion {
+            C::Fiber | C::Ethernet | C::Clara | C::Lea => E::Determined,
+            C::Coax => E::Smug,
+            C::Mobile | C::Aino | C::Hikari => E::Happy,
+        },
+    };
+    (stage.key(), emotion)
+}
+
 /// A trigger fully resolved against a companion's bank: the line to
 /// show, the emotion it carries, and the sheet mood that displays it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -828,17 +915,27 @@ fn process_pill_lines(
         return;
     }
     for PillLine { presentation } in inbox.drain() {
+        // The line is offered at the emotion it carries on its
+        // presentation (tutorial segments carry their authored
+        // emotion; results/quiz producers default to Neutral — see
+        // `pill::present`), and the mugshot shows that emotion's face.
         match bubble
             .queue
-            .offer(presentation.text.clone(), Emotion::Neutral)
+            .offer(presentation.text.clone(), presentation.emotion)
         {
             OfferOutcome::Shown | OfferOutcome::ReplacedStale => {
                 bubble.typewriter = Some(Typewriter::new(&presentation.text));
                 bubble.applied_mood = None;
-                bubble.face_emotion = "neutral";
+                bubble.face_emotion = emotion_slug(presentation.emotion);
                 bubble.face = FaceAnim::default();
                 if let Some(ui) = &ui {
-                    show_pill_face(&mut bubble, &asset_server, ui, &mut images, presentation.speaker);
+                    show_pill_face(
+                        &mut bubble,
+                        &asset_server,
+                        ui,
+                        &mut images,
+                        presentation.speaker,
+                    );
                     commands.entity(ui.root).insert(Visibility::Visible);
                     if let Ok(mut name) = texts.get_mut(ui.name) {
                         name.0 = presentation.speaker_name.to_string();
@@ -1088,6 +1185,65 @@ mod tests {
                 );
             }
         }
+    }
+
+    // ---- tutorial spec table ----
+
+    #[test]
+    fn tutorial_spec_keys_resolve_in_every_companions_bank() {
+        // Every (companion, stage) the compiled table references must
+        // resolve in that companion's bank — a missing key would be a
+        // silent no-op at runtime, so the table is pinned here.
+        for companion in [
+            Companion::Fiber,
+            Companion::Coax,
+            Companion::Mobile,
+            Companion::Ethernet,
+            Companion::Clara,
+            Companion::Aino,
+            Companion::Hikari,
+            Companion::Lea,
+        ] {
+            let bank = DialogueBank::load_default(companion);
+            for stage in TutorialStage::ALL {
+                let (key, _emotion) = tutorial_spec(companion, stage);
+                assert_eq!(key, stage.key());
+                assert!(
+                    bank.lines.get(key).is_some_and(|l| !l.is_empty()),
+                    "{companion:?} bank is missing tutorial key '{key}'"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn tutorial_spec_emotions_vary_per_companion_as_authored() {
+        // Spot-pin the segments file's per-companion variance: the
+        // cases a single global row could not express.
+        assert_eq!(
+            tutorial_spec(Companion::Ethernet, TutorialStage::ScoringAndCores).1,
+            Emotion::Smug
+        );
+        assert_eq!(
+            tutorial_spec(Companion::Clara, TutorialStage::ScoringAndCores).1,
+            Emotion::Neutral
+        );
+        assert_eq!(
+            tutorial_spec(Companion::Fiber, TutorialStage::ScoringAndCores).1,
+            Emotion::Playful
+        );
+        assert_eq!(
+            tutorial_spec(Companion::Coax, TutorialStage::Wrap).1,
+            Emotion::Smug
+        );
+        assert_eq!(
+            tutorial_spec(Companion::Mobile, TutorialStage::BriefingBudgetMath).1,
+            Emotion::Neutral
+        );
+        assert_eq!(
+            tutorial_spec(Companion::Ethernet, TutorialStage::FirstOutage).1,
+            Emotion::Annoyed
+        );
     }
 
     // ---- bubble queue discipline ----
@@ -1507,6 +1663,41 @@ mod tests {
         let pres = crate::waifu::pill::present(PillSpeaker::Host(crate::warehouse::HostId::Tessa), "x");
         assert_eq!(pres.face_path, "art/companions/tessa_portrait.jpg");
         assert_eq!(pres.speaker_name, "Tessa");
+    }
+
+    #[test]
+    fn a_pill_line_carries_its_emotion_to_the_render_path() {
+        let mut app = reaction_test_app();
+        enter_playing(&mut app);
+        app.world_mut()
+            .resource_mut::<PillInbox>()
+            .push_line_with_emotion(
+                PillSpeaker::Companion(Companion::Fiber),
+                "Determined line.",
+                Emotion::Determined,
+            );
+        app.update();
+        let bubble = app.world().resource::<BubbleState>();
+        let active = bubble.queue.active().expect("pill line must be up");
+        assert_eq!(active.emotion, Emotion::Determined);
+        assert_eq!(bubble.face_emotion, "determined");
+    }
+
+    #[test]
+    fn a_default_pill_line_renders_neutral() {
+        // Existing producers (results/quiz) keep their pre-tutorial
+        // behaviour: no carried emotion means Neutral on the render
+        // path, face included.
+        let mut app = reaction_test_app();
+        enter_playing(&mut app);
+        app.world_mut()
+            .resource_mut::<PillInbox>()
+            .push_line(PillSpeaker::Companion(Companion::Fiber), "Plain line.");
+        app.update();
+        let bubble = app.world().resource::<BubbleState>();
+        let active = bubble.queue.active().expect("pill line must be up");
+        assert_eq!(active.emotion, Emotion::Neutral);
+        assert_eq!(bubble.face_emotion, "neutral");
     }
 
     #[test]
