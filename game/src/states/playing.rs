@@ -38,6 +38,7 @@ impl Plugin for PlayingPlugin {
                     super::identification::setup_identification_console,
                     super::jumper::setup_jumper_console,
                     super::survey::setup_survey_console,
+                    super::workbench::setup_workbench_console,
                     super::quiz::setup_quiz_ui,
                 )
                     .chain(),

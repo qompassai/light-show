@@ -84,5 +84,8 @@
   ],
   "tutorial_survey": [
     "A design that passes at one point is a hypothesis. Survey every named point against its own line — the shelf in the back doesn't care about your average."
+  ],
+  "workmanship_defect": [
+    "A defect went live in that termination. In RF that's a return-loss story — rebuild it and re-measure; hope isn't a test set."
   ]
 }

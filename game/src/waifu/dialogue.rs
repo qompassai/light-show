@@ -190,6 +190,12 @@ impl DialogueBank {
                     "Wrong diagnosis. Compare the old reading to the new one; the quantity that changed is the culprit.",
                 ],
             ),
+            (
+                "workmanship_defect",
+                &[
+                    "The inspection found a defect in the finished end. Precision is the job — rebuild it to the card, not to memory.",
+                ],
+            ),
         ])
     }
 
@@ -331,6 +337,18 @@ impl DialogueBank {
                 "diagnosis_wrong",
                 &[
                     "Wrong call. Look at what the tones said then and what they say now — the delta names the fault.",
+                ],
+            ),
+            (
+                "workmanship_defect",
+                &[
+                    "Inspection caught what your eyes waved through. A defect you ship is a callback you schedule — rebuild the end and test it like you mean it.",
+                ],
+            ),
+            (
+                "tutorial_workbench",
+                &[
+                    "The bench is a state machine, not a vibe: strip to the card, fold the braid back, seat it flush, compress once. A mistake the card catches costs a connector. A mistake it can't — shielding, seating, the short test — ships. Work the card, in order, every end.",
                 ],
             ),
             (
@@ -486,6 +504,12 @@ impl DialogueBank {
                 ],
             ),
             (
+                "workmanship_defect",
+                &[
+                    "A defect went live in that termination. In RF that's a return-loss story — rebuild it and re-measure; hope isn't a test set.",
+                ],
+            ),
+            (
                 "tutorial_history_diagnosis",
                 &[
                     "Read the history like a tech, not a fortune-teller: same RSSI then and now, SNR down — the signal didn't move, the noise did. That's interference, every time.",
@@ -638,6 +662,12 @@ impl DialogueBank {
                 "diagnosis_wrong",
                 &[
                     "Wrong cause. Diff the history against today — one number moved. Follow the one that moved.",
+                ],
+            ),
+            (
+                "workmanship_defect",
+                &[
+                    "That termination failed inspection. A bad crimp passes a tug and fails a certifier — rebuild it and certify it.",
                 ],
             ),
         ])

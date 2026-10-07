@@ -14,6 +14,7 @@ pub mod results;
 pub mod survey;
 pub mod triage_console;
 pub mod warehouse;
+pub mod workbench;
 
 use bevy::prelude::*;
 

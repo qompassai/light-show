@@ -100,6 +100,8 @@ fn playthrough_app() -> App {
     app.init_resource::<crate::states::identification::IdentificationProgress>();
     app.init_resource::<crate::states::jumper::JumperProgress>();
     app.init_resource::<crate::states::survey::SurveyProgress>();
+    app.init_resource::<crate::states::workbench::WorkbenchProgress>();
+    app.init_resource::<crate::states::workbench::HandoffProgress>();
     app.init_resource::<crate::astra::AttemptTelemetry>();
     app.add_plugins((
         MenuPlugin,
@@ -902,6 +904,7 @@ fn playthrough_app_with_full_ui() -> App {
         crate::states::identification::IdentificationConsolePlugin,
         crate::states::jumper::JumperConsolePlugin,
         crate::states::survey::SurveyConsolePlugin,
+        crate::states::workbench::WorkbenchConsolePlugin,
         crate::astra::AstraPlugin,
         crate::waifu::dialogue_ui::DialogueUiPlugin,
     ));
@@ -994,6 +997,21 @@ fn production_plugin_set_no_b0001_on_level_load() {
     assert!(
         entity_count::<crate::states::jumper::JumperButton>(&mut jumper_app) > 0,
         "the jumper console must spawn its buttons on c1l5"
+    );
+
+    // Ondine's c1l3 carries the workbench (Astra §2e); Linka's m1l2
+    // carries the survey + diagnosis console (§2d).
+    let mut bench_app = playthrough_app_with_full_ui();
+    jump_to_level(&mut bench_app, Companion::Coax, level_index_for_id("c1l3"));
+    assert!(
+        entity_count::<crate::states::workbench::WorkbenchButton>(&mut bench_app) > 0,
+        "the workbench console must spawn its buttons on c1l3"
+    );
+    let mut survey_app = playthrough_app_with_full_ui();
+    jump_to_level(&mut survey_app, Companion::Mobile, level_index_for_id("m1l2"));
+    assert!(
+        entity_count::<crate::states::survey::SurveyButton>(&mut survey_app) > 0,
+        "the survey console must spawn its diagnosis buttons on m1l2"
     );
 }
 

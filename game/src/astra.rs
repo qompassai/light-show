@@ -21,6 +21,7 @@ use crate::states::jumper::JumperProgress;
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
 use crate::states::survey::SurveyProgress;
+use crate::states::workbench::{HandoffProgress, WorkbenchProgress};
 use crate::states::GameState;
 
 /// All Astra progress resources as one system parameter. The win
@@ -34,6 +35,8 @@ pub struct AstraProgress<'w> {
     pub ident: Option<Res<'w, IdentificationProgress>>,
     pub jumper: Option<Res<'w, JumperProgress>>,
     pub survey: Option<Res<'w, SurveyProgress>>,
+    pub workbench: Option<Res<'w, WorkbenchProgress>>,
+    pub handoff: Option<Res<'w, HandoffProgress>>,
 }
 
 impl AstraProgress<'_> {
@@ -50,6 +53,16 @@ impl AstraProgress<'_> {
     /// The survey progress, when the resource exists.
     pub fn survey(&self) -> Option<&SurveyProgress> {
         self.survey.as_deref()
+    }
+
+    /// The workbench progress, when the resource exists.
+    pub fn workbench(&self) -> Option<&WorkbenchProgress> {
+        self.workbench.as_deref()
+    }
+
+    /// The handoff progress, when the resource exists.
+    pub fn handoff(&self) -> Option<&HandoffProgress> {
+        self.handoff.as_deref()
     }
 }
 
@@ -92,6 +105,21 @@ pub fn astra_gates_pass(level: &LevelDef, progress: &AstraProgress) -> bool {
             _ => return false,
         }
     }
+    // §2e: the bench sequence must be complete with no live defect.
+    if level.workbench.is_some() {
+        match progress.workbench() {
+            Some(workbench) if workbench.complete() => {}
+            _ => return false,
+        }
+    }
+    // §2g: the capstone's Ethernet handoff must be verified (the
+    // verify itself only latched while the board passed).
+    if level.handoff_required {
+        match progress.handoff() {
+            Some(handoff) if handoff.verified => {}
+            _ => return false,
+        }
+    }
     true
 }
 
@@ -108,6 +136,18 @@ pub fn mechanic_states(level: &LevelDef, progress: &AstraProgress) -> MechanicSt
     }
     mechanics.service_defect_present =
         level.defect_present(progress.jumper().is_some_and(|j| j.swapped));
+    if let (Some(def), Some(workbench)) = (&level.workbench, progress.workbench()) {
+        mechanics.inspection = Some(workbench.inspection_state(def));
+        mechanics.workmanship = Some(workbench.workmanship_state(def));
+        if workbench.defect_active {
+            mechanics.workmanship_loss_db = def.workmanship_loss_db;
+        }
+    }
+    if level.handoff_required {
+        if let Some(handoff) = progress.handoff() {
+            mechanics.handoff = Some(handoff.handoff_state());
+        }
+    }
     mechanics
 }
 

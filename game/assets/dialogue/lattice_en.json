@@ -78,5 +78,8 @@
   ],
   "diagnosis_wrong": [
     "Wrong cause. Diff the history against today — one number moved. Follow the one that moved."
+  ],
+  "workmanship_defect": [
+    "That termination failed inspection. A bad crimp passes a tug and fails a certifier — rebuild it and certify it."
   ]
 }

@@ -78,5 +78,8 @@
   ],
   "diagnosis_wrong": [
     "Wrong diagnosis. Compare the old reading to the new one; the quantity that changed is the culprit."
+  ],
+  "workmanship_defect": [
+    "The inspection found a defect in the finished end. Precision is the job — rebuild it to the card, not to memory."
   ]
 }

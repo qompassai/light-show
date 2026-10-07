@@ -81,5 +81,11 @@
   ],
   "diagnosis_wrong": [
     "Wrong call. Look at what the tones said then and what they say now — the delta names the fault."
+  ],
+  "workmanship_defect": [
+    "Inspection caught what your eyes waved through. A defect you ship is a callback you schedule — rebuild the end and test it like you mean it."
+  ],
+  "tutorial_workbench": [
+    "The bench is a state machine, not a vibe: strip to the card, fold the braid back, seat it flush, compress once. A mistake the card catches costs a connector. A mistake it can't — shielding, seating, the short test — ships. Work the card, in order, every end."
   ]
 }

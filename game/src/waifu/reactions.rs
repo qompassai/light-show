@@ -175,10 +175,13 @@ pub enum ReactionTrigger {
     /// A wrong diagnosis was committed at the survey console
     /// (Astra §2d). Fires only on Linka's track.
     DiagnosisWrong,
+    /// An uncaught workbench defect went live (Astra §2e). Fired by
+    /// the workbench console when the defective end completes.
+    WorkmanshipDefect,
 }
 
 impl ReactionTrigger {
-    pub const ALL: [ReactionTrigger; 12] = [
+    pub const ALL: [ReactionTrigger; 13] = [
         ReactionTrigger::FirstPlacement,
         ReactionTrigger::SegmentComplete,
         ReactionTrigger::TooHot,
@@ -191,6 +194,7 @@ impl ReactionTrigger {
         ReactionTrigger::ServiceStateFail,
         ReactionTrigger::SurveyPointFail,
         ReactionTrigger::DiagnosisWrong,
+        ReactionTrigger::WorkmanshipDefect,
     ];
 }
 
@@ -211,6 +215,7 @@ pub fn trigger_spec(trigger: ReactionTrigger) -> (&'static str, Emotion) {
         ReactionTrigger::ServiceStateFail => ("service_fail", Emotion::Worried),
         ReactionTrigger::SurveyPointFail => ("survey_point_fail", Emotion::Worried),
         ReactionTrigger::DiagnosisWrong => ("diagnosis_wrong", Emotion::Annoyed),
+        ReactionTrigger::WorkmanshipDefect => ("workmanship_defect", Emotion::Annoyed),
     }
 }
 
