@@ -18,16 +18,27 @@ struct WipeUniforms {
 
 @fragment
 fn fragment(in: UiVertexOutput) -> @location(0) vec4<f32> {
-    // Project the UV onto the wipe direction, normalized to 0..1.
+    // Project the UV onto the wipe direction. The projection of the
+    // unit square onto dir spans [-extent/2, +extent/2] (extent = the
+    // L1 norm of dir), NOT [-0.5, +0.5] — normalizing by extent maps
+    // proj to exactly 0..1 for any direction. Without this, a diagonal
+    // direction leaves proj < 0 in the starting corner, and the edge
+    // math below covers that corner even at progress = 0 (and leaves
+    // the far corner uncovered at progress = 1).
     let dir = normalize(
         vec2<f32>(uniforms.direction_x, uniforms.direction_y) + vec2<f32>(1e-5, 0.0)
     );
-    let proj = dot(in.uv - vec2<f32>(0.5), dir) + 0.5;
+    let extent = abs(dir.x) + abs(dir.y);
+    let proj = dot(in.uv - vec2<f32>(0.5), dir) / extent + 0.5;
 
     // Covered where proj < progress, with a soft leading edge.
     // progress = 0 -> alpha 0 everywhere; progress = 1 -> alpha 1.
+    // The edge travels slightly past both ends (edge = progress *
+    // (1 + s)) so the soft band is fully off-screen at progress = 0
+    // and fully past the far corner at progress = 1.
     let s = max(uniforms.softness, 1e-4);
-    let alpha = 1.0 - smoothstep(uniforms.progress - s, uniforms.progress, proj);
+    let edge = uniforms.progress * (1.0 + s);
+    let alpha = 1.0 - smoothstep(edge - s, edge, proj);
 
     return vec4<f32>(uniforms.color.rgb, alpha * uniforms.color.a);
 }

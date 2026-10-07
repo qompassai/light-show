@@ -5,7 +5,8 @@
 
 use bevy::prelude::*;
 use osp_sim::{
-    Component, EthernetViolation, Medium, Outage, OutageKind, PathGraph, ReceiveWindow, Wavelength,
+    CoaxViolation, Component, EthernetViolation, Medium, Outage, OutageKind, PathGraph,
+    ReceiveWindow, Wavelength, WirelessViolation,
 };
 use serde::Deserialize;
 
@@ -469,6 +470,19 @@ pub struct LevelDef {
     /// (TIA-568 says 90 m + 10 m patch; levels use 100 m).
     #[serde(default)]
     pub max_segment_length_m: Option<f64>,
+    /// Coax only: the plant's noise floor in dBmV before any ingress
+    /// hazard raises it. Unset falls back to the quiet-plant default in
+    /// `coax_params`.
+    #[serde(default)]
+    pub coax_noise_floor_dbmv: Option<f64>,
+    /// Coax only: minimum carrier-to-noise ratio (dB) the tap must
+    /// hold. Unset falls back to the default in `coax_params`.
+    #[serde(default)]
+    pub min_carrier_to_noise_db: Option<f64>,
+    /// Wireless only: minimum carried SNR (dB) the link must hold end
+    /// to end. Unset falls back to the default in `wireless_params`.
+    #[serde(default)]
+    pub min_snr_db: Option<f64>,
     pub nodes: Vec<LevelNode>,
     /// Edges already placed for the player (fixed plant they don't route).
     pub fixed_edges: Vec<LevelEdge>,
@@ -607,16 +621,69 @@ impl LevelDef {
         )
     }
 
+    /// Coax evaluation parameters: (quiet-plant noise floor in dBmV,
+    /// minimum carrier-to-noise ratio in dB). Defaults: a −35 dBmV
+    /// floor (a quiet plant's thermal floor referred to the tap) and
+    /// 25 dB CNR (the classic carrier-quality bar — below it the
+    /// picture degrades no matter how balanced the levels are).
+    fn coax_params(&self) -> (f64, f64) {
+        (
+            self.coax_noise_floor_dbmv.unwrap_or(-35.0),
+            self.min_carrier_to_noise_db.unwrap_or(25.0),
+        )
+    }
+
+    /// Wireless evaluation parameter: the minimum carried SNR (dB)
+    /// the link must hold. Default 10 dB — the floor under a robust
+    /// digital link; interference raises the *requirement* from here
+    /// (see `effective_wireless_min_snr_db`).
+    fn wireless_params(&self) -> f64 {
+        self.min_snr_db.unwrap_or(10.0)
+    }
+
+    /// The coax noise floor an evaluation actually runs against: the
+    /// level's quiet-plant floor, raised by an unresolved ingress
+    /// hazard's accumulated floor rise. Ingress does not eat the
+    /// carrier — it buries it — so the outage moves the floor, never
+    /// the received level.
+    fn effective_coax_noise_floor_dbmv(&self, outage: Option<&Outage>) -> f64 {
+        let (floor, _) = self.coax_params();
+        match outage {
+            Some(o) if !o.resolved && o.kind == OutageKind::IngressNoise => {
+                floor + o.accumulated_extra_loss_db()
+            }
+            _ => floor,
+        }
+    }
+
+    /// The wireless SNR requirement an evaluation actually runs
+    /// against: the level's minimum, raised by an unresolved
+    /// interference hazard's accumulated floor rise. The evaluator
+    /// measures carried SNR against a fixed thermal floor, so a
+    /// floor that rose by N dB is a requirement that rose by N dB.
+    fn effective_wireless_min_snr_db(&self, outage: Option<&Outage>) -> f64 {
+        let base = self.wireless_params();
+        match outage {
+            Some(o) if !o.resolved && o.kind == OutageKind::WirelessInterference => {
+                base + o.accumulated_extra_loss_db()
+            }
+            _ => base,
+        }
+    }
+
     /// Plain (non-outage) win check, dispatched on the level's medium.
     pub fn is_win_state(&self, graph: &PathGraph, tx_dbm: f64, wavelength: Wavelength) -> bool {
         self.is_win_state_with_outage(graph, tx_dbm, wavelength, None)
     }
 
-    /// Outage-aware win check. Degrade hazards add their accumulated
-    /// extra loss on top (fiber/coax/wireless); full cuts rely on the
-    /// caller excluding the severed edge (see `board::rebuild_live_graph`),
-    /// so they surface as an ordinary disconnect. Ethernet ignores the
-    /// outage — its constraints don't degrade over time.
+    /// Outage-aware win check. Fiber degrade hazards add their
+    /// accumulated extra loss on top of the budget; coax ingress and
+    /// wireless interference instead raise the noise floor the signal
+    /// is judged against (see the `effective_*` helpers) — the carrier
+    /// level itself is untouched. Full cuts rely on the caller
+    /// excluding the severed edge (see `board::rebuild_live_graph`),
+    /// so they surface as an ordinary disconnect. Ethernet ignores
+    /// the outage — its constraints don't degrade over time.
     pub fn is_win_state_with_outage(
         &self,
         graph: &PathGraph,
@@ -650,6 +717,30 @@ impl LevelDef {
                     .map(|eval| eval.passes())
                     .unwrap_or(false)
             }
+            Medium::Coax => {
+                let (_, min_cnr_db) = self.coax_params();
+                graph
+                    .evaluate_coax(
+                        self.source_node,
+                        self.target_node,
+                        tx_dbm,
+                        self.receive_window(),
+                        self.effective_coax_noise_floor_dbmv(outage),
+                        min_cnr_db,
+                    )
+                    .map(|eval| eval.passes())
+                    .unwrap_or(false)
+            }
+            Medium::Wireless => graph
+                .evaluate_wireless(
+                    self.source_node,
+                    self.target_node,
+                    tx_dbm,
+                    self.receive_window(),
+                    self.effective_wireless_min_snr_db(outage),
+                )
+                .map(|eval| eval.passes())
+                .unwrap_or(false),
             _ => graph
                 .compute_link_budget_with_outage(
                     self.source_node,
@@ -808,6 +899,86 @@ impl LevelDef {
                     Err(_) => "Link disconnected — no route completed.".to_string(),
                 }
             }
+            Medium::Coax => {
+                let (_, min_cnr_db) = self.coax_params();
+                let floor = self.effective_coax_noise_floor_dbmv(outage);
+                match graph.evaluate_coax(
+                    self.source_node,
+                    self.target_node,
+                    tx_dbm,
+                    self.receive_window(),
+                    floor,
+                    min_cnr_db,
+                ) {
+                    Ok(eval) => {
+                        let mut parts = vec![
+                            format!("Rx: {:.2} dBmV", eval.received_dbmv),
+                            format!(
+                                "CNR: {:.1} dB (floor {:.0} dBmV) / {:.0} dB min",
+                                eval.carrier_to_noise_db, floor, min_cnr_db
+                            ),
+                            window_verdict(eval.received_dbmv, self.receive_window()).to_string(),
+                            cnr_verdict(eval.carrier_to_noise_db, min_cnr_db).to_string(),
+                        ];
+                        let extra: Vec<String> = eval
+                            .violations
+                            .iter()
+                            .filter_map(|v| match v {
+                                CoaxViolation::NonFiniteInput { field } => {
+                                    Some(format!("non-finite input for {field}"))
+                                }
+                                CoaxViolation::UnsupportedComponent { detail, .. } => {
+                                    Some(detail.clone())
+                                }
+                                _ => None,
+                            })
+                            .collect();
+                        if !extra.is_empty() {
+                            parts.push(format!("VIOLATION: {}", extra.join("; ")));
+                        }
+                        parts.join("  |  ")
+                    }
+                    Err(_) => self.partial_ledger(graph, tx_dbm, wavelength, outage),
+                }
+            }
+            Medium::Wireless => {
+                let required_snr_db = self.effective_wireless_min_snr_db(outage);
+                match graph.evaluate_wireless(
+                    self.source_node,
+                    self.target_node,
+                    tx_dbm,
+                    self.receive_window(),
+                    required_snr_db,
+                ) {
+                    Ok(eval) => {
+                        let mut parts = vec![
+                            format!("Rx: {:.2} dBm", eval.received_dbm),
+                            format!("SNR: {:.1} dB / {:.0} dB min", eval.snr_db, required_snr_db),
+                            format!("Fade margin: {:.1} dB", eval.fade_margin_db),
+                            window_verdict(eval.received_dbm, self.receive_window()).to_string(),
+                            snr_verdict(eval.snr_db, required_snr_db).to_string(),
+                        ];
+                        let extra: Vec<String> = eval
+                            .violations
+                            .iter()
+                            .filter_map(|v| match v {
+                                WirelessViolation::NonFiniteInput { field } => {
+                                    Some(format!("non-finite input for {field}"))
+                                }
+                                WirelessViolation::UnsupportedComponent { detail, .. } => {
+                                    Some(detail.clone())
+                                }
+                                _ => None,
+                            })
+                            .collect();
+                        if !extra.is_empty() {
+                            parts.push(format!("VIOLATION: {}", extra.join("; ")));
+                        }
+                        parts.join("  |  ")
+                    }
+                    Err(_) => self.partial_ledger(graph, tx_dbm, wavelength, outage),
+                }
+            }
             _ => {
                 let units = self.units_label();
                 match graph.compute_link_budget_with_outage(
@@ -843,6 +1014,27 @@ fn window_verdict(received_dbm: f64, window: ReceiveWindow) -> &'static str {
         "TOO LOW"
     } else {
         "TOO HOT"
+    }
+}
+
+/// Verdict word for a carrier-to-noise ratio against its requirement:
+/// the coax failure mode a level-only readout hides — the levels can
+/// be perfectly balanced while the carrier drowns in a risen floor.
+fn cnr_verdict(cnr_db: f64, required_db: f64) -> &'static str {
+    if cnr_db >= required_db {
+        "CNR OK"
+    } else {
+        "CNR TOO LOW"
+    }
+}
+
+/// Verdict word for a carried SNR against its requirement — the
+/// wireless counterpart of `cnr_verdict`.
+fn snr_verdict(snr_db: f64, required_db: f64) -> &'static str {
+    if snr_db >= required_db {
+        "SNR OK"
+    } else {
+        "SNR TOO LOW"
     }
 }
 
@@ -1217,48 +1409,553 @@ mod tests {
         }
     }
 
-    // The two storm levels are only winnable if the mid-storm repair pill
-    // actually lands back in window once the degrade has climbed: the 12 dB
-    // amp 90 s into IngressNoise, and the 30 dBm repeater 80 s into
-    // WirelessInterference.
+    // The two storm levels under the specialty evaluators: ingress and
+    // interference raise the noise floor (the CNR / SNR requirement),
+    // never the carrier level — so the winning play is riding the
+    // storm out on the pill that was balanced at dusk, NOT out-shouting
+    // the floor. (The previous optical model subtracted the accrual
+    // from the received level, which made the loudest pill the repair;
+    // that is exactly the field mistake these levels now teach against.)
     #[test]
     fn storm_repair_pills_win_mid_storm() {
-        let coax = load_level(11); // c1l2 in the 50-level layout
+        let coax = load_level(11); // c1l2 in the 80-level layout
+        let wavelength = Wavelength::from(coax.wavelength);
+        let balanced_amp = coax
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 3.0))
+            .expect("c1l2 must offer a 3 dB amp");
+        let graph = graph_with_single_placement(&coax, balanced_amp);
+
+        // 90 s in: floor has risen 9 dB (−35 → −26 dBmV). The 3 dB amp
+        // still lands Rx 8 dBmV, and CNR 8 − (−26) = 34 ≥ 25.
         let mut ingress = fresh_outage(&coax).unwrap();
-        ingress.tick(90.0); // +9 dB of floor rise
-        let repair_amp = coax
+        ingress.tick(90.0);
+        assert!(
+            coax.is_win_state_with_outage(&graph, coax.tx_dbm, wavelength, Some(&ingress)),
+            "3 dB amp must ride out c1l2 90 s into the ingress storm (CNR 34 ≥ 25)"
+        );
+
+        // Full accrual (12 dB cap): floor −23 dBmV, CNR 31 ≥ 25 — the
+        // balanced pill survives the whole storm, not just its middle.
+        let mut full_ingress = fresh_outage(&coax).unwrap();
+        full_ingress.tick(600.0);
+        assert_eq!(full_ingress.accumulated_extra_loss_db(), 12.0);
+        assert!(
+            coax.is_win_state_with_outage(&graph, coax.tx_dbm, wavelength, Some(&full_ingress)),
+            "3 dB amp must survive c1l2 at full 12 dB ingress accrual (CNR 31 ≥ 25)"
+        );
+
+        // The old model's repair — the 12 dB amp — is now the trap:
+        // Rx 17 dBmV overshoots the 15 dBmV window top. Out-shouting
+        // a risen floor cooks the drop.
+        let loud_amp = coax
             .available_components
             .iter()
             .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 12.0))
             .expect("c1l2 must offer a 12 dB amp");
-        let graph = graph_with_single_placement(&coax, repair_amp);
+        let loud_graph = graph_with_single_placement(&coax, loud_amp);
         assert!(
-            coax.is_win_state_with_outage(
-                &graph,
-                coax.tx_dbm,
-                Wavelength::from(coax.wavelength),
-                Some(&ingress),
-            ),
-            "12 dB amp must rebalance c1l2 90 s into the ingress storm (17 − 9 = 8 dBmV)"
+            !coax.is_win_state_with_outage(&loud_graph, coax.tx_dbm, wavelength, Some(&ingress)),
+            "12 dB amp must NOT win c1l2 mid-storm (Rx 17 dBmV > 15 dBmV window)"
         );
 
-        let wireless = load_level(21); // wireless2 in the 50-level layout
-        let mut interference = fresh_outage(&wireless).unwrap();
-        interference.tick(80.0); // +8 dB of floor rise
-        let repair_rpt = wireless
+        let wireless = load_level(21); // m1l2 in the 80-level layout
+        let wavelength = Wavelength::from(wireless.wavelength);
+        let balanced_rpt = wireless
             .available_components
             .iter()
-            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 30.0))
-            .expect("m1l2 must offer a 30 dBm repeater");
-        let graph = graph_with_single_placement(&wireless, repair_rpt);
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 20.0))
+            .expect("m1l2 must offer a 20 dBm repeater");
+        let graph = graph_with_single_placement(&wireless, balanced_rpt);
+
+        // 80 s in: the SNR requirement has climbed 8 dB (10 → 18).
+        // The 20 dBm repeater lands Rx −68.01 dBm with carried SNR
+        // 26.99 — still clear of the raised bar.
+        let mut interference = fresh_outage(&wireless).unwrap();
+        interference.tick(80.0);
         assert!(
             wireless.is_win_state_with_outage(
                 &graph,
                 wireless.tx_dbm,
-                Wavelength::from(wireless.wavelength),
+                wavelength,
                 Some(&interference),
             ),
-            "30 dBm repeater must ride out m1l2 80 s into the interference storm"
+            "20 dBm repeater must ride out m1l2 80 s into the interference storm (SNR 26.99 ≥ 18)"
+        );
+
+        // And the loud swap is the trap here too: the 30 dBm repeater
+        // lands Rx −58.02 dBm, above the −65 dBm window top — more
+        // power never fixes a risen floor.
+        let loud_rpt = wireless
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 30.0))
+            .expect("m1l2 must offer a 30 dBm repeater");
+        let loud_graph = graph_with_single_placement(&wireless, loud_rpt);
+        assert!(
+            !wireless.is_win_state_with_outage(
+                &loud_graph,
+                wireless.tx_dbm,
+                wavelength,
+                Some(&interference),
+            ),
+            "30 dBm repeater must NOT win m1l2 mid-storm (Rx −58.02 dBm > −65 dBm window)"
+        );
+    }
+
+    /// All three ingress levels (c1l2, c1l5, c1l10) must stay winnable
+    /// through the FULL 12 dB floor-rise accrual, with exactly the
+    /// same single winning pill they have at rest — the coax2 caution
+    /// from the wiring brief, proven per level: the binding case is
+    /// c1l5, whose winner lands Rx 5.5 dBmV for a full-accrual CNR of
+    /// 5.5 − (−35 + 12) = 28.5 ≥ 25.
+    #[test]
+    fn coax_ingress_levels_stay_winnable_through_full_accrual() {
+        for idx in [11, 14, 19] {
+            let level = load_level(idx);
+            let wavelength = Wavelength::from(level.wavelength);
+            let mut storm = fresh_outage(&level).unwrap();
+            storm.tick(600.0); // far past the cap
+            assert_eq!(
+                storm.accumulated_extra_loss_db(),
+                12.0,
+                "level {} ({}) outage must cap at 12 dB",
+                idx,
+                level.id
+            );
+            let winners = level
+                .available_components
+                .iter()
+                .filter(|choice| {
+                    let graph = graph_with_single_placement(&level, choice);
+                    level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, Some(&storm))
+                })
+                .count();
+            assert_eq!(
+                winners, 1,
+                "level {} ({}) must keep exactly one winning pill at full ingress accrual",
+                idx, level.id
+            );
+        }
+
+        // The binding numbers, asserted directly against the evaluator:
+        // c1l5's winner (5 dB amp) at full accrual.
+        let level = load_level(14);
+        let winner = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 5.0))
+            .expect("c1l5 must offer a 5 dB amp");
+        let graph = graph_with_single_placement(&level, winner);
+        let mut storm = fresh_outage(&level).unwrap();
+        storm.tick(600.0);
+        let eval = graph
+            .evaluate_coax(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                level.receive_window(),
+                level.effective_coax_noise_floor_dbmv(Some(&storm)),
+                level.coax_params().1,
+            )
+            .expect("c1l5 path must resolve");
+        assert!(
+            (eval.received_dbmv - 5.5).abs() < 0.01,
+            "c1l5 winner Rx must be 5.5 dBmV, got {}",
+            eval.received_dbmv
+        );
+        assert!(
+            (eval.carrier_to_noise_db - 28.5).abs() < 0.01,
+            "c1l5 winner CNR at full accrual must be 28.5 dB, got {}",
+            eval.carrier_to_noise_db
+        );
+        assert!(eval.passes());
+    }
+
+    /// The remaining two binding cases for the specialty defaults,
+    /// asserted numerically against the evaluators at rest: c1l8's
+    /// winning cascade holds CNR 36 against the −35 dBmV quiet-plant
+    /// floor (the 25 dB bar clears with headroom), and m1l10's
+    /// winning repeater carries SNR 16.72 — comfortably above the
+    /// 10 dB wireless default, so the level binds the default from
+    /// the safe side: any default above 16.72 would soft-lock it.
+    /// (Win/lose coverage for both levels also comes from
+    /// `every_level_has_exactly_its_intended_winning_pill_count`.)
+    #[test]
+    fn specialty_binding_cases_hold_at_rest() {
+        // c1l8 (index 17): exactly one winning pill, at CNR 36.
+        let level = load_level(17);
+        let wavelength = Wavelength::from(level.wavelength);
+        let winners: Vec<&ComponentChoice> = level
+            .available_components
+            .iter()
+            .filter(|choice| {
+                let graph = graph_with_single_placement(&level, choice);
+                level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, None)
+            })
+            .collect();
+        assert_eq!(
+            winners.len(),
+            1,
+            "c1l8 must have exactly one winning pill, got {}",
+            winners.len()
+        );
+        let graph = graph_with_single_placement(&level, winners[0]);
+        let eval = graph
+            .evaluate_coax(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                level.receive_window(),
+                level.effective_coax_noise_floor_dbmv(None),
+                level.coax_params().1,
+            )
+            .expect("c1l8 path must resolve");
+        assert!(
+            (eval.carrier_to_noise_db - 36.0).abs() < 0.1,
+            "c1l8 winner CNR must be 36 dB, got {}",
+            eval.carrier_to_noise_db
+        );
+        assert!(eval.passes());
+
+        // m1l10 (index 29): exactly one winning pill, at SNR 16.72.
+        let level = load_level(29);
+        let wavelength = Wavelength::from(level.wavelength);
+        let winners: Vec<&ComponentChoice> = level
+            .available_components
+            .iter()
+            .filter(|choice| {
+                let graph = graph_with_single_placement(&level, choice);
+                level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, None)
+            })
+            .collect();
+        assert_eq!(
+            winners.len(),
+            1,
+            "m1l10 must have exactly one winning pill, got {}",
+            winners.len()
+        );
+        let graph = graph_with_single_placement(&level, winners[0]);
+        let eval = graph
+            .evaluate_wireless(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                level.receive_window(),
+                level.wireless_params(),
+            )
+            .expect("m1l10 path must resolve");
+        assert!(
+            (eval.snr_db - 16.72).abs() < 0.05,
+            "m1l10 winner SNR must be 16.72 dB, got {}",
+            eval.snr_db
+        );
+        assert!(
+            eval.snr_db >= level.wireless_params(),
+            "m1l10 winner SNR must clear the 10 dB wireless default it binds"
+        );
+        assert!(eval.passes());
+    }
+
+    /// Adversarial: the specialty evaluators and the optical budget
+    /// genuinely disagree, in both directions — which is why coax and
+    /// wireless levels must not be scored by the optical engine.
+    #[test]
+    fn specialty_evaluators_disagree_with_the_optical_budget() {
+        // Direction 1 — optical passes, coax evaluator fails on CNR
+        // alone. c1l2 with a hostile plant floor (−10 dBmV, via the
+        // level's own override field): the 3 dB amp lands Rx 8 dBmV,
+        // dead center of the [0, 15] window, but CNR is 18 < 25.
+        let mut level = load_level(11);
+        level.coax_noise_floor_dbmv = Some(-10.0);
+        let amp = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 3.0))
+            .expect("c1l2 must offer a 3 dB amp")
+            .clone();
+        let graph = graph_with_single_placement(&level, &amp);
+        let wavelength = Wavelength::from(level.wavelength);
+        let optical = graph
+            .compute_link_budget_with_outage(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                wavelength,
+                level.receive_window(),
+                None,
+            )
+            .expect("c1l2 path must resolve");
+        assert!(
+            optical.in_window,
+            "optical budget must pass the balanced c1l2 plant (Rx {:.2})",
+            optical.received_dbm
+        );
+        assert!(
+            !level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, None),
+            "coax evaluator must fail the same plant on CNR alone"
+        );
+        let eval = graph
+            .evaluate_coax(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                level.receive_window(),
+                level.effective_coax_noise_floor_dbmv(None),
+                level.coax_params().1,
+            )
+            .expect("c1l2 path must resolve");
+        assert_eq!(eval.violations.len(), 1, "CNR must be the ONLY violation");
+        assert!(
+            matches!(
+                eval.violations[0],
+                CoaxViolation::CarrierToNoiseTooLow { .. }
+            ),
+            "the sole violation must be CarrierToNoiseTooLow, got {:?}",
+            eval.violations
+        );
+
+        // Direction 2 — optical passes, wireless evaluator fails on
+        // SNR alone. A synthetic amp chain on m1l1's shape: a 1 km
+        // first hop wrecks the carried SNR (reception at −80.05 dBm →
+        // SNR 14.95), the 90 dB amp shouts the wreckage back into the
+        // window over a short second hop — level fine, signal ruined.
+        // (Under the optical budget an amplifier is free gain; the
+        // wireless evaluator charges it 5 dB of noise figure.)
+        let level = load_level(20); // m1l1: window [−75, −40]
+        let mut graph = PathGraph::default();
+        for node in &level.nodes {
+            graph.add_node(node.id, node.label.clone());
+        }
+        graph.connect(
+            0,
+            1,
+            Component::WirelessHop {
+                distance_m: 1000.0,
+                frequency_mhz: 2400.0,
+            },
+        );
+        graph.connect(1, 2, Component::Amplifier { gain_db: 90.0 });
+        graph.connect(
+            2,
+            3,
+            Component::WirelessHop {
+                distance_m: 100.0,
+                frequency_mhz: 2400.0,
+            },
+        );
+        let optical = graph
+            .compute_link_budget_with_outage(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                Wavelength::from(level.wavelength),
+                level.receive_window(),
+                None,
+            )
+            .expect("synthetic path must resolve");
+        assert!(
+            optical.in_window,
+            "optical budget must pass the amp chain (Rx {:.2})",
+            optical.received_dbm
+        );
+        assert!(
+            !level.is_win_state_with_outage(
+                &graph,
+                level.tx_dbm,
+                Wavelength::from(level.wavelength),
+                None,
+            ),
+            "wireless evaluator must fail the amp chain on carried SNR"
+        );
+        let eval = graph
+            .evaluate_wireless(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                level.receive_window(),
+                level.wireless_params(),
+            )
+            .expect("synthetic path must resolve");
+        assert!(
+            level.receive_window().contains(eval.received_dbm),
+            "amp chain level must be in window (got {:.2}) — SNR is the failure",
+            eval.received_dbm
+        );
+        assert!(
+            eval.violations
+                .iter()
+                .any(|v| matches!(v, WirelessViolation::SignalToNoiseTooLow { .. })),
+            "violations must include SignalToNoiseTooLow, got {:?}",
+            eval.violations
+        );
+
+        // Direction 3 — the reverse: the wireless evaluator passes a
+        // state the optical budget fails. m1l2's balanced repeater at
+        // full interference accrual: the optical model subtracts the
+        // 12 dB accrual from the received level (−68.01 − 12 = −80.01,
+        // below the −75 floor), while the floor-rise model keeps the
+        // level and raises the SNR bar to 22 — and 26.99 clears it.
+        let level = load_level(21);
+        let rpt = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 20.0))
+            .expect("m1l2 must offer a 20 dBm repeater");
+        let graph = graph_with_single_placement(&level, rpt);
+        let mut storm = fresh_outage(&level).unwrap();
+        storm.tick(600.0);
+        let optical = graph
+            .compute_link_budget_with_outage(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                Wavelength::from(level.wavelength),
+                level.receive_window(),
+                Some(&storm),
+            )
+            .expect("m1l2 path must resolve");
+        assert!(
+            !optical.in_window,
+            "optical budget must fail m1l2 at full accrual (Rx {:.2})",
+            optical.received_dbm
+        );
+        assert!(
+            level.is_win_state_with_outage(
+                &graph,
+                level.tx_dbm,
+                Wavelength::from(level.wavelength),
+                Some(&storm),
+            ),
+            "wireless evaluator must pass m1l2 at full accrual (SNR 26.99 ≥ 22)"
+        );
+    }
+
+    /// Adversarial: garbage specialty parameters fail closed — a NaN
+    /// launch, floor, or requirement must never let a level pass, and
+    /// the ledger must render the failure instead of panicking.
+    #[test]
+    fn specialty_params_fail_closed_on_nan() {
+        // Coax: NaN launch power.
+        let mut level = load_level(11);
+        let amp = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 3.0))
+            .expect("c1l2 must offer a 3 dB amp")
+            .clone();
+        let graph = graph_with_single_placement(&level, &amp);
+        let wavelength = Wavelength::from(level.wavelength);
+        assert!(
+            !level.is_win_state_with_outage(&graph, f64::NAN, wavelength, None),
+            "NaN coax launch must fail closed"
+        );
+        // Coax: NaN floor / NaN CNR requirement via the level fields.
+        level.coax_noise_floor_dbmv = Some(f64::NAN);
+        assert!(
+            !level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, None),
+            "NaN coax noise floor must fail closed"
+        );
+        level.coax_noise_floor_dbmv = None;
+        level.min_carrier_to_noise_db = Some(f64::NAN);
+        assert!(
+            !level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, None),
+            "NaN CNR requirement must fail closed"
+        );
+        let ledger = level.signal_ledger(&graph, level.tx_dbm, wavelength, None);
+        assert!(
+            ledger.contains("non-finite input"),
+            "ledger must name the non-finite input, got: {ledger}"
+        );
+
+        // Wireless: NaN launch / NaN SNR requirement.
+        let mut level = load_level(20);
+        let rpt = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 20.0))
+            .expect("m1l1 must offer a 20 dBm repeater")
+            .clone();
+        let graph = graph_with_single_placement(&level, &rpt);
+        let wavelength = Wavelength::from(level.wavelength);
+        assert!(
+            level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, None),
+            "sanity: m1l1's 20 dBm repeater wins with honest parameters"
+        );
+        assert!(
+            !level.is_win_state_with_outage(&graph, f64::NAN, wavelength, None),
+            "NaN wireless launch must fail closed"
+        );
+        level.min_snr_db = Some(f64::NAN);
+        assert!(
+            !level.is_win_state_with_outage(&graph, level.tx_dbm, wavelength, None),
+            "NaN SNR requirement must fail closed"
+        );
+    }
+
+    /// The ledgers speak each discipline's language: a coax ledger
+    /// carries CNR, a wireless ledger carries SNR and fade margin —
+    /// and a drowned carrier reads CNR TOO LOW even at a good level.
+    #[test]
+    fn specialty_ledgers_report_cnr_and_snr() {
+        let level = load_level(10); // c1l1
+        let amp = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 5.0))
+            .expect("c1l1 must offer a 5 dB amp");
+        let graph = graph_with_single_placement(&level, amp);
+        let ledger = level.signal_ledger(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+        );
+        assert!(
+            ledger.contains("CNR:") && ledger.contains("CNR OK") && ledger.contains("IN WINDOW"),
+            "coax ledger must report a passing CNR, got: {ledger}"
+        );
+
+        let level = load_level(20); // m1l1
+        let rpt = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Repeater { tx_dbm } if tx_dbm == 20.0))
+            .expect("m1l1 must offer a 20 dBm repeater");
+        let graph = graph_with_single_placement(&level, rpt);
+        let ledger = level.signal_ledger(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+        );
+        assert!(
+            ledger.contains("SNR:") && ledger.contains("SNR OK") && ledger.contains("IN WINDOW"),
+            "wireless ledger must report a passing SNR, got: {ledger}"
+        );
+
+        // The CNR failure wording shows up in the ledger, not just the
+        // evaluator: hostile floor on c1l2 (same setup as the
+        // disagreement test) reads CNR TOO LOW at an in-window level.
+        let mut level = load_level(11);
+        level.coax_noise_floor_dbmv = Some(-10.0);
+        let amp = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Amplifier { gain_db } if gain_db == 3.0))
+            .expect("c1l2 must offer a 3 dB amp")
+            .clone();
+        let graph = graph_with_single_placement(&level, &amp);
+        let ledger = level.signal_ledger(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+        );
+        assert!(
+            ledger.contains("CNR TOO LOW") && ledger.contains("IN WINDOW"),
+            "ledger must read CNR TOO LOW at an in-window level, got: {ledger}"
         );
     }
 

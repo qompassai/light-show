@@ -127,6 +127,63 @@ pub fn styled_button(palette: ButtonPalette) -> (ButtonPalette, BorderColor) {
     (palette, BorderColor::all(palette.border))
 }
 
+/// Spawns the keeper title artwork's circuit-corner brackets inside a
+/// relatively-positioned panel: four L corners, each two hairlines
+/// meeting at the corner point, inset from the panel's edges. Panels
+/// in the menu flow (the credits screen) wear these instead of
+/// generic rounded trim, so the whole flow speaks the cover art's
+/// language. `arm` is each hairline's length in px.
+pub fn spawn_corner_brackets(
+    parent: &mut ChildSpawnerCommands,
+    color: Color,
+    inset: f32,
+    arm: f32,
+) {
+    // (horizontal anchor, vertical anchor) per corner: -1 = left/top
+    // edge, +1 = right/bottom edge.
+    for (sx, sy) in [(-1.0f32, -1.0f32), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
+        let (left, right) = if sx < 0.0 {
+            (Val::Px(inset), Val::Auto)
+        } else {
+            (Val::Auto, Val::Px(inset))
+        };
+        let (top, bottom) = if sy < 0.0 {
+            (Val::Px(inset), Val::Auto)
+        } else {
+            (Val::Auto, Val::Px(inset))
+        };
+        // Horizontal hairline along the panel's top/bottom edge.
+        parent.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left,
+                right,
+                top,
+                bottom,
+                width: Val::Px(arm),
+                height: Val::Px(2.0),
+                ..default()
+            },
+            BackgroundColor(color),
+        ));
+        // Vertical hairline along the panel's left/right edge, meeting
+        // the horizontal one at the corner point.
+        parent.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left,
+                right,
+                top,
+                bottom,
+                width: Val::Px(2.0),
+                height: Val::Px(arm),
+                ..default()
+            },
+            BackgroundColor(color),
+        ));
+    }
+}
+
 fn apply_button_palette(
     mut query: Query<(
         &Interaction,
@@ -171,10 +228,7 @@ mod tests {
     #[test]
     fn presets_keep_their_faces() {
         assert_eq!(ButtonPalette::gold().normal, neon::NEON_GOLD);
-        assert_eq!(
-            ButtonPalette::slate().normal,
-            Color::srgb(0.13, 0.15, 0.22)
-        );
+        assert_eq!(ButtonPalette::slate().normal, Color::srgb(0.13, 0.15, 0.22));
         assert_eq!(ButtonPalette::back().normal, Color::srgb(0.2, 0.2, 0.28));
     }
 }

@@ -453,7 +453,11 @@ fn ethernet_track_wins_both_levels_through_real_input() {
 // ---------------------------------------------------------------------------
 
 /// c1l2 repair path: no pre-placement, storm fires at 15 s, ride the
-/// climbing noise floor for 90 s, then hot-swap to the 12 dB amp.
+/// climbing noise floor for 90 s, then place the balanced 3 dB amp —
+/// ingress raises the floor, so its CNR (34 dB against the −26 dBmV
+/// floor) is what carries the win, not raw level. (The 12 dB amp is
+/// the trap under the specialty evaluator: Rx 17 dBmV overshoots the
+/// window — out-shouting a risen floor cooks the drop.)
 #[test]
 fn coax_storm_hot_swap_repair_wins_through_real_input() {
     let mut app = playthrough_app();
@@ -464,20 +468,24 @@ fn coax_storm_hot_swap_repair_wins_through_real_input() {
 
     advance_clock(&mut app, 20.0);
     expect_outage_active(&app);
-    // IngressNoise timer is 110 s: at 90 s the storm still rages and the
-    // floor has climbed ~9 dB, sinking the (unplaced) 3 dB answer.
+    // IngressNoise timer is 110 s: at 90 s the storm still rages and
+    // the floor has climbed ~9 dB under the (unplaced) 3 dB answer.
     tick_outage(&mut app, 90.0);
     assert_eq!(
         game_state(&app),
         GameState::OutageActive,
         "the storm must still be active at 90 s"
     );
-    tap_pill(&mut app, 1, 2, 1); // 12 dB amp: back in window
+    tap_pill(&mut app, 1, 2, 0); // 3 dB amp: CNR holds over the risen floor
     expect_results(&app, true);
 }
 
 /// m1l2 repair path: no pre-placement, storm fires at 15 s, ride the
-/// interference for 80 s, then hot-swap to the 30 dBm repeater.
+/// interference for 80 s, then place the balanced 20 dBm repeater —
+/// interference raises the SNR requirement (10 → 18 dB), and the
+/// repeater's carried SNR of ~27 dB clears it without moving the
+/// received level. (The 30 dBm repeater is the trap: Rx −58 dBm
+/// overshoots the −65 dBm window top.)
 #[test]
 fn wireless_storm_hot_swap_repair_wins_through_real_input() {
     let mut app = playthrough_app();
@@ -488,15 +496,15 @@ fn wireless_storm_hot_swap_repair_wins_through_real_input() {
 
     advance_clock(&mut app, 20.0);
     expect_outage_active(&app);
-    // WirelessInterference timer is 100 s: at 80 s the 20 dBm answer has
-    // sunk out of the window and the storm still rages.
+    // WirelessInterference timer is 100 s: at 80 s the storm still
+    // rages and the SNR bar has climbed 8 dB.
     tick_outage(&mut app, 80.0);
     assert_eq!(
         game_state(&app),
         GameState::OutageActive,
         "the storm must still be active at 80 s"
     );
-    tap_pill(&mut app, 1, 2, 1); // 30 dBm repeater: back in window
+    tap_pill(&mut app, 1, 2, 0); // 20 dBm repeater: SNR clears the risen bar
     expect_results(&app, true);
 }
 

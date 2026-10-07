@@ -27,7 +27,8 @@ impl Plugin for WarehousePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Loadout>()
             .init_resource::<WarehouseScreen>()
-            .add_systems(Startup, seed_loadout)
+            .init_resource::<wh::BackdropBag>()
+            .add_systems(Startup, (seed_loadout, seed_backdrop))
             .add_systems(OnEnter(GameState::Warehouse), reset_screen)
             .add_systems(
                 Update,
@@ -39,16 +40,6 @@ impl Plugin for WarehousePlugin {
     }
 }
 
-/// Portrait panel size. The panel is the fallback when the art is
-/// missing, so it is sized for the portrait, not for the name.
-const PORTRAIT_W: f32 = 176.0;
-const PORTRAIT_H: f32 = 235.0;
-/// Gap between the two hosts on the counter stage.
-const STAGE_GAP: f32 = 18.0;
-/// Height of the counter front painted over the hosts' lower third.
-const COUNTER_H: f32 = 62.0;
-/// How far the counter front overhangs the portrait pair, per side.
-const COUNTER_OVERHANG: f32 = 10.0;
 /// Design-width cap for full-row text (dialogue panels, questions,
 /// shop cards). Panels take the full row width up to this cap, so a
 /// window narrower than the cap shrinks them fluidly instead of the
@@ -154,6 +145,10 @@ struct WarehouseScreen {
     /// these through the pill bar INSTEAD of the old greeting panels:
     /// hosts speak as a reaction to the visit's haul, never by default.
     enter_lines: Vec<(HostId, String)>,
+    /// Backdrop on screen for this visit (index into
+    /// `warehouse::BACKDROPS`), dealt by `reset_screen` from the
+    /// persisted shuffle bag: a different scene every visit.
+    backdrop: u8,
 }
 
 impl WarehouseScreen {
@@ -166,10 +161,6 @@ impl WarehouseScreen {
 
 #[derive(Component)]
 struct WarehouseRoot;
-
-/// Tags a host portrait panel (fallback panel + name, image on top).
-#[derive(Component)]
-struct HostPortrait;
 
 /// What a Warehouse button does when pressed.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
@@ -232,11 +223,39 @@ fn seed_loadout(save: Option<Res<SaveData>>, mut loadout: ResMut<Loadout>) {
     }
 }
 
+/// Backdrop rotation from the loaded save, so the shuffle bag
+/// continues across sessions. Without a save (headless tests) the
+/// default stands.
+fn seed_backdrop(save: Option<Res<SaveData>>, mut bag: ResMut<wh::BackdropBag>) {
+    if let Some(save) = save {
+        *bag = wh::BackdropBag::from_save(&save);
+    }
+}
+
 fn reset_screen(
     mut screen: ResMut<WarehouseScreen>,
     pending_haul: Option<ResMut<crate::salvage::PendingHaul>>,
+    mut bag: ResMut<wh::BackdropBag>,
+    save: Option<ResMut<SaveData>>,
 ) {
     *screen = WarehouseScreen::default();
+    // A different backdrop every visit: deal the next scene from the
+    // shuffle bag and persist the rotation immediately, so a crash
+    // mid-visit never deals the same scene again next time.
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_nanos() as u64)
+        .unwrap_or(0x2545_F491_4F6C_DD1D);
+    bag.advance(seed);
+    screen.backdrop = bag.current();
+    if let Some(mut save) = save {
+        let (remaining, current) = bag.to_save();
+        save.warehouse_backdrop_bag = remaining;
+        save.warehouse_backdrop_current = current;
+        if let Err(e) = crate::save::save(&save) {
+            warn!("failed to save Warehouse backdrop rotation: {}", e);
+        }
+    }
     let haul = pending_haul.and_then(|mut h| h.take());
     screen.enter_lines = wh::enter_reaction(haul.as_ref());
 }
@@ -402,14 +421,6 @@ fn host_color(id: HostId) -> Color {
     }
 }
 
-/// Fallback panel color per host, shown until (or instead of) the art.
-fn panel_color(id: HostId) -> Color {
-    match id {
-        HostId::Bianca => Color::srgb(0.16, 0.12, 0.28),
-        HostId::Tessa => Color::srgb(0.30, 0.20, 0.12),
-    }
-}
-
 fn rebuild_screen(
     mut commands: Commands,
     screen: Res<WarehouseScreen>,
@@ -448,12 +459,17 @@ fn rebuild_screen(
             BackgroundColor(Color::srgb(0.05, 0.05, 0.12)),
         ))
         .with_children(|root| {
-            // Scene backdrop: the FST warehouse interior (generated
-            // art with no hosts in it — Bianca and Tessa are composited
-            // in front of it on the stage). A translucent scrim keeps
+            // Scene backdrop: this visit's interior from the
+            // rotation pool — Bianca and Tessa are IN the artwork
+            // (working the bench, the tester, the shelves), never
+            // composited portrait cards. A translucent scrim keeps
             // text readable over the art; the root's flat color above
-            // is the pre-load fallback, and a missing file just leaves
-            // the flat screen, as with the portraits.
+            // is the pre-load fallback, and a missing file just
+            // leaves the flat screen.
+            let backdrop_path = wh::BACKDROPS
+                .get(screen.backdrop as usize)
+                .copied()
+                .unwrap_or(wh::BACKDROPS[0]);
             root.spawn((
                 Node {
                     position_type: PositionType::Absolute,
@@ -461,7 +477,7 @@ fn rebuild_screen(
                     height: Val::Percent(100.0),
                     ..default()
                 },
-                ImageNode::new(asset_server.load("art/warehouse_backdrop.jpg")),
+                ImageNode::new(asset_server.load(backdrop_path)),
             ));
             root.spawn((
                 Node {
@@ -488,13 +504,9 @@ fn rebuild_screen(
                     justify: Justify::Center,
                 },
             );
-            root.spawn(text(
-                &fonts.medium,
-                format!("Cores: {}", cores.0),
-                18.0,
-                NEON_GOLD,
-            ));
-            spawn_stage(root, &fonts, &asset_server);
+            // No Cores balance up here: the balance appears only
+            // where money moves (the Shop, cannot-afford replies) —
+            // see `spawn_shop`.
             match screen.mode {
                 Mode::Shelf => spawn_shelf(root, &fonts, &asset_server, save, &screen),
                 Mode::Learn => spawn_learn(root, &fonts, &asset_server, &screen),
@@ -562,94 +574,6 @@ fn spawn_row(parent: &mut ChildSpawnerCommands, build: impl FnOnce(&mut ChildSpa
         .with_children(build);
 }
 
-/// Host portrait over a solid fallback panel. The panel always
-/// renders; the image covers it once it loads. A missing file is
-/// logged by the asset server and never draws, leaving the panel:
-/// art lands separately, and its absence is not a crash. Names are
-/// not on the panel — they sit on the counter front (see
-/// `spawn_stage`).
-fn spawn_portrait(
-    parent: &mut ChildSpawnerCommands,
-    asset_server: &AssetServer,
-    id: HostId,
-) {
-    let host = wh::host(id);
-    parent
-        .spawn((
-            HostPortrait,
-            Node {
-                width: Val::Px(PORTRAIT_W),
-                height: Val::Px(PORTRAIT_H),
-                flex_shrink: 0.0,
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::FlexEnd,
-                ..default()
-            },
-            BackgroundColor(panel_color(id)),
-        ))
-        .with_children(|panel| {
-            panel.spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    ..default()
-                },
-                ImageNode::new(asset_server.load(host.portrait)),
-            ));
-        });
-}
-
-/// The Emporium beat: Bianca and Tessa side by side behind the
-/// service counter, in frame for every mode — dialogue included. The
-/// counter front spawns after the portraits so it paints over their
-/// lower thirds; a gold trim line runs along its top edge and each
-/// host's name plate sits on the counter in front of her.
-fn spawn_stage(
-    parent: &mut ChildSpawnerCommands,
-    fonts: &UiFonts,
-    asset_server: &AssetServer,
-) {
-    parent
-        .spawn(Node {
-            flex_direction: FlexDirection::Row,
-            column_gap: Val::Px(STAGE_GAP),
-            ..default()
-        })
-        .with_children(|stage| {
-            spawn_portrait(stage, asset_server, HostId::Bianca);
-            spawn_portrait(stage, asset_server, HostId::Tessa);
-            stage
-                .spawn((
-                    Node {
-                        position_type: PositionType::Absolute,
-                        left: Val::Px(-COUNTER_OVERHANG),
-                        right: Val::Px(-COUNTER_OVERHANG),
-                        bottom: Val::Px(0.0),
-                        height: Val::Px(COUNTER_H),
-                        border: UiRect::top(Val::Px(3.0)),
-                        flex_direction: FlexDirection::Row,
-                        justify_content: JustifyContent::SpaceAround,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.07, 0.06, 0.09)),
-                    BorderColor::all(NEON_GOLD),
-                ))
-                .with_children(|counter| {
-                    for id in [HostId::Bianca, HostId::Tessa] {
-                        let host = wh::host(id);
-                        counter.spawn(text(&fonts.medium, host.name, 15.0, host_color(id)));
-                    }
-                });
-        });
-}
-
-/// A host speaking: a dialogue panel under the stage, where both
-/// hosts stay in frame behind the counter. The speaker is identified
-/// by the name line and the host-colored accent on the panel's left
-/// edge — the Emporium arrangement: the characters hold the shot,
-/// the box carries the words.
 /// Resolve a host line to its universal pill presentation (speaker
 /// face + name + talking text surface). Every host line in the
 /// Warehouse goes through this — no bare-text speech.
@@ -660,8 +584,9 @@ fn pill_presentation(id: HostId, line: &str) -> crate::waifu::pill::PillPresenta
 /// A host speaking: the universal pill as an in-flow bar — square
 /// mugshot window at the left end carrying the speaker's close-up,
 /// name + line to its right, rounded bar anchored in the content
-/// column under the stage (both hosts stay in frame behind the
-/// counter). Same presentation data as the in-level pill.
+/// column. The hosts themselves live in the backdrop artwork; the
+/// mugshot carries the speaker's face. Same presentation data as
+/// the in-level pill.
 fn spawn_host_line(
     parent: &mut ChildSpawnerCommands,
     fonts: &UiFonts,
@@ -1013,6 +938,15 @@ fn spawn_shop(
             .to_owned(),
     ));
     spawn_host_line(root, fonts, asset_server, host, &line);
+    // The balance lives only where money moves: here in the Shop
+    // (and in the hosts' cannot-afford replies), never in the
+    // screen header or the other modes.
+    root.spawn(text(
+        &fonts.medium,
+        format!("Cores: {balance}"),
+        16.0,
+        NEON_GOLD,
+    ));
     for item in wh::SHOP {
         root.spawn(Node {
             flex_direction: FlexDirection::Column,
@@ -1332,19 +1266,20 @@ mod tests {
             let path = assets.join(host.portrait);
             assert!(path.is_file(), "host portrait missing: {}", path.display());
         }
-        let backdrop = assets.join("art/warehouse_backdrop.jpg");
-        assert!(
-            backdrop.is_file(),
-            "warehouse backdrop missing: {}",
-            backdrop.display()
-        );
+        for backdrop in wh::BACKDROPS {
+            let path = assets.join(backdrop);
+            assert!(
+                path.is_file(),
+                "warehouse backdrop missing: {}",
+                path.display()
+            );
+        }
     }
 
-    #[test]
-    fn missing_portraits_fall_back_to_panels_without_panicking() {
-        // No portrait art exists in this tree and no image loader is
-        // registered, so every portrait load fails: the screen must still
-        // build, with a panel per host.
+    /// An App wired the way the missing-art tests need: no image
+    /// loader registered, so every art load fails and the screen
+    /// must degrade to its flat fallbacks, never crash.
+    fn warehouse_app() -> App {
         let mut app = App::new();
         app.add_plugins((
             MinimalPlugins,
@@ -1358,17 +1293,108 @@ mod tests {
         app.init_resource::<Cores>();
         app.insert_resource(crate::audio::Sfx::for_tests());
         app.add_plugins(WarehousePlugin);
+        app
+    }
+
+    fn enter_warehouse(app: &mut App) {
         app.world_mut()
             .resource_mut::<NextState<GameState>>()
             .set(GameState::Warehouse);
         for _ in 0..5 {
             app.update();
         }
+    }
+
+    #[test]
+    fn scene_builds_with_the_hosts_in_the_artwork_not_on_cards() {
+        let mut app = warehouse_app();
+        enter_warehouse(&mut app);
         let world = app.world_mut();
-        let panels = world
-            .query_filtered::<(), With<HostPortrait>>()
+        let roots = world
+            .query_filtered::<(), With<WarehouseRoot>>()
             .iter(world)
             .count();
-        assert_eq!(panels, 2, "one fallback panel per host on the shelf");
+        assert_eq!(roots, 1, "the warehouse scene builds on entry");
+    }
+
+    #[test]
+    fn every_backdrop_in_the_pool_can_be_dealt_to_the_scene() {
+        // Deal each pool index to the bag the way a save would carry
+        // it, enter the Warehouse, and the visit must come up
+        // showing exactly that scene. (That every pool path exists
+        // on disk is pinned by
+        // `warehouse_art_paths_exist_in_the_game_asset_tree`.)
+        for idx in 0..wh::BACKDROPS.len() as u8 {
+            let mut app = warehouse_app();
+            let save = SaveData {
+                warehouse_backdrop_bag: vec![idx],
+                warehouse_backdrop_current: (idx + 1) % wh::BACKDROPS.len() as u8,
+                ..SaveData::default()
+            };
+            app.insert_resource(wh::BackdropBag::from_save(&save));
+            enter_warehouse(&mut app);
+            assert_eq!(
+                app.world().resource::<WarehouseScreen>().backdrop,
+                idx,
+                "the visit must deal backdrop {idx}"
+            );
+        }
+    }
+
+    #[test]
+    fn warehouse_scene_has_no_portrait_cards_in_source() {
+        // The portrait-card stage is retired by design (the hosts
+        // live in the backdrop artwork). Pin its absence so the
+        // cards cannot creep back in a future scene edit. Needles
+        // are built with `concat!` so this test's own source does
+        // not contain them.
+        let src = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/states/warehouse.rs"),
+        )
+        .expect("states/warehouse.rs readable");
+        for retired in [
+            concat!("spawn_", "stage"),
+            concat!("spawn_", "portrait"),
+            concat!("Host", "Portrait"),
+        ] {
+            assert!(!src.contains(retired), "{retired} must stay retired");
+        }
+        assert!(
+            src.contains("wh::BACKDROPS"),
+            "the scene must draw its backdrop from the rotation pool"
+        );
+    }
+
+    #[test]
+    fn cores_balance_appears_only_in_the_shop_in_source() {
+        // Matt's direction: the balance shows only where money
+        // moves. Pin: exactly one balance render in this screen's
+        // source, and it lives inside `spawn_shop`. (The test's own
+        // literals escape their quotes, so they never self-match.)
+        let src = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/states/warehouse.rs"),
+        )
+        .expect("states/warehouse.rs readable");
+        assert_eq!(
+            src.matches("format!(\"Cores:").count(),
+            1,
+            "exactly one Cores balance render may exist"
+        );
+        let shop_start = src.find("fn spawn_shop").expect("spawn_shop exists");
+        let balance_at = src
+            .find("format!(\"Cores:")
+            .expect("the balance render exists");
+        let shop_end = src[shop_start..]
+            .find("fn teardown_warehouse")
+            .map(|at| at + shop_start)
+            .expect("teardown_warehouse exists");
+        assert!(
+            shop_start < balance_at && balance_at < shop_end,
+            "the balance render must live inside spawn_shop"
+        );
+        assert!(
+            !src.contains("format!(\"Cores: {}\", cores.0)"),
+            "the old header balance render must stay retired"
+        );
     }
 }

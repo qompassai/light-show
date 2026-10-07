@@ -83,6 +83,17 @@ pub struct SaveData {
     /// Warehouse consumables carried, by item id; duplicates are the count.
     #[serde(default)]
     pub consumables: Vec<String>,
+    /// Warehouse backdrop shuffle bag: indices into
+    /// `warehouse::BACKDROPS` not yet shown this cycle, in the order
+    /// they were bagged (drawn from the end). Persisted so the
+    /// no-repeat rotation survives restarts. `serde(default)` keeps
+    /// pre-rotation saves loading; an empty bag refills on entry.
+    /// Contents are untrusted input — the bag sanitizes on load.
+    #[serde(default)]
+    pub warehouse_backdrop_bag: Vec<u8>,
+    /// Backdrop index on screen at the last Warehouse visit.
+    #[serde(default)]
+    pub warehouse_backdrop_current: u8,
 }
 
 impl Default for SaveData {
@@ -96,6 +107,8 @@ impl Default for SaveData {
             owned_gear: Vec::new(),
             warehouse_quiz_passed: Vec::new(),
             consumables: Vec::new(),
+            warehouse_backdrop_bag: Vec::new(),
+            warehouse_backdrop_current: 0,
         }
     }
 }
@@ -353,6 +366,15 @@ fn validate(data: &mut SaveData) {
     data.consumables
         .retain(|id| !id.is_empty() && id.len() <= 32);
     data.consumables.truncate(CONSUMABLES_MAX);
+    // Backdrop rotation: indices must name pool entries, each at most
+    // once (draw order is meaningful, so no sort); current in range.
+    let backdrop_count = crate::warehouse::BACKDROPS.len() as u8;
+    let mut seen = HashSet::new();
+    data.warehouse_backdrop_bag
+        .retain(|&idx| idx < backdrop_count && seen.insert(idx));
+    if data.warehouse_backdrop_current >= backdrop_count {
+        data.warehouse_backdrop_current = 0;
+    }
 }
 
 /// Upper bound on carried consumables across all kinds: every shop

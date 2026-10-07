@@ -561,6 +561,9 @@ mod tests {
             endpoint_poe_draw_w: None,
             required_bandwidth_mbps: None,
             max_segment_length_m: None,
+            coax_noise_floor_dbmv: None,
+            min_carrier_to_noise_db: None,
+            min_snr_db: None,
             nodes: vec![
                 LevelNode {
                     id: 0,

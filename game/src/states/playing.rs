@@ -39,6 +39,10 @@ impl Plugin for PlayingPlugin {
                 )
                     .chain(),
             )
+            // Leaving a run restores the home camera framing the menu
+            // and results expect (see `restore_home_framing`).
+            .add_systems(OnEnter(GameState::Results), restore_home_framing)
+            .add_systems(OnEnter(GameState::MainMenu), restore_home_framing)
             // Board teardown moved off `OnExit(Playing)`: that would also
             // fire on every Playing -> OutageActive transition (the board
             // and ledger UI need to stay alive and interactive through an
@@ -120,8 +124,11 @@ pub struct LevelClock {
 // for the same tradeoff).
 /// Seconds to lerp the persistent camera to the board framing (Finding 3).
 const CAMERA_LERP_SECS: f32 = 0.5;
-/// Board framing: nodes sit around y=300 in world space; centering at
-/// y=200 keeps the board clear of the briefing text at the top.
+/// The home framing: where the camera rests outside a level (menu,
+/// results) — centered horizontally at 1:1, raised so the board's
+/// upper rows sit mid-frame with the briefing text clear at the top.
+/// Levels ease from here to their fit framing and back (see
+/// `board::board_framing` and `restore_home_framing`).
 const BOARD_CAM_POS: Vec3 = Vec3::new(0.0, 200.0, 0.0);
 
 /// Persistent-camera lerp marker (Finding 3). Inserted on the existing
@@ -131,6 +138,8 @@ const BOARD_CAM_POS: Vec3 = Vec3::new(0.0, 200.0, 0.0);
 struct CameraLerp {
     from: Vec3,
     to: Vec3,
+    from_scale: f32,
+    to_scale: f32,
     elapsed_secs: f32,
 }
 
@@ -139,17 +148,48 @@ struct CameraLerp {
 fn lerp_camera(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Transform, &mut CameraLerp)>,
+    mut query: Query<(Entity, &mut Transform, &mut Projection, &mut CameraLerp)>,
 ) {
-    for (entity, mut transform, mut lerp) in &mut query {
+    for (entity, mut transform, mut projection, mut lerp) in &mut query {
         lerp.elapsed_secs += time.delta_secs();
         let t = (lerp.elapsed_secs / CAMERA_LERP_SECS).clamp(0.0, 1.0);
-        transform.translation = lerp
-            .from
-            .lerp(lerp.to, EaseFunction::CubicInOut.sample_clamped(t));
+        let eased = EaseFunction::CubicInOut.sample_clamped(t);
+        transform.translation = lerp.from.lerp(lerp.to, eased);
+        // The fit framing's zoom eases with the glide, so entering a
+        // wide level feels like pulling back, not a cut.
+        if let Projection::Orthographic(ortho) = &mut *projection {
+            ortho.scale = lerp.from_scale + (lerp.to_scale - lerp.from_scale) * eased;
+        }
         if t >= 1.0 {
             transform.translation = lerp.to;
+            if let Projection::Orthographic(ortho) = &mut *projection {
+                ortho.scale = lerp.to_scale;
+            }
             commands.entity(entity).remove::<CameraLerp>();
+        }
+    }
+}
+
+/// Eases the camera back to the home framing (`BOARD_CAM_POS` at
+/// 1:1) after a level's fit zoom, on the ways out of a run (Results,
+/// or straight back to the menu). A no-op when the camera is already
+/// home, so arrivals that never entered a level keep today's exact
+/// behavior — no drift on the first menu entry or picker round-trips.
+fn restore_home_framing(
+    mut commands: Commands,
+    cameras: Query<(Entity, &Transform, &Projection), With<Camera>>,
+) {
+    if let Ok((entity, transform, projection)) = cameras.single() {
+        if let Projection::Orthographic(ortho) = projection {
+            if (ortho.scale - 1.0).abs() > 0.001 {
+                commands.entity(entity).insert(CameraLerp {
+                    from: transform.translation,
+                    to: BOARD_CAM_POS,
+                    from_scale: ortho.scale,
+                    to_scale: 1.0,
+                    elapsed_secs: 0.0,
+                });
+            }
         }
     }
 }
@@ -164,30 +204,56 @@ fn setup_level(
     mut active_outage: ResMut<ActiveOutage>,
     asset_server: Res<AssetServer>,
     mut companions: Query<(Entity, &mut crate::waifu::CompanionSprite)>,
-    cameras: Query<(Entity, &Transform), With<Camera>>,
+    cameras: Query<(Entity, &Transform, &Projection), With<Camera>>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
+    let level_def = level::load_level(index.0);
+
+    // Fit framing (playtest round 2): the board is laid out in fixed
+    // world coordinates and most levels are wider than the window, so
+    // the historical fixed framing bled nodes and labels off the
+    // edges. `board::board_framing` centers the camera on the level
+    // and zooms out (never in) until the whole board fits this window.
+    // Falls back to the 720x1280 design resolution when no window
+    // exists (unit tests).
+    let (win_w, win_h) = windows
+        .single()
+        .map(|w| (w.width(), w.height()))
+        .unwrap_or((720.0, 1280.0));
+    let framing = board::board_framing(&level_def, Vec2::new(win_w, win_h));
+    let cam_target = Vec3::new(framing.center.x, framing.center.y, 0.0);
+
     // Persistent camera (Finding 3): the MainMenu camera is a plain
     // Camera2dBundle, identical to what was spawned here before, so the
     // Android framing fix (verified 2026-09-30) is preserved — only the
     // despawn/respawn cut is gone, replaced by a 0.5s ease to the board
-    // framing.
+    // framing (now the level's fit framing: center + zoom).
     match cameras.single() {
-        Ok((entity, transform)) => {
-            let from = transform.translation;
+        Ok((entity, transform, projection)) => {
+            let from_scale = match projection {
+                Projection::Orthographic(ortho) => ortho.scale,
+                _ => 1.0,
+            };
             commands.entity(entity).insert(CameraLerp {
-                from,
-                to: BOARD_CAM_POS,
+                from: transform.translation,
+                to: cam_target,
+                from_scale,
+                to_scale: framing.scale,
                 elapsed_secs: 0.0,
             });
         }
         Err(_) => {
             // Defensive: no camera exists (the menu always spawns one, so
-            // this shouldn't happen). Spawn directly at the board framing.
-            commands.spawn((Camera2d, Transform::from_translation(BOARD_CAM_POS)));
+            // this shouldn't happen). Spawn directly at the fit framing.
+            let mut projection = OrthographicProjection::default_2d();
+            projection.scale = framing.scale;
+            commands.spawn((
+                Camera2d,
+                Projection::Orthographic(projection),
+                Transform::from_translation(cam_target),
+            ));
         }
     }
-    let level_def = level::load_level(index.0);
 
     placed.0.clear();
     clock.elapsed_seconds = 0.0;
@@ -206,11 +272,17 @@ fn setup_level(
     live.wavelength = WavelengthWrapper(level_def.wavelength.into());
     live.tx_dbm = level_def.tx_dbm;
 
-    // Half the window width in world units (camera zoom is 1:1): keeps
-    // node-label plates on screen. Falls back to the 720-wide design
-    // resolution when no window exists (unit tests).
-    let half_w = windows.single().map(|w| w.width() * 0.5).unwrap_or(360.0);
-    board::spawn_board_from_level(&mut commands, &level_def, &asset_server, half_w);
+    // Half the visible width in world units — the window width
+    // widened by the fit zoom — plus the view's center: together they
+    // keep node-label plates inside the framed view.
+    let half_w = win_w * 0.5 * framing.scale;
+    board::spawn_board_from_level(
+        &mut commands,
+        &level_def,
+        &asset_server,
+        half_w,
+        framing.center.x,
+    );
     // Signals the on-device instrumentation tests (android/app/src/androidTest)
     // that the board has finished spawning and is ready to receive touch
     // input — they poll Logcat for this line before injecting gestures.

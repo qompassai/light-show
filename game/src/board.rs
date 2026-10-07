@@ -595,6 +595,7 @@ fn layout_node_labels(
     requests: &[LabelRequest],
     pill_centers: &[Vec2],
     half_w: f32,
+    view_center_x: f32,
 ) -> Vec<LabelPlacement> {
     let mut placed: Vec<LabelPlacement> = Vec::with_capacity(requests.len());
     for (i, req) in requests.iter().enumerate() {
@@ -625,11 +626,17 @@ fn layout_node_labels(
         let mut best_center = req.pos;
         let mut best_score = usize::MAX;
         for offset in &candidates {
-            // Clamp before scoring: a plate wider than the visible area
-            // centers at x = 0 instead of clipping one edge.
-            let max_cx = (half_w - LABEL_EDGE_MARGIN - half.x).max(0.0);
+            // Clamp before scoring, into the visible band around the
+            // camera's center (the fit framing can center the view away
+            // from x = 0 on wide levels): a plate wider than the
+            // visible area centers on the view instead of clipping
+            // one edge.
+            let max_dx = (half_w - LABEL_EDGE_MARGIN - half.x).max(0.0);
             let raw = req.pos + *offset;
-            let center = Vec2::new(raw.x.clamp(-max_cx, max_cx), raw.y);
+            let center = Vec2::new(
+                raw.x.clamp(view_center_x - max_dx, view_center_x + max_dx),
+                raw.y,
+            );
             let mut score = 0;
             // Other nodes' rings are solid; the node's own ring is
             // excluded — every candidate clears its visible band by
@@ -672,8 +679,9 @@ fn layout_node_labels(
 /// Spawns the board's node-label entities and the ledger overlay text.
 /// Plain function (not a system) so it can be called synchronously from
 /// the `OnEnter(Playing)` setup system, right after loading the level.
-/// `half_w` is half the window width in world units (camera zoom is 1:1),
-/// used to keep label plates on screen.
+/// `half_w` is half the visible width in world units (window width x
+/// the fit framing's camera scale) and `view_center_x` is the world x
+/// the camera centers on — together they keep label plates on screen.
 ///
 /// The briefing panel carries the level's instructional text ONLY.
 /// Companion flavor lines (the level's `on_enter_line` key into the
@@ -686,6 +694,7 @@ pub fn spawn_board_from_level(
     level: &LevelDef,
     asset_server: &AssetServer,
     half_w: f32,
+    view_center_x: f32,
 ) {
     let label_font: Handle<Font> = asset_server.load(crate::fonts::DISPLAY);
     let body_font: Handle<Font> = asset_server.load(crate::fonts::BODY);
@@ -794,7 +803,8 @@ pub fn spawn_board_from_level(
                     }
                 })
                 .collect();
-            let label_layouts = layout_node_labels(&label_requests, &pill_centers, half_w);
+            let label_layouts =
+                layout_node_labels(&label_requests, &pill_centers, half_w, view_center_x);
             for ((node, req), layout) in level
                 .nodes
                 .iter()
@@ -1230,6 +1240,81 @@ fn board_backdrop_frame(level: &LevelDef) -> (Vec2, Vec2) {
     (center, BOARD_BG_NATIVE * scale)
 }
 
+/// Horizontal clearance kept on each side of the node extents in the
+/// fit frame: node rings (26) plus room for side-placed label plates.
+const FIT_SIDE_PAD: f32 = 160.0;
+/// Clearance below the lowest node: its below-labels (~128) plus the
+/// ledger overlay and companion zone at the screen's foot.
+const FIT_BOTTOM_PAD: f32 = 260.0;
+/// Clearance above the highest node before the briefing allowance:
+/// its above-labels at the far stagger (~128) plus a small gap.
+const FIT_TOP_LABEL_PAD: f32 = 140.0;
+/// Screen-space height (px) the briefing panel may occupy; converted
+/// to world units at the candidate camera scale, since the panel is
+/// UI and does not shrink when the camera zooms out. Long briefings
+/// wrap to roughly this height at phone widths.
+const FIT_BRIEFING_PX: f32 = 240.0;
+
+/// The camera framing a level needs: where to center, and the
+/// orthographic scale (world units per screen pixel, >= 1.0) at which
+/// the whole board fits the window.
+///
+/// Why this exists: the board is laid out in fixed world coordinates
+/// (200-unit grid) and the camera used to sit at 1:1 on a fixed point,
+/// so any level wider than the window bled off the edges — most
+/// levels span 800 world units against a 720-wide design window, and
+/// Clara's span 1200. The playtest saw the bleed as clipped node
+/// labels at the screen edges (worst behind the briefing panel, which
+/// overlays the top of the view). Zooming out to fit — never in —
+/// keeps every node, pill, and label reachable at any window size;
+/// levels that already fit keep the historical 1:1 framing.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BoardFraming {
+    pub center: Vec2,
+    pub scale: f32,
+}
+
+/// The orthographic scale at which `required` (world units) fits
+/// `window` (screen px) on both axes. Never below 1.0: fitting only
+/// ever zooms out.
+pub fn fit_scale(required: Vec2, window: Vec2) -> f32 {
+    (required.x / window.x).max(required.y / window.y).max(1.0)
+}
+
+/// Computes the fit framing for `level` at the given window size.
+///
+/// The required frame is the node extents padded by the fit margins;
+/// the briefing allowance is scale-dependent (the panel is fixed-size
+/// UI eating world space), so the scale is solved in two passes: a
+/// first scale from label-only headroom, then the final scale with
+/// the panel's world-space height folded into the top pad.
+pub fn board_framing(level: &LevelDef, window: Vec2) -> BoardFraming {
+    let mut min = Vec2::splat(f32::MAX);
+    let mut max = Vec2::splat(f32::MIN);
+    for node in &level.nodes {
+        let p = grid_to_world(node.grid_x, node.grid_y);
+        min = min.min(p);
+        max = max.max(p);
+    }
+    if level.nodes.is_empty() {
+        min = Vec2::new(-600.0, -800.0);
+        max = Vec2::new(600.0, 1000.0);
+    }
+    let frame = |top_pad: f32| {
+        let lo = Vec2::new(min.x - FIT_SIDE_PAD, min.y - FIT_BOTTOM_PAD);
+        let hi = Vec2::new(max.x + FIT_SIDE_PAD, max.y + top_pad);
+        ((lo + hi) / 2.0, hi - lo)
+    };
+    let (_, size) = frame(FIT_TOP_LABEL_PAD);
+    let first = fit_scale(size, window);
+    let top_pad = FIT_TOP_LABEL_PAD + FIT_BRIEFING_PX * first;
+    let (center, size) = frame(top_pad);
+    BoardFraming {
+        center,
+        scale: first.max(fit_scale(size, window)),
+    }
+}
+
 /// Largest number of signal pulses alive at once — one per lit edge in
 /// the worst case. A dense level can't grow an unbounded sprite fleet.
 const MAX_SIGNAL_PULSES: usize = 24;
@@ -1447,6 +1532,9 @@ mod tests {
             endpoint_poe_draw_w: None,
             required_bandwidth_mbps: None,
             max_segment_length_m: None,
+            coax_noise_floor_dbmv: None,
+            min_carrier_to_noise_db: None,
+            min_snr_db: None,
             nodes,
             fixed_edges,
             available_components,
@@ -2528,7 +2616,7 @@ mod tests {
         ];
         let pills = vec![Vec2::new(100.0, 265.0), Vec2::new(100.0, 335.0)];
         let half_w = 450.0; // Matt's phone screenshot width / 2
-        let placed = layout_node_labels(&requests, &pills, half_w);
+        let placed = layout_node_labels(&requests, &pills, half_w, 0.0);
         assert_eq!(placed.len(), 3);
         for (i, placement) in placed.iter().enumerate() {
             let half = placement.plate * 0.5;
@@ -2579,7 +2667,7 @@ mod tests {
             label: "Customer Drop",
             prefer_above: true,
         }];
-        let placed = layout_node_labels(&requests, &[], 450.0);
+        let placed = layout_node_labels(&requests, &[], 450.0, 0.0);
         assert_eq!(placed.len(), 1);
         let half = placed[0].plate * 0.5;
         assert!(
@@ -2604,7 +2692,7 @@ mod tests {
             label: &long_label,
             prefer_above: true,
         }];
-        let placed = layout_node_labels(&requests, &[], 200.0);
+        let placed = layout_node_labels(&requests, &[], 200.0, 0.0);
         assert!(
             placed[0].center.x.abs() < 0.01,
             "oversize plate should center, got {}",
@@ -2628,7 +2716,7 @@ mod tests {
                 prefer_above: false,
             },
         ];
-        let placed = layout_node_labels(&requests, &[], 450.0);
+        let placed = layout_node_labels(&requests, &[], 450.0, 0.0);
         assert!(
             placed[0].center.y > 300.0,
             "even row should sit above, got {}",
@@ -2660,8 +2748,8 @@ mod tests {
             },
         ];
         let pills = vec![Vec2::new(100.0, 265.0), Vec2::new(100.0, 335.0)];
-        let a = layout_node_labels(&requests, &pills, 450.0);
-        let b = layout_node_labels(&requests, &pills, 450.0);
+        let a = layout_node_labels(&requests, &pills, 450.0, 0.0);
+        let b = layout_node_labels(&requests, &pills, 450.0, 0.0);
         assert_eq!(a, b);
     }
 
@@ -2673,6 +2761,117 @@ mod tests {
         assert!(rect_hits_circle(center, half, Vec2::new(60.0, 0.0), 15.0));
         assert!(!rect_hits_circle(center, half, Vec2::new(200.0, 0.0), 15.0));
         assert!(!rect_hits_circle(center, half, Vec2::new(0.0, 100.0), 15.0));
+    }
+
+    // -- Camera fit framing (playtest round 2: nothing bleeds off-window) --
+
+    #[test]
+    fn fit_scale_never_zooms_in() {
+        // A board smaller than the window keeps the historical 1:1.
+        assert_eq!(
+            fit_scale(Vec2::new(400.0, 600.0), Vec2::new(720.0, 1280.0)),
+            1.0
+        );
+        // An exact fit is still 1:1.
+        assert_eq!(
+            fit_scale(Vec2::new(720.0, 1280.0), Vec2::new(720.0, 1280.0)),
+            1.0
+        );
+    }
+
+    #[test]
+    fn fit_scale_grows_with_the_tight_axis() {
+        // Width-bound: 1440 world units into a 720 window.
+        assert_eq!(
+            fit_scale(Vec2::new(1440.0, 600.0), Vec2::new(720.0, 1280.0)),
+            2.0
+        );
+        // Height-bound: 2560 world units into a 1280 window.
+        assert_eq!(
+            fit_scale(Vec2::new(400.0, 2560.0), Vec2::new(720.0, 1280.0)),
+            2.0
+        );
+    }
+
+    /// The playtest fit check, pinned as a test: at the narrow (~650)
+    /// and wide (~1300) window widths, plus the 720 design width,
+    /// every shipped level's nodes — and their furthest label
+    /// extremes — sit inside the framed view. Before the fit framing,
+    /// any level wider than the window (most of them) bled nodes and
+    /// label fragments off the edges.
+    #[test]
+    fn every_shipped_level_fits_at_playtest_window_widths() {
+        let windows = [
+            Vec2::new(650.0, 1156.0),
+            Vec2::new(720.0, 1280.0),
+            Vec2::new(1300.0, 1280.0),
+        ];
+        let label_reach = LABEL_FAR_DY + 16.0; // far stagger + plate half
+        for i in 0..crate::level::LEVEL_SOURCES.len() {
+            let level = crate::level::load_level(i);
+            for window in windows {
+                let framing = board_framing(&level, window);
+                assert!(
+                    framing.scale >= 1.0,
+                    "{}: fit must never zoom in (scale {})",
+                    level.id,
+                    framing.scale
+                );
+                let half_view = window * framing.scale * 0.5;
+                for node in &level.nodes {
+                    let p = grid_to_world(node.grid_x, node.grid_y);
+                    assert!(
+                        (p.x - framing.center.x).abs() <= half_view.x + 0.5,
+                        "{}: node ({}, {}) outside the framed view at {window:?} \
+                         (center {}, half {})",
+                        level.id,
+                        node.grid_x,
+                        node.grid_y,
+                        framing.center.x,
+                        half_view.x
+                    );
+                    assert!(
+                        p.y + label_reach <= framing.center.y + half_view.y + 0.5
+                            && p.y - label_reach >= framing.center.y - half_view.y - 0.5,
+                        "{}: node ({}, {}) label reach escapes the framed view \
+                         at {window:?}",
+                        level.id,
+                        node.grid_x,
+                        node.grid_y
+                    );
+                }
+            }
+        }
+    }
+
+    /// The first level at the design window keeps the historical 1:1
+    /// framing — the fit must not shrink boards that already fit.
+    #[test]
+    fn the_first_level_keeps_its_1_to_1_framing() {
+        let level = crate::level::load_level(0);
+        let framing = board_framing(&level, Vec2::new(720.0, 1280.0));
+        assert_eq!(framing.scale, 1.0);
+    }
+
+    /// The widest shipped content (Clara's seven-column levels) is the
+    /// case that bled hardest: at the narrow playtest width it must
+    /// zoom out substantially and still contain its extreme nodes.
+    #[test]
+    fn the_widest_levels_zoom_out_and_fit_at_the_narrow_width() {
+        let mut widest: Option<(String, f32, BoardFraming)> = None;
+        for i in 0..crate::level::LEVEL_SOURCES.len() {
+            let level = crate::level::load_level(i);
+            let framing = board_framing(&level, Vec2::new(650.0, 1156.0));
+            let beats = widest.as_ref().is_none_or(|(_, s, _)| framing.scale > *s);
+            if beats {
+                widest = Some((level.id.clone(), framing.scale, framing));
+            }
+        }
+        let (id, scale, _) = widest.expect("at least one level exists");
+        assert!(
+            scale > 1.5,
+            "the widest level ({id}) should need real zoom-out at 650 px, got {scale}"
+        );
     }
 }
 

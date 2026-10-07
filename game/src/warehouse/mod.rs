@@ -73,6 +73,115 @@ pub fn host(id: HostId) -> &'static Host {
     host
 }
 
+/// The Warehouse backdrop pool: generated interiors with Bianca and
+/// Tessa IN the artwork — the hosts are never composited portrait
+/// cards. The scene rotates through the pool with a shuffle bag
+/// (`BackdropBag`): a different backdrop each visit, no repeat until
+/// the pool cycles. Paths are relative to the game asset root; the
+/// index into this table is the rotation's currency (save fields,
+/// `BackdropBag`, the scene), so entries are never reordered, only
+/// appended.
+pub const BACKDROPS: [&str; 5] = [
+    "art/warehouse_backdrop_1.jpg",
+    "art/warehouse_backdrop_2.jpg",
+    "art/warehouse_backdrop_3.jpg",
+    "art/warehouse_backdrop_4.jpg",
+    "art/warehouse_backdrop_5.jpg",
+];
+
+/// Shuffle-bag rotation over `BACKDROPS`. A Bevy resource on the
+/// screen side: seeded from the save at startup, advanced once per
+/// Warehouse entry, and mirrored back into the save by the screen so
+/// the rotation survives restarts.
+///
+/// Invariants: `remaining` holds each pool index at most once, all
+/// `< BACKDROPS.len()`; `current` is always a valid index. Every
+/// block of `BACKDROPS.len()` consecutive draws is a permutation of
+/// the pool, and two consecutive draws never match — not even across
+/// a reshuffle, because a refill's first draw is swapped away from
+/// the outgoing `current`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Resource)]
+pub struct BackdropBag {
+    /// Indices not yet shown this cycle; drawn from the end.
+    remaining: Vec<u8>,
+    /// Backdrop on screen now (index into `BACKDROPS`).
+    current: u8,
+}
+
+impl BackdropBag {
+    /// From persisted fields. The save is untrusted input: unknown
+    /// indices are dropped, duplicates collapse, and an out-of-range
+    /// current resets to the first backdrop.
+    pub fn from_save(save: &SaveData) -> Self {
+        let count = BACKDROPS.len() as u8;
+        let mut seen = std::collections::HashSet::new();
+        let remaining: Vec<u8> = save
+            .warehouse_backdrop_bag
+            .iter()
+            .copied()
+            .filter(|&idx| idx < count && seen.insert(idx))
+            .collect();
+        let current = if save.warehouse_backdrop_current < count {
+            save.warehouse_backdrop_current
+        } else {
+            0
+        };
+        Self { remaining, current }
+    }
+
+    /// Persisted form: (bag in bagged order, current index).
+    pub fn to_save(&self) -> (Vec<u8>, u8) {
+        (self.remaining.clone(), self.current)
+    }
+
+    /// Backdrop on screen now (index into `BACKDROPS`).
+    pub fn current(&self) -> u8 {
+        self.current
+    }
+
+    /// Asset path of the backdrop on screen now.
+    pub fn current_path(&self) -> &'static str {
+        BACKDROPS[self.current as usize]
+    }
+
+    /// Move to the next backdrop and return its index, refilling and
+    /// reshuffling the bag when it runs dry. `seed` only stirs the
+    /// shuffle; the no-repeat invariants hold for every seed.
+    pub fn advance(&mut self, seed: u64) -> u8 {
+        if self.remaining.is_empty() {
+            self.remaining = (0..BACKDROPS.len() as u8).collect();
+            shuffle_backdrops(&mut self.remaining, seed);
+            // Never open a fresh bag with the outgoing backdrop: a
+            // different scene every visit, cycle boundary or not.
+            if self.remaining.len() > 1 && self.remaining.last() == Some(&self.current) {
+                let last = self.remaining.len() - 1;
+                self.remaining.swap(0, last);
+            }
+        }
+        self.current = self.remaining.pop().expect("bag refilled above");
+        assert!((self.current as usize) < BACKDROPS.len());
+        self.current
+    }
+}
+
+/// Fisher–Yates stirred by a xorshift64* PRNG: tiny, deterministic
+/// per seed (the rotation tests pin behavior per seed), and more
+/// than enough entropy for dealing backdrops.
+fn shuffle_backdrops(indices: &mut [u8], seed: u64) {
+    let mut state = seed ^ 0x9E37_79B9_7F4A_7C15;
+    if state == 0 {
+        state = 0x2545_F491_4F6C_DD1D;
+    }
+    for i in (1..indices.len()).rev() {
+        state ^= state >> 12;
+        state ^= state << 25;
+        state ^= state >> 27;
+        let roll = state.wrapping_mul(0x2545_F491_4F6C_DD1D);
+        let j = (roll % (i as u64 + 1)) as usize;
+        indices.swap(i, j);
+    }
+}
+
 /// One multiple-choice question with both host reactions. `source` is
 /// the manual section that validates the answer.
 #[derive(Debug)]
@@ -1048,5 +1157,108 @@ mod enter_reaction_tests {
         let big = enter_reaction(Some(&haul_of(5)));
         assert_ne!(one[1].1, mid[1].1);
         assert_ne!(mid[1].1, big[1].1);
+    }
+}
+
+#[cfg(test)]
+mod backdrop_tests {
+    use super::*;
+
+    fn sorted(mut draws: Vec<u8>) -> Vec<u8> {
+        draws.sort_unstable();
+        draws
+    }
+
+    // ---- Rotation: validation ----
+
+    #[test]
+    fn every_cycle_is_a_full_permutation_for_many_seeds() {
+        // The shuffle-bag contract (Matt's direction): a different
+        // backdrop each visit, no repeats until the pool cycles.
+        for seed in [0_u64, 1, 7, 42, 1_000_000, u64::MAX] {
+            let mut bag = BackdropBag::default();
+            for cycle in 0..3_u64 {
+                let draws: Vec<u8> = (0..BACKDROPS.len())
+                    .map(|_| bag.advance(seed ^ cycle))
+                    .collect();
+                assert_eq!(
+                    sorted(draws),
+                    (0..BACKDROPS.len() as u8).collect::<Vec<u8>>(),
+                    "seed {seed}: each cycle must deal every backdrop exactly once"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn consecutive_visits_never_repeat_even_across_reshuffles() {
+        let mut bag = BackdropBag::default();
+        let mut previous = bag.advance(3);
+        for visit in 0..200_u64 {
+            let next = bag.advance(visit.wrapping_mul(31).wrapping_add(5));
+            assert_ne!(next, previous, "visit {visit} repeated a backdrop");
+            previous = next;
+        }
+    }
+
+    #[test]
+    fn save_round_trip_preserves_the_rotation() {
+        let mut bag = BackdropBag::default();
+        bag.advance(11);
+        bag.advance(12);
+        let (remaining, current) = bag.to_save();
+        let save = SaveData {
+            warehouse_backdrop_bag: remaining,
+            warehouse_backdrop_current: current,
+            ..SaveData::default()
+        };
+        let restored = BackdropBag::from_save(&save);
+        assert_eq!(restored, bag);
+        // The restored bag continues the same cycle, draw for draw.
+        let mut original = bag;
+        let mut restored = restored;
+        for step in 0..BACKDROPS.len() {
+            assert_eq!(
+                original.advance(step as u64),
+                restored.advance(step as u64),
+                "draw {step} diverged after a save round-trip"
+            );
+        }
+    }
+
+    // ---- Rotation: adversarial ----
+
+    #[test]
+    fn hostile_save_fields_are_sanitized_on_load() {
+        let save = SaveData {
+            warehouse_backdrop_bag: vec![9, 2, 2, 255, 0, 9],
+            warehouse_backdrop_current: 99,
+            ..SaveData::default()
+        };
+        let bag = BackdropBag::from_save(&save);
+        assert_eq!(bag.current(), 0, "out-of-range current resets");
+        let (remaining, _) = bag.to_save();
+        assert_eq!(remaining, vec![2, 0], "unknowns dropped, dupes collapse");
+        // Even starting from the sanitized bag, the cycle contract holds.
+        let mut bag = bag;
+        let mut draws: Vec<u8> = (0..3).map(|_| bag.advance(5)).collect();
+        draws.dedup();
+        assert_eq!(draws.len(), 3, "sanitized bag still deals without repeats");
+    }
+
+    #[test]
+    fn nearly_empty_bag_refills_without_repeating_current() {
+        // One index left in the bag and it IS the current backdrop's
+        // only neighbor scenario: after it is drawn, the refill must
+        // not hand the same scene straight back.
+        let save = SaveData {
+            warehouse_backdrop_bag: vec![4],
+            warehouse_backdrop_current: 2,
+            ..SaveData::default()
+        };
+        let mut bag = BackdropBag::from_save(&save);
+        assert_eq!(bag.advance(1), 4, "the bagged index is dealt first");
+        let after_refill = bag.advance(2);
+        assert_ne!(after_refill, 4, "no immediate repeat across the refill");
     }
 }

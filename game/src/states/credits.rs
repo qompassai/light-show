@@ -115,6 +115,17 @@ fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
                 13.0,
                 Color::srgb(0.75, 0.75, 0.85),
             ));
+            // The cover art's circuit-corner brackets frame the panel
+            // (main-menu design doc): hairline L corners in the art's
+            // cyan instead of generic trim. Spawned last so they paint
+            // over the panel's edge; absolutely positioned, so the
+            // flex column ignores them.
+            crate::ui::spawn_corner_brackets(
+                parent,
+                Color::srgba(0.435, 0.949, 1.0, 0.45),
+                10.0,
+                26.0,
+            );
         });
 }
 
