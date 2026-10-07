@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791402576
-Git HEAD: 485e57a99848113dd48cb306fe016463a1f121d8
+Generated: 1791402677
+Git HEAD: 158ebbcbf03a16313ce2ececd12bcc7cdd06a074
 
 ## Files: 6421 total
 
@@ -14,8 +14,8 @@ Git HEAD: 485e57a99848113dd48cb306fe016463a1f121d8
 - rmeta: 24 files
 - lock: 24 files
 - bash: 12 files
-- tag: 10 files
 - txt: 10 files
+- tag: 10 files
 - lua: 9 files
 - toml: 8 files
 - python: 7 files
@@ -24,13 +24,13 @@ Git HEAD: 485e57a99848113dd48cb306fe016463a1f121d8
 - wgsl: 4 files
 - kotlin: 4 files
 - properties: 2 files
-- css: 1 files
-- nix: 1 files
-- html: 1 files
-- yaml: 1 files
 - bat: 1 files
 - cff: 1 files
 - uproject: 1 files
+- html: 1 files
+- nix: 1 files
+- css: 1 files
+- yaml: 1 files
 
 ## Top definitions by probability
 
