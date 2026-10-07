@@ -28,7 +28,7 @@
           "To equalize voltage between phase conductors under load",
           "To eliminate induced voltages on metallic raceways"
         ],
-        "correct_idx": 0,
+        "correct_tag": "ec58e362bcd34f44b039610d3dc05e97748918e097034a9010c8a560446af79c",
         "explanation": "NEC 250.4(A)(1): Solidly grounded systems shall be grounded to limit voltage imposed by lightning, line surges, or unintentional contact with higher-voltage lines, and to stabilize voltage to earth during normal operation. The grounding path must provide a low-impedance path so that fault current will operate overcurrent devices.",
         "article_ref": "NEC 250.4(A)",
         "domain": "GroundingBonding"
@@ -42,7 +42,7 @@
           "A redundant neutral path to carry unbalanced load current back to the source",
           "A static-dissipation path rated at least 1 ampere continuous"
         ],
-        "correct_idx": 0,
+        "correct_tag": "8acfa68b39bd3a54af92c6019a9bd8ab104036106e28da95945e02a57f75cef9",
         "explanation": "NEC 250.4(A)(5): The electrical equipment grounding conductor shall provide an effective ground-fault current path \u2014 a low-impedance electrically conductive path that facilitates the operation of the overcurrent protective device or ground detector for high-impedance grounded systems.",
         "article_ref": "NEC 250.4(A)",
         "domain": "GroundingBonding"
@@ -56,7 +56,7 @@
           "Connecting the neutral conductor to the grounding electrode at a location other than the service equipment",
           "Using aluminum grounding electrode conductors within 18 inches of the earth"
         ],
-        "correct_idx": 0,
+        "correct_tag": "66e9d4b55308262202e63182110d9768843a5895f25de13d47c4a1147e6ad0a4",
         "explanation": "NEC 250.6: The grounding of electrical systems, circuit conductors, surge arresters, surge-protective devices, and conductive normally non-current-carrying metal parts of equipment shall be installed and arranged in a manner that will prevent objectionable current from flowing on the grounding conductors or grounding paths.",
         "article_ref": "NEC 250.6",
         "domain": "GroundingBonding"
@@ -70,7 +70,7 @@
           "100 volts",
           "300 volts"
         ],
-        "correct_idx": 0,
+        "correct_tag": "aacce462a0bb80359b515c75652f58570812277a6a6d69b56e72e67fa670b48a",
         "explanation": "NEC 250.20(A): AC systems of less than 50 volts shall be grounded where the system is supplied by transformers and the supply system exceeds 150 volts to ground, or where the system is supplied by transformers and the supply system is ungrounded, or where installed as overhead conductors outside of buildings.",
         "article_ref": "NEC 250.20(A)",
         "domain": "GroundingBonding"
@@ -84,7 +84,7 @@
           "A single-phase 2-wire 480V system with both conductors ungrounded",
           "A 3-phase 4-wire delta system where no midpoint tap is used as a circuit conductor"
         ],
-        "correct_idx": 0,
+        "correct_tag": "b7cad2e44f02667a9f4d783ad7d3691d64a2051fb7d5c9ad8624ad5a821a5284",
         "explanation": "NEC 250.20(B): AC systems of 50V to 1000V that are required to be grounded include: systems where the voltage to ground does not exceed 150V; single-phase 3-wire systems; 3-phase 4-wire wye systems where the neutral is used as a circuit conductor; and 3-phase 4-wire delta systems where the midpoint of one phase is used as a circuit conductor.",
         "article_ref": "NEC 250.20(B)",
         "domain": "GroundingBonding"
@@ -98,7 +98,7 @@
           "At the load center furthest from the service entrance",
           "At the utility transformer secondary terminals"
         ],
-        "correct_idx": 0,
+        "correct_tag": "d623e8725e32bbe201c1a653b1a00985b630ff30017117ce37dd480b60547f8d",
         "explanation": "NEC 250.24(A): For grounded systems, the grounded conductor shall be connected to the grounding electrode conductor at the service equipment. The grounding electrode conductor connects the grounded conductor, the equipment grounding conductor, and the grounding electrode system at the service equipment.",
         "article_ref": "NEC 250.24(A)",
         "domain": "GroundingBonding"
@@ -112,7 +112,7 @@
           "The size specified in Table 310.16",
           "The size specified in Table 250.66"
         ],
-        "correct_idx": 0,
+        "correct_tag": "648f532671b7acbd0112e32359f43067df41dc22f25572e1e12d5096da07a112",
         "explanation": "NEC 250.24(C): The grounded conductor brought to the service equipment shall not be smaller than the size specified in Table 250.102(C)(1) based on the area of the largest ungrounded service-entrance conductor.",
         "article_ref": "NEC 250.24(C)",
         "domain": "GroundingBonding"
@@ -126,7 +126,7 @@
           "The neutral conductor to the phase conductors to balance load",
           "The service-entrance conductors to the meter enclosure"
         ],
-        "correct_idx": 0,
+        "correct_tag": "8a211b7f6c41abd598430a31eaa4cd04ab229d12b231a26a8e8ebb2ae261b0b4",
         "explanation": "NEC 250.28: The main bonding jumper shall connect the equipment grounding conductor(s) and the grounding electrode conductor to the grounded (neutral) conductor at the service equipment. The MBJ may be a wire, bus, screw, or strap.",
         "article_ref": "NEC 250.28",
         "domain": "GroundingBonding"
@@ -140,7 +140,7 @@
           "Red",
           "Yellow"
         ],
-        "correct_idx": 0,
+        "correct_tag": "056143a6eda65312d047a0591965f5605a18208350042d8eafa9aa75ea84554c",
         "explanation": "NEC 250.28: Where the main bonding jumper is a screw only, the screw shall be colored green and shall be visible after installation.",
         "article_ref": "NEC 250.28",
         "domain": "GroundingBonding"
@@ -154,7 +154,7 @@
           "Each electrode must be connected to a separate panel to avoid objectionable current",
           "They must be tested annually and only those below 5 ohms may remain connected"
         ],
-        "correct_idx": 0,
+        "correct_tag": "a9de9303ebe3eca85d7ca9238381b70e0061b87757233ad8a71d62eebd71d831",
         "explanation": "NEC 250.50: All grounding electrodes as described in 250.52(A)(1) through (A)(7) that are present at each building or structure served shall be bonded together to form the grounding electrode system.",
         "article_ref": "NEC 250.50",
         "domain": "GroundingBonding"

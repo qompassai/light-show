@@ -42,15 +42,16 @@
         "summary": "Syslog: flap on NE-3"
       }
     ],
-    "expected_order": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      7,
-      5,
-      6
+    "expected_order_tag": "d3efed9e0e9952de27d69fb0480ac968dd72f063facbe6b5d0bac04d1bdf3991",
+    "expected_step_tags": [
+      "e0322bfea60e7138a21e5cd0bd67b2a1709f9bb701bfd5482aa69718ab56daef",
+      "62f4cbc167c9ac07a75d8001aa9a5a2eaf0db546e458ff6bc277e9381f2e9af3",
+      "fda670bc7434f03b6e73c101d82dfccf04ad455579be5530cf7c144bee5ae308",
+      "02b886110bbd5724ec1e109ed8ab7183b02d729b514ce48b6ecff7b78bbb347d",
+      "d5b5a21bca43e480ce4323a821b3b04d16af5af471b4dd633bab624713bb2a58",
+      "88bb1bf007d79919a87467e4aa6f9dab729f35a42423694ab17a97a81e15d147",
+      "a982e15413bd05d3404190cbf33d19b766a21a38204ffe663f50412b5dd6a625",
+      "d3efed9e0e9952de27d69fb0480ac968dd72f063facbe6b5d0bac04d1bdf3991"
     ]
   },
   "api_sequence": null,

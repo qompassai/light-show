@@ -5,6 +5,7 @@
 //! `build_app()` so there is exactly one place that configures the App.
 
 mod anim;
+pub mod answer_verify;
 mod asset_root;
 mod astra;
 pub mod audio;

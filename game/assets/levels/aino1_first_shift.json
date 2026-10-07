@@ -7,8 +7,9 @@
         "summary": "Fiber cut: edge 3-7 (backhoe)"
       }
     ],
-    "expected_order": [
-      0
+    "expected_order_tag": "733b9914ef96a06e44aaed0a152dea0b35225caf1ab2281c55af377c53c2ea8c",
+    "expected_step_tags": [
+      "733b9914ef96a06e44aaed0a152dea0b35225caf1ab2281c55af377c53c2ea8c"
     ]
   },
   "api_sequence": null,

@@ -234,29 +234,92 @@ impl ApiOp {
     }
 }
 
-/// An API-driver puzzle: the player must issue the `expected` calls in
+/// An API-driver puzzle: the player must issue the expected calls in
 /// order, picking from `choices` (which include distractors). A wrong
 /// pick raises an alarm (counter + console feedback) but never fails
 /// the level outright — the puzzle is about learning the sequence, not
 /// punishing exploration.
+///
+/// The expected order itself is never stored: the level carries only
+/// keyed tags (see `crate::answer_verify`) — one for the full
+/// sequence, plus one per step (the tag of each prefix), so the
+/// console can still tell a correct next pick from a wrong one and
+/// can name the next expected call as a hint, without any plaintext
+/// order existing in the data.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ApiSequenceDef {
     /// Which API is being driven: "nbi" (CMS/AMS SOAP/XML), "smx"
     /// (REST/JSON), or "bxe" (field portal workflow).
     pub api: String,
-    /// The correct call order.
-    pub expected: Vec<ApiOp>,
+    /// Keyed tag of the full expected order: hex HMAC-SHA256 over
+    /// `api_sequence:{level_id}:{op,op,...}` under the build-time
+    /// answer key.
+    pub expected_tag: String,
+    /// Keyed tag of each prefix of the expected order:
+    /// `expected_step_tags[i]` tags the first `i + 1` ops. Its length
+    /// is the expected sequence length.
+    pub expected_step_tags: Vec<String>,
     /// Buttons shown on the console. Must contain every expected op
     /// (plus distractors); validated in tests.
     pub choices: Vec<ApiOp>,
 }
 
-/// Verify an API call sequence: exact ordered match against expected.
-/// Vacuous truth on two empties; any wrong op, wrong order, or
-/// length mismatch is false. Fails closed on empty expected with
-/// non-empty placed (a level-authoring bug, not a pass).
-pub fn verify_api_sequence(expected: &[ApiOp], placed: &[ApiOp]) -> bool {
-    !expected.is_empty() && expected == placed
+impl ApiSequenceDef {
+    /// Number of calls in the expected sequence.
+    pub fn expected_len(&self) -> usize {
+        self.expected_step_tags.len()
+    }
+
+    /// True when `op` is the correct next call after `placed`,
+    /// checked against the step tag for this position.
+    pub fn step_matches(&self, level_id: &str, placed: &[ApiOp], op: ApiOp) -> bool {
+        let Some(step_tag) = self.expected_step_tags.get(placed.len()) else {
+            return false;
+        };
+        let mut candidate = placed.to_vec();
+        candidate.push(op);
+        crate::answer_verify::verify_tag(
+            "api_sequence",
+            level_id,
+            &serialize_api_ops(&candidate),
+            step_tag,
+        )
+    }
+
+    /// The next expected call after `placed`, recovered by testing
+    /// every offered choice against the step tag. `None` when the
+    /// sequence is complete — or when the build carries no answer
+    /// key (fail-closed builds cannot name it).
+    pub fn next_expected(&self, level_id: &str, placed: &[ApiOp]) -> Option<ApiOp> {
+        self.choices
+            .iter()
+            .copied()
+            .find(|&op| self.step_matches(level_id, placed, op))
+    }
+}
+
+/// Canonical serialization of an API call sequence for tagging:
+/// op names (their JSON forms) joined with commas.
+pub fn serialize_api_ops(ops: &[ApiOp]) -> String {
+    ops.iter()
+        .map(|op| format!("{op:?}"))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Verify a completed API call sequence against the stored tag:
+/// the placed order must be exactly the expected length and its tag
+/// must match. Fails closed — no key, a short/long placed order, or
+/// any wrong op all return `false`.
+pub fn verify_api_sequence(level_id: &str, seq: &ApiSequenceDef, placed: &[ApiOp]) -> bool {
+    !placed.is_empty()
+        && placed.len() == seq.expected_step_tags.len()
+        && crate::answer_verify::verify_tag(
+            "api_sequence",
+            level_id,
+            &serialize_api_ops(placed),
+            &seq.expected_tag,
+        )
 }
 
 /// NOC alarm severity for Aino's triage levels. Mirrors
@@ -281,22 +344,69 @@ pub struct AlarmDef {
 
 /// Alarm-triage puzzle (Aino's NOC track): when present, the player must
 /// acknowledge the listed alarms through the triage console in exactly
-/// `expected_order` (highest priority first) before the level counts as
-/// won. The board win check still applies underneath.
+/// the expected order (highest priority first) before the level counts
+/// as won. The board win check still applies underneath. Like the API
+/// sequence, the order itself is never stored — only keyed tags.
 #[derive(Debug, Clone, Deserialize)]
 pub struct AlarmTriageDef {
     /// Alarms raised when the level starts.
     pub alarms: Vec<AlarmDef>,
-    /// Correct ack order: alarm ids, highest priority first. A wrong
-    /// pick bumps the console's wrong-pick counter but never fails the
-    /// level -- triage teaches priority, it does not punish exploration.
-    pub expected_order: Vec<u8>,
+    /// Keyed tag of the correct ack order (alarm ids, highest
+    /// priority first): hex HMAC-SHA256 over
+    /// `alarm_triage:{level_id}:{id,id,...}` under the build-time
+    /// answer key (see `crate::answer_verify`). A wrong pick bumps
+    /// the console's wrong-pick counter but never fails the level --
+    /// triage teaches priority, it does not punish exploration.
+    pub expected_order_tag: String,
+    /// Keyed tag of each prefix of the expected ack order:
+    /// `expected_step_tags[i]` tags the first `i + 1` ids. Its length
+    /// is the expected order length.
+    pub expected_step_tags: Vec<String>,
 }
 
-/// Verify an alarm ack order: exact ordered match against expected.
+impl AlarmTriageDef {
+    /// Number of acks in the expected order.
+    pub fn expected_len(&self) -> usize {
+        self.expected_step_tags.len()
+    }
+
+    /// True when `alarm_id` is the correct next ack after `acked`,
+    /// checked against the step tag for this position.
+    pub fn step_matches(&self, level_id: &str, acked: &[u8], alarm_id: u8) -> bool {
+        let Some(step_tag) = self.expected_step_tags.get(acked.len()) else {
+            return false;
+        };
+        let mut candidate = acked.to_vec();
+        candidate.push(alarm_id);
+        crate::answer_verify::verify_tag(
+            "alarm_triage",
+            level_id,
+            &serialize_alarm_order(&candidate),
+            step_tag,
+        )
+    }
+}
+
+/// Canonical serialization of an alarm ack order for tagging:
+/// decimal ids joined with commas.
+pub fn serialize_alarm_order(ids: &[u8]) -> String {
+    ids.iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Verify a completed alarm ack order against the stored tag.
 /// Same fail-closed semantics as `verify_api_sequence`.
-pub fn verify_triage_order(expected: &[u8], acked: &[u8]) -> bool {
-    !expected.is_empty() && expected == acked
+pub fn verify_triage_order(level_id: &str, triage: &AlarmTriageDef, acked: &[u8]) -> bool {
+    !acked.is_empty()
+        && acked.len() == triage.expected_step_tags.len()
+        && crate::answer_verify::verify_tag(
+            "alarm_triage",
+            level_id,
+            &serialize_alarm_order(acked),
+            &triage.expected_order_tag,
+        )
 }
 
 /// Which NEC/article domain a quiz question belongs to. Drives Léa's
@@ -323,8 +433,9 @@ pub enum QuizDomain {
 }
 
 /// One quiz question in Léa's track. Deserialized from the level JSON;
-/// the `answer` string from the source quiz data is resolved to
-/// `correct_idx` at import time (see `tools/import_quiz.py`).
+/// the `answer` string from the source quiz data is resolved to a
+/// keyed `correct_tag` at authoring time (see `tools/tag_answers.py`), so
+/// the plaintext correct index never ships in the level data.
 #[derive(Debug, Clone, Deserialize)]
 pub struct QuizQuestion {
     /// Stable id, e.g. "nec250-001".
@@ -333,14 +444,31 @@ pub struct QuizQuestion {
     pub prompt: String,
     /// Exactly four choices, in display order.
     pub choices: [String; 4],
-    /// Index into `choices` of the correct answer (pre-shuffle).
-    pub correct_idx: usize,
+    /// Keyed tag of the correct answer: hex HMAC-SHA256 over
+    /// `quiz:{id}:{correct_idx}` under the build-time answer key
+    /// (see `crate::answer_verify`). Verified, never stored in
+    /// plaintext.
+    pub correct_tag: String,
     /// Léa's teaching moment, shown after the player answers.
     pub explanation: String,
     /// NEC article reference for lookup, e.g. "NEC 250.4(A)(1)".
     pub article_ref: Option<String>,
     /// Which domain this question belongs to.
     pub domain: QuizDomain,
+}
+
+impl QuizQuestion {
+    /// True when `choice` is this question's correct answer.
+    pub fn verify_choice(&self, choice: usize) -> bool {
+        crate::answer_verify::verify_tag("quiz", &self.id, &choice.to_string(), &self.correct_tag)
+    }
+
+    /// Recover the correct index for the post-answer teaching reveal
+    /// by testing every candidate against the keyed tag. `None` only
+    /// when the build carries no answer key (fail-closed builds).
+    pub fn reveal_correct(&self) -> Option<usize> {
+        (0..self.choices.len()).find(|&i| self.verify_choice(i))
+    }
 }
 
 /// A quiz level's question set (Léa's track). When a `LevelDef` carries
@@ -372,7 +500,7 @@ pub fn score_quiz(questions: &[QuizQuestion], answers: &[usize]) -> (usize, usiz
     let correct = questions
         .iter()
         .zip(answers.iter())
-        .filter(|(q, a)| **a == q.correct_idx)
+        .filter(|(q, a)| q.verify_choice(**a))
         .count();
     (correct, total)
 }
@@ -3110,6 +3238,29 @@ mod tests {
         );
     }
 
+    /// Build an ApiSequenceDef carrying keyed tags for `ops` under
+    /// the resolved test key, the way the level-data migration does.
+    fn test_api_def(level_id: &str, ops: &[ApiOp]) -> ApiSequenceDef {
+        ApiSequenceDef {
+            api: "bxe".to_string(),
+            expected_tag: crate::answer_verify::test_tag_for(
+                "api_sequence",
+                level_id,
+                &serialize_api_ops(ops),
+            ),
+            expected_step_tags: (1..=ops.len())
+                .map(|n| {
+                    crate::answer_verify::test_tag_for(
+                        "api_sequence",
+                        level_id,
+                        &serialize_api_ops(&ops[..n]),
+                    )
+                })
+                .collect(),
+            choices: ops.to_vec(),
+        }
+    }
+
     /// BxE portal ops (Hikari's field track): every variant needs a
     /// non-empty label and blurb (the console renders both), and the
     /// address-to-diagnostics / slow-portal / master-tech sequences
@@ -3133,12 +3284,14 @@ mod tests {
             ApiOp::ListDevices,
             ApiOp::ReadDiagnostics,
         ];
-        assert!(verify_api_sequence(&full, &full));
-        assert!(!verify_api_sequence(&full, &full[..3]));
+        let full_def = test_api_def("hikari2", &full);
+        assert!(verify_api_sequence("hikari2", &full_def, &full));
+        assert!(!verify_api_sequence("hikari2", &full_def, &full[..3]));
         // hikari6: the slow-portal shortcut skips search entirely.
         let fast = [ApiOp::Login, ApiOp::ReadDiagnostics];
-        assert!(verify_api_sequence(&fast, &fast));
-        assert!(!verify_api_sequence(&fast, &full));
+        let fast_def = test_api_def("hikari6", &fast);
+        assert!(verify_api_sequence("hikari6", &fast_def, &fast));
+        assert!(!verify_api_sequence("hikari6", &fast_def, &full));
         // hikari10: the complete certification workflow.
         let certify = [
             ApiOp::Login,
@@ -3148,7 +3301,8 @@ mod tests {
             ApiOp::RunSpeedTest,
             ApiOp::CertifyInstall,
         ];
-        assert!(verify_api_sequence(&certify, &certify));
+        let certify_def = test_api_def("hikari10", &certify);
+        assert!(verify_api_sequence("hikari10", &certify_def, &certify));
     }
 
     // -- Scenario (Field School) levels -----------------------------------

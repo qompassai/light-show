@@ -28,7 +28,7 @@
           "To serve as an instruction manual for untrained persons",
           "To ensure that every installation is efficient and adequate for future expansion"
         ],
-        "correct_idx": 1,
+        "correct_tag": "ef09d566321500bd862b86ebc72085422b0d6f3757f1a2ae8de3eba2e022a7f4",
         "explanation": "Correct: The practical safeguarding of persons and property from hazards arising from the use of electricity. Section 90.2(A) states this purpose and also states that the Code is not intended as a design specification or an instruction manual for untrained persons.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -42,7 +42,7 @@
           "An installation that requires no further inspection or maintenance",
           "An installation optimized for the lowest construction cost"
         ],
-        "correct_idx": 0,
+        "correct_tag": "a091594759b188bb376ebf5d0cfa822d919655b788fd921eb74f933001813e18",
         "explanation": "Correct: An installation that is essentially free from hazard but not necessarily efficient, convenient, or adequate for good service or future expansion. This is the adequacy statement in 90.2(B).",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -56,7 +56,7 @@
           "Communications cabling installed in a dwelling by the property owner",
           "A premises network powered from customer-owned electrical equipment"
         ],
-        "correct_idx": 1,
+        "correct_tag": "fcf8ac16d98ceb351616a69356af25330e5effbb8f41699a7203131f2e159abe",
         "explanation": "Correct: Communications equipment under the exclusive control of a communications utility and located outdoors or in building spaces used exclusively for that installation. Section 90.2(D)(4) identifies this installation as not covered.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -70,7 +70,7 @@
           "Only Chapters 1 and 2 apply generally; every later chapter is informational",
           "Chapters 5 through 7 replace all requirements in Chapters 1 through 4"
         ],
-        "correct_idx": 0,
+        "correct_tag": "a8ad18fbfd32fa06e3fb35f9420df2566f1e4781668b8a41b51ec51a5f07ec67",
         "explanation": "Correct: Chapters 1 through 4 apply generally, while Chapters 5 through 7 address special occupancies, equipment, or conditions and may supplement or modify earlier requirements. Section 90.3 describes this arrangement.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -84,7 +84,7 @@
           "Only Chapters 1 and 3 apply",
           "Requirements in Chapters 1 through 7 can never apply"
         ],
-        "correct_idx": 1,
+        "correct_tag": "5fbb986f5ee7501973d4b4a77121975fcea4d7819b7e6c17a14a56de73d82d98",
         "explanation": "Correct: They are not subject to Chapters 1 through 7 except where a requirement is specifically referenced. Section 90.3 states this rule for Chapter 8 communications systems.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -98,7 +98,7 @@
           "Tables are informational only, but informative annexes are enforceable",
           "Neither the tables nor the informative annexes may be used"
         ],
-        "correct_idx": 0,
+        "correct_tag": "5c3534cf53b7ec204dbc129afb79b7c17f3cab32b50565c54d54187bde9bad47",
         "explanation": "Correct: The tables apply as referenced; informative annexes are included for information and are not Code requirements. Section 90.3 establishes the status of Chapter 9 tables and informative annexes.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -112,7 +112,7 @@
           "The authority having jurisdiction",
           "The installer who obtained the permit"
         ],
-        "correct_idx": 2,
+        "correct_tag": "e2b4e8d4401719088bc4ac76e334c0439bf94ea8c8607c080f26d5eff9c958b9",
         "explanation": "Correct: The authority having jurisdiction. Section 90.4(B) assigns the enforcing authority responsibility for interpretations, approval decisions, and special permission contemplated by the rules.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -126,7 +126,7 @@
           "Whenever the installer has used the method before",
           "Only when the serving utility requests the change"
         ],
-        "correct_idx": 1,
+        "correct_tag": "c3ce8cd40320221799fafe770ae24b9e66a0f93305ab1ef581edee388d722a04",
         "explanation": "Correct: When equivalent objectives can be achieved by establishing and maintaining effective safety. Section 90.4(C) permits the authority having jurisdiction to waive specific requirements or permit alternative methods under that condition.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -140,7 +140,7 @@
           "Shall or shall not",
           "Can or cannot"
         ],
-        "correct_idx": 2,
+        "correct_tag": "7284488eeb5d73f3b9534803e007911a268ee6a561e2fca3abec039447f5de3d",
         "explanation": "Correct: Shall or shall not. Section 90.5(A) states that mandatory rules identify actions specifically required or prohibited and are characterized by these terms.",
         "article_ref": null,
         "domain": "GeneralRequirements"
@@ -154,7 +154,7 @@
           "Should be considered",
           "Is recommended or is discouraged"
         ],
-        "correct_idx": 0,
+        "correct_tag": "5f4aecd6f8d8ac65162a1ea48492bb366699e2edf5c5588dcde9a0e144f8bc20",
         "explanation": "Correct: Shall be permitted or shall not be required. Section 90.5(B) uses these terms for actions that are allowed but not required, normally describing options or alternative methods.",
         "article_ref": null,
         "domain": "GeneralRequirements"

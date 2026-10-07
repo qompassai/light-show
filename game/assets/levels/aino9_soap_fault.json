@@ -10,10 +10,11 @@
       "CreateService",
       "RebootOnt"
     ],
-    "expected": [
-      "Login",
-      "GetManagedElement",
-      "GetNeStatus"
+    "expected_tag": "da0ac30320a3598cd31a60db71c422e1657c403edabcd545f33ba6b5d8d95a5f",
+    "expected_step_tags": [
+      "f58e30f2b66d092c369c51c413ec1871a2afe2f419d9d12792e516135a6835c1",
+      "8c2786a7135b95976bc787ad1f7b8bdaefa1cca34d1db0ee96006bf37aa4d760",
+      "da0ac30320a3598cd31a60db71c422e1657c403edabcd545f33ba6b5d8d95a5f"
     ]
   },
   "available_components": [],

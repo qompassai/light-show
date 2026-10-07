@@ -482,13 +482,13 @@ fn check_outage_resolution(
     // API-driver levels additionally require the console sequence —
     // same gate as the plain win check (see playing::check_win_condition).
     let api_ok = match &level.api_sequence {
-        Some(seq) => api_progress.is_complete(&seq.expected),
+        Some(seq) => api_progress.is_complete(&level.id, seq),
         None => true,
     };
     // Triage levels (Aino's NOC board) additionally require the alarms
     // acked in the expected priority order.
     let triage_ok = match &level.alarm_triage {
-        Some(triage) => triage_progress.is_complete(&triage.expected_order),
+        Some(triage) => triage_progress.is_complete(&level.id, triage),
         None => true,
     };
     // Astra mechanic gates — same conjunction as the plain win check.

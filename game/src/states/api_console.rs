@@ -28,15 +28,16 @@ pub struct ApiProgress {
 
 impl ApiProgress {
     /// True when the player has produced exactly the expected order.
-    pub fn is_complete(&self, expected: &[ApiOp]) -> bool {
-        crate::level::verify_api_sequence(expected, &self.placed)
+    pub fn is_complete(&self, level_id: &str, seq: &crate::level::ApiSequenceDef) -> bool {
+        crate::level::verify_api_sequence(level_id, seq, &self.placed)
     }
 
     /// Record a click. Returns `true` when the pick was the next
     /// expected op (appended), `false` on a wrong pick (alarm raised,
-    /// nothing appended).
-    pub fn push(&mut self, op: ApiOp, expected: &[ApiOp]) -> bool {
-        let next_ok = expected.get(self.placed.len()) == Some(&op);
+    /// nothing appended). The pick is checked against the step tag
+    /// for this position — the expected order itself is never held.
+    pub fn push(&mut self, op: ApiOp, level_id: &str, seq: &crate::level::ApiSequenceDef) -> bool {
+        let next_ok = seq.step_matches(level_id, &self.placed, op);
         if next_ok {
             self.placed.push(op);
             true
@@ -134,7 +135,11 @@ pub(crate) fn setup_api_console(
             ));
             root.spawn((
                 ApiStatusLine,
-                Text::new(status_text(seq.expected.len(), 0, seq.expected.first())),
+                Text::new(status_text(
+                    seq.expected_len(),
+                    0,
+                    seq.next_expected(&level.id, &[]),
+                )),
                 TextFont {
                     font: body.clone().into(),
                     font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
@@ -186,10 +191,16 @@ pub(crate) fn setup_api_console(
         });
 }
 
-fn status_text(total: usize, done: usize, next: Option<&ApiOp>) -> String {
-    match next {
-        Some(op) => format!("{done}/{total} calls — next: {}", op.label()),
-        None => format!("{done}/{total} calls — sequence complete"),
+fn status_text(total: usize, done: usize, next: Option<ApiOp>) -> String {
+    if done >= total {
+        format!("{done}/{total} calls — sequence complete")
+    } else {
+        match next {
+            Some(op) => format!("{done}/{total} calls — next: {}", op.label()),
+            // No answer key in this build: the next call cannot be
+            // named, so the hint is omitted rather than faked.
+            None => format!("{done}/{total} calls"),
+        }
     }
 }
 
@@ -218,16 +229,16 @@ fn handle_api_buttons(
         if *interaction != Interaction::Pressed {
             continue;
         }
-        let ok = progress.push(button.0, &seq.expected);
+        let ok = progress.push(button.0, &level.id, seq);
         if ok {
             sfx.play(&mut commands, crate::audio::SfxKind::Click);
         } else {
             sfx.play(&mut commands, crate::audio::SfxKind::Alarm);
         }
         let done = progress.placed.len();
-        let next = seq.expected.get(done);
+        let next = seq.next_expected(&level.id, &progress.placed);
         for mut text in &mut status {
-            **text = status_text(seq.expected.len(), done, next);
+            **text = status_text(seq.expected_len(), done, next);
         }
         for mut text in &mut alarms {
             **text = format!("Alarms: {}", progress.alarms_raised);
@@ -251,6 +262,8 @@ mod tests {
     use super::*;
     use crate::level::verify_api_sequence;
 
+    const LEVEL_ID: &str = "console-test";
+
     fn expected() -> Vec<ApiOp> {
         vec![
             ApiOp::Login,
@@ -260,66 +273,105 @@ mod tests {
         ]
     }
 
+    /// The def under test: `expected()` as keyed tags under the
+    /// resolved key, built the way the level-data migration builds
+    /// them (full-sequence tag + one step tag per prefix).
+    fn def() -> crate::level::ApiSequenceDef {
+        let exp = expected();
+        crate::level::ApiSequenceDef {
+            api: "nbi".to_string(),
+            expected_tag: crate::answer_verify::test_tag_for(
+                "api_sequence",
+                LEVEL_ID,
+                &crate::level::serialize_api_ops(&exp),
+            ),
+            expected_step_tags: (1..=exp.len())
+                .map(|n| {
+                    crate::answer_verify::test_tag_for(
+                        "api_sequence",
+                        LEVEL_ID,
+                        &crate::level::serialize_api_ops(&exp[..n]),
+                    )
+                })
+                .collect(),
+            choices: exp,
+        }
+    }
+
+    fn empty_def() -> crate::level::ApiSequenceDef {
+        crate::level::ApiSequenceDef {
+            api: "nbi".to_string(),
+            expected_tag: String::new(),
+            expected_step_tags: Vec::new(),
+            choices: Vec::new(),
+        }
+    }
+
     #[test]
     fn push_appends_correct_picks_in_order() {
         let mut p = ApiProgress::default();
-        let exp = expected();
-        for op in &exp {
-            assert!(p.push(*op, &exp));
+        let def = def();
+        for op in &expected() {
+            assert!(p.push(*op, LEVEL_ID, &def));
         }
-        assert!(p.is_complete(&exp));
+        assert!(p.is_complete(LEVEL_ID, &def));
         assert_eq!(p.alarms_raised, 0);
     }
 
     #[test]
     fn push_rejects_wrong_pick_and_raises_alarm() {
         let mut p = ApiProgress::default();
-        let exp = expected();
-        assert!(p.push(ApiOp::Login, &exp));
+        let def = def();
+        assert!(p.push(ApiOp::Login, LEVEL_ID, &def));
         // Skipping ShowOnt straight to CreateService is wrong.
-        assert!(!p.push(ApiOp::CreateService, &exp));
+        assert!(!p.push(ApiOp::CreateService, LEVEL_ID, &def));
         assert_eq!(p.alarms_raised, 1);
         // The bad pick was not appended — the player must still
         // produce the exact expected order.
         assert_eq!(p.placed, vec![ApiOp::Login]);
-        assert!(!p.is_complete(&exp));
+        assert!(!p.is_complete(LEVEL_ID, &def));
     }
 
     #[test]
     fn push_rejects_extra_calls_past_the_end() {
         let mut p = ApiProgress::default();
-        let exp = expected();
-        for op in &exp {
-            assert!(p.push(*op, &exp));
+        let def = def();
+        for op in &expected() {
+            assert!(p.push(*op, LEVEL_ID, &def));
         }
-        assert!(p.is_complete(&exp));
+        assert!(p.is_complete(LEVEL_ID, &def));
         // One more click after completion is a wrong pick.
-        assert!(!p.push(ApiOp::Logout, &exp));
+        assert!(!p.push(ApiOp::Logout, LEVEL_ID, &def));
         assert_eq!(p.alarms_raised, 1);
-        assert!(p.is_complete(&exp));
+        assert!(p.is_complete(LEVEL_ID, &def));
     }
 
     #[test]
     fn verify_api_sequence_cases() {
         let exp = expected();
-        assert!(verify_api_sequence(&exp, &exp));
-        assert!(!verify_api_sequence(&exp, &[]));
-        assert!(!verify_api_sequence(&[], &[]));
-        assert!(!verify_api_sequence(&[], &[ApiOp::Login]));
+        let def = def();
+        assert!(verify_api_sequence(LEVEL_ID, &def, &exp));
+        assert!(!verify_api_sequence(LEVEL_ID, &def, &[]));
+        assert!(!verify_api_sequence(LEVEL_ID, &empty_def(), &[]));
+        assert!(!verify_api_sequence(
+            LEVEL_ID,
+            &empty_def(),
+            &[ApiOp::Login]
+        ));
         let mut swapped = exp.clone();
         swapped.swap(1, 2);
-        assert!(!verify_api_sequence(&exp, &swapped));
+        assert!(!verify_api_sequence(LEVEL_ID, &def, &swapped));
         let mut short = exp.clone();
         short.pop();
-        assert!(!verify_api_sequence(&exp, &short));
+        assert!(!verify_api_sequence(LEVEL_ID, &def, &short));
     }
 
     #[test]
     fn reset_clears_progress_and_alarms() {
         let mut p = ApiProgress::default();
-        let exp = expected();
-        p.push(ApiOp::Login, &exp);
-        p.push(ApiOp::RebootOnt, &exp);
+        let def = def();
+        p.push(ApiOp::Login, LEVEL_ID, &def);
+        p.push(ApiOp::RebootOnt, LEVEL_ID, &def);
         p.reset();
         assert!(p.placed.is_empty());
         assert_eq!(p.alarms_raised, 0);

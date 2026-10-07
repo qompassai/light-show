@@ -9,11 +9,12 @@
       "RebootOnt",
       "Logout"
     ],
-    "expected": [
-      "Login",
-      "ShowOnt",
-      "CreateService",
-      "VerifyService"
+    "expected_tag": "7b2fd3a92bbd9eda7f66503924e999190cc5dee3c2bd0ee8471762f15c9a6d25",
+    "expected_step_tags": [
+      "b057c784f9c33707741b78eb2066dead577ca5235dc13cfb009ceb53fe4e0e36",
+      "084d98d517b73b535fe08c2ce0983334dacb87f3208ff10e531751aa22ee39a7",
+      "274ccf769a7773716b1fa409cdd69ca1c526380f06929f3e015c471301accf53",
+      "7b2fd3a92bbd9eda7f66503924e999190cc5dee3c2bd0ee8471762f15c9a6d25"
     ]
   },
   "available_components": [],

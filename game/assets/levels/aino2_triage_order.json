@@ -17,10 +17,11 @@
         "summary": "Syslog noise: auth failures on NE-7"
       }
     ],
-    "expected_order": [
-      0,
-      1,
-      2
+    "expected_order_tag": "ff05573a70f2d1b155ce941f2e5f58ece4d865e1858f13485ac1447481c28998",
+    "expected_step_tags": [
+      "0b568849dd30f442dc297f979b38c1eb7fa09d380683f1d81615024a053fa7bf",
+      "2f3ade61f7e965587651c0191753ecdb0657a56356f320f6421f5f6d4c640e3c",
+      "ff05573a70f2d1b155ce941f2e5f58ece4d865e1858f13485ac1447481c28998"
     ]
   },
   "api_sequence": null,

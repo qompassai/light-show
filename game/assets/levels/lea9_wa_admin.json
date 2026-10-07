@@ -28,7 +28,7 @@
           "December 31, 2026",
           "January 1, 2027"
         ],
-        "correct_idx": 2,
+        "correct_tag": "9a610f07b6a00f2f3a73cc9a68373cc98c7edc06fee47d644206bef2cf81e3f4",
         "explanation": "WAC 296-46B-010: The 2026 NEC will replace the 2023 edition effective December 31, 2026, as adopted by reference under WAC 296-46B-010.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -42,7 +42,7 @@
           "All Annexes A through H",
           "No Annexes are adopted \u2014 only the main body of the NEC"
         ],
-        "correct_idx": 0,
+        "correct_tag": "6fbf900c0bedd2e7da086139b11c9f7a4bb2fd1e1a59c8155c2564d1c9dd83be",
         "explanation": "WAC 296-46B-010: Washington adopts the 2023 NEC (NFPA 70-2023) by reference, including Annexes A, B, and C specifically.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -56,7 +56,7 @@
           "A journey level electrician who supervises apprentices on a job site",
           "The foreman designated to oversee a project with more than ten workers"
         ],
-        "correct_idx": 1,
+        "correct_tag": "14d7580305da3b04a92ade7aa9e7013ff1c68d59d2a6e465bd0d6b839d5122e0",
         "explanation": "WAC 296-46B-100: Washington's definitions supplement NEC Article 100, and 'Administrator' is defined as the person who qualifies a contractor's license by passing the required examination.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -70,7 +70,7 @@
           "Industrial machinery rooms",
           "Outdoor agricultural facilities"
         ],
-        "correct_idx": 1,
+        "correct_tag": "98f4ea3c78e594183d8d78581ea85c9e32d0e46fdf072005ff654e95f0b7d768",
         "explanation": "WAC 296-46B-210-008(A): Washington adds extra GFCI requirements for dwelling units beyond those required by the NEC. WAC 296-46B-210-008(B) covers other-than-dwelling units separately.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -84,7 +84,7 @@
           "Common areas must be served by a dedicated transformer",
           "Common area loads may be split evenly across any dwelling unit panels"
         ],
-        "correct_idx": 1,
+        "correct_tag": "13c2f27c60b1441abd5aca28ba94e6e88860fe382f8d67a89c4c3b27262a0dff",
         "explanation": "WAC 296-46B-210-025: Washington requires that common area branch circuits be on separate circuits from individual dwelling units in multi-family buildings.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -98,7 +98,7 @@
           "1000 amperes",
           "1200 amperes"
         ],
-        "correct_idx": 2,
+        "correct_tag": "9e4e3092c4cd4265124199e3c470dface41993b1338c52ddd08dbb41ab6e70e1",
         "explanation": "WAC 296-46B-215-010: Ground fault protection testing is required for feeders over 150V to ground in solidly grounded wye systems rated 1,000 amperes or greater.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -112,7 +112,7 @@
           "A signed affidavit from the property owner",
           "An arc-flash hazard analysis"
         ],
-        "correct_idx": 1,
+        "correct_tag": "bf3d3b5b8698403adfe8e77c25d3ec5a0bf1a63a345db241b8c93963052f3234",
         "explanation": "WAC 296-46B-215-005: Feeder diagrams are required for certain projects and must be submitted to L&I as part of the plan review or permit process.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -126,7 +126,7 @@
           "They are MANDATORY \u2014 a Washington amendment requiring them at all new buildings on permanent concrete foundations",
           "They are required only for buildings taller than three stories"
         ],
-        "correct_idx": 2,
+        "correct_tag": "dc024d5acfd3506498d6b0c517e67e114e017439f281c163b41f84229f9c4f51",
         "explanation": "WAC 296-46B-250-052: This is a critical Washington amendment. While NEC 250.52 uses 'shall be permitted' language, WAC 296-46B-250-052 makes concrete-encased grounding electrodes MANDATORY at all new buildings on permanent concrete foundations.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -140,7 +140,7 @@
           "50 ohms",
           "100 ohms"
         ],
-        "correct_idx": 1,
+        "correct_tag": "66c66d8899845f2b4ab956bf91a4b770afcc4798f2d1e12f67c1bf1693353471",
         "explanation": "WAC 296-46B-250-053(A)(2): Ground rods, pipes, or plate electrodes must have a resistance to earth of 25 ohms or less. If a single rod exceeds 25 ohms, a second electrode must be installed.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"
@@ -154,7 +154,7 @@
           "Rigid metallic conduit, IMC, rigid nonmetallic conduit, or EMT",
           "Wireways, auxiliary gutters, or surface metal raceways"
         ],
-        "correct_idx": 2,
+        "correct_tag": "01354806c05538a18df58731ef0846655176ddf531a8f27015f6ea1a53a7bed1",
         "explanation": "WAC 296-46B-250-064: Where a grounding electrode conductor is subject to physical damage, it must be protected by rigid metallic conduit, intermediate metal conduit (IMC), rigid nonmetallic conduit, or EMT.",
         "article_ref": "NEC 296",
         "domain": "WashingtonLaw"

@@ -450,13 +450,13 @@ fn check_win_condition(
     // the expected call sequence through the console. The board check
     // still applies underneath — both gates must pass.
     let api_ok = match &level.api_sequence {
-        Some(seq) => api_progress.is_complete(&seq.expected),
+        Some(seq) => api_progress.is_complete(&level.id, seq),
         None => true,
     };
     // Triage levels (Aino's NOC board) additionally require the alarms
     // acked in the expected priority order. All three gates must pass.
     let triage_ok = match &level.alarm_triage {
-        Some(triage) => triage_progress.is_complete(&triage.expected_order),
+        Some(triage) => triage_progress.is_complete(&level.id, triage),
         None => true,
     };
     // Astra mechanic gates (§2b–§2f): every present optional block

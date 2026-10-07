@@ -28,7 +28,7 @@
           "A manufacturer\u2019s equipment catalog kept at the service equipment",
           "A one-line diagram filed only with the electric utility"
         ],
-        "correct_idx": 1,
+        "correct_tag": "fb43e0065d523f84734e528c9f9873691d1320e496b81ff2b2993f31a1f7bc8a",
         "explanation": "Correct: An area-classification drawing and associated documentation available to the authority having jurisdiction and authorized personnel. Section 500.4 requires the classification to be documented on an area-classification drawing and other associated documentation and made available to the AHJ and persons authorized to design, install, inspect, maintain, or operate the electrical equipment.",
         "article_ref": "NEC 500.4",
         "domain": "HazardousLocations"
@@ -42,7 +42,7 @@
           "Class II, Division 1",
           "Class III, Division 1"
         ],
-        "correct_idx": 0,
+        "correct_tag": "882790c66bbcdcfb4441b352d87945d6af4e3395f0e75d8d8a57dcc150bb9c48",
         "explanation": "Correct: Class I, Division 1. Section 500.5(B)(1)(1) includes a location in which ignitible concentrations of flammable gases, flammable liquid-produced vapors, or combustible liquid-produced vapors can exist under normal operating conditions.",
         "article_ref": "NEC 500.5(B)",
         "domain": "HazardousLocations"
@@ -56,7 +56,7 @@
           "Class II, Division 2",
           "Class III, Division 2"
         ],
-        "correct_idx": 1,
+        "correct_tag": "345c71e82266ccf92e0668527ec8177b703386a2d64691c1f387d77ebfdf2568",
         "explanation": "Correct: Class I, Division 2. Section 500.5(B)(2)(1) describes a location where flammable liquids, vapors, or gases are normally confined within closed containers or systems and can escape only because of accidental rupture, breakdown, or abnormal operation.",
         "article_ref": "NEC 500.5(B)",
         "domain": "HazardousLocations"
@@ -70,7 +70,7 @@
           "Class II, Division 2",
           "Class III, Division 1"
         ],
-        "correct_idx": 1,
+        "correct_tag": "78189aa18e3ff3950011182f06862af35fd045a14a7a95be6f210085527ecf65",
         "explanation": "Correct: Class II, Division 1. Section 500.5(C)(1)(1) applies where combustible dust is in the air under normal operating conditions in quantities sufficient to produce explosive or ignitible mixtures.",
         "article_ref": "NEC 500.5(C)",
         "domain": "HazardousLocations"
@@ -84,7 +84,7 @@
           "Class III, Division 1",
           "Class III, Division 2"
         ],
-        "correct_idx": 3,
+        "correct_tag": "ca0fc35ddb2a2e1bac97b1f3b5dd1b669d0acdc4dc50dc2ed397faa33aeec2af",
         "explanation": "Correct: Class III, Division 2. Section 500.5(D)(2)(b) classifies locations where ignitible fibers or flyings are stored or handled, other than in the process of manufacture, as Class III, Division 2.",
         "article_ref": "NEC 500.5(D)",
         "domain": "HazardousLocations"
@@ -98,7 +98,7 @@
           "Group C",
           "Group D"
         ],
-        "correct_idx": 0,
+        "correct_tag": "1e79942126d60396c65830fb3844c42673ca2b35c39095c909c5c7ea593645ba",
         "explanation": "Correct: Group A. Section 500.6(A)(1) identifies acetylene as Class I, Group A.",
         "article_ref": "NEC 500.6(A)",
         "domain": "HazardousLocations"
@@ -112,7 +112,7 @@
           "Group G",
           "Group D"
         ],
-        "correct_idx": 0,
+        "correct_tag": "ca33aa0c5333078e196ad641eb375f13eb608d320cc1488b33c83ad808ddc274",
         "explanation": "Correct: Group E. Section 500.6(B)(1) assigns atmospheres containing combustible metal dusts, including aluminum, magnesium, and their commercial alloys, to Group E.",
         "article_ref": "NEC 500.6(B)",
         "domain": "HazardousLocations"
@@ -126,7 +126,7 @@
           "135\u00b0C",
           "165\u00b0C"
         ],
-        "correct_idx": 2,
+        "correct_tag": "1e4fefa43293d93c3502afea57e989d9e8574f4959751e7074c6284835ba3339",
         "explanation": "Correct: 135\u00b0C. Table 500.8(C)(4) assigns temperature code T4 to a maximum surface temperature of 135\u00b0C (275\u00b0F).",
         "article_ref": "NEC 135",
         "domain": "HazardousLocations"
@@ -140,7 +140,7 @@
           "\u221220\u00b0C to +50\u00b0C",
           "0\u00b0C to +40\u00b0C"
         ],
-        "correct_idx": 1,
+        "correct_tag": "a96379c6e45507e37b336c8f43768b1f9183a9c30ba038d1401d705650472a93",
         "explanation": "Correct: \u221225\u00b0C to +40\u00b0C. Section 500.8(C)(5) states that electrical equipment designed for use from \u221225\u00b0C to +40\u00b0C requires no ambient-temperature marking. Equipment intended for another range must be marked with the special range and the symbol Ta or Tamb.",
         "article_ref": "NEC 500.8(C)",
         "domain": "HazardousLocations"
@@ -154,7 +154,7 @@
           "five",
           "seven"
         ],
-        "correct_idx": 2,
+        "correct_tag": "0cb49f7316fa27e50ca4f827a1724574cef59ffa5b8da4dede353d60ebcc18f6",
         "explanation": "Correct: five. Section 500.8(E)(1) requires NPT-threaded entries into explosionproof equipment to have at least five threads fully engaged. The listed factory-threaded exception permits at least four and one-half fully engaged threads.",
         "article_ref": "NEC 500.8(E)",
         "domain": "HazardousLocations"

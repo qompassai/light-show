@@ -32,13 +32,14 @@
         "summary": "Syslog: flap on NE-9"
       }
     ],
-    "expected_order": [
-      0,
-      1,
-      2,
-      3,
-      5,
-      4
+    "expected_order_tag": "3a6c73ae9e51295ae480e7295639c27f0a0812e943aeec35b3bfe1848e052900",
+    "expected_step_tags": [
+      "08b3caa0a0b52f8978152fe91e136c489a05baa53fc1c3661cfc400cc41ce845",
+      "15bbbe6aa3439db94cf6570d3b45a85013ac6f8d76deea2102322181d1bec1f0",
+      "abec7e37fc1fedf15df0e5548daaacd64b02581f0c01d0f16baeb5d471e6abc4",
+      "12d350f812fa27bf7f36bf069dade44cf87c4a33f8c2d14f438ce18d5aa6c396",
+      "118cb6477092491ea26904ea3a2b67f5caa29245aa14c1b28fa5e0ac38c3f5f9",
+      "3a6c73ae9e51295ae480e7295639c27f0a0812e943aeec35b3bfe1848e052900"
     ]
   },
   "api_sequence": {
@@ -51,10 +52,11 @@
       "StopSupervision",
       "Logout"
     ],
-    "expected": [
-      "Login",
-      "GetAllManagedElements",
-      "GetNeStatus"
+    "expected_tag": "3e58e392978943ab0dde67e45f99b6679e4caa07a23a583394eb5ad9aecc703b",
+    "expected_step_tags": [
+      "7339237e815298dc4a3a2f6c86e79c594a297749dd1ae94647afa3443b0af608",
+      "7be498d7b7bd2e2950d499d749a475d992e00898f2d0fc2544dcfe9421c12660",
+      "3e58e392978943ab0dde67e45f99b6679e4caa07a23a583394eb5ad9aecc703b"
     ]
   },
   "available_components": [

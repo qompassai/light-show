@@ -10,10 +10,11 @@
       "GetNeStatus",
       "RebootOnt"
     ],
-    "expected": [
-      "StopSupervision",
-      "ExecuteNeAction",
-      "StartSupervision"
+    "expected_tag": "f6602c0e10ac627ceb34ce00a0fc0228b2b83bebde35bc1c7fdcef1424b9201b",
+    "expected_step_tags": [
+      "7818d377b571ade41ce5a63905f340dd9a4acb08105293dd096f1dbdd700d959",
+      "d3de23fe70bcdae1aebe90f946493b885919b21a3d8dbfa1c8741b7800a97a5b",
+      "f6602c0e10ac627ceb34ce00a0fc0228b2b83bebde35bc1c7fdcef1424b9201b"
     ]
   },
   "available_components": [

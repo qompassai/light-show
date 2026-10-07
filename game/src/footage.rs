@@ -439,18 +439,24 @@ fn quiz_answer_ui(world: &mut World, wrong: bool) {
             None => return,
         };
         let choice_count = first.choices.len().max(1);
+        // The correct index is no longer stored — recover it from
+        // the keyed tag. A keyless debug build cannot, and drives
+        // choice 0 (footage still captures the quiz UI flow; this
+        // harness is debug-only and never grades anything).
+        let correct_idx = first.reveal_correct().unwrap_or(0);
         let choice = if wrong {
-            (first.correct_idx + 1) % choice_count
+            (correct_idx + 1) % choice_count
         } else {
-            first.correct_idx
+            correct_idx
         };
         let correct = progress.answer(&quiz, choice);
         // `answer` leaves `current` on the answered question.
         let q = &quiz.questions[progress.current];
+        let correct_idx = q.reveal_correct().unwrap_or(0);
         AnswerData {
             correct,
-            correct_idx: q.correct_idx,
-            correct_choice: q.choices[q.correct_idx].clone(),
+            correct_idx,
+            correct_choice: q.choices[correct_idx].clone(),
             explanation: q.explanation.clone(),
             article_ref: q.article_ref.clone(),
         }

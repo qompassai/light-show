@@ -10,12 +10,13 @@
       "VerifyService",
       "Logout"
     ],
-    "expected": [
-      "Login",
-      "CreateSubscriber",
-      "CreateOnt",
-      "CreateService",
-      "VerifyService"
+    "expected_tag": "bfdb24052623668d798e03ed7df9b7721ffbdb36a0aa5b597435b01463dbe78e",
+    "expected_step_tags": [
+      "18575a903c2ebe581248e49293ed60392cc576beadbb505f8bd1eb90e11e4b66",
+      "7ddd5994178d073feffd4b7b39fae39a33b3feaf2f87017d9bf56d3ff6cb8ac8",
+      "416fb2b8bc9f78ccf19ed13fe0c793e6bd37f57ccef124f142fd90b43e4f28fc",
+      "2f0268395998fbe66f8747b27390bf6bef0ade50ccc7e26d5b84511a801d935f",
+      "bfdb24052623668d798e03ed7df9b7721ffbdb36a0aa5b597435b01463dbe78e"
     ]
   },
   "available_components": [],

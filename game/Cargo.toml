@@ -19,6 +19,8 @@ path = "src/main.rs"
 osp_sim = { path = "../crates/osp_sim", version = "0.1.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+hmac = "0.12"
+sha2 = "0.10"
 dirs = "6"
 encase = "0.12"
 bevy_render = "0.19"

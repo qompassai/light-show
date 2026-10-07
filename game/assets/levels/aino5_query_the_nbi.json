@@ -10,11 +10,12 @@
       "StartSupervision",
       "DeleteSubscriber"
     ],
-    "expected": [
-      "Login",
-      "GetAllManagedElements",
-      "GetManagedElement",
-      "GetNeStatus"
+    "expected_tag": "99b6486b1babc1821eff97985e57394091a1aafe8b446f13ca01b7f3efa275bd",
+    "expected_step_tags": [
+      "ea17f7b2073800ff219368c61940663b2534825a2a04e360ebd6c7b1208124e7",
+      "849aacec15f855104ba9adccc07b209e938d3e3d97e6fa65ab7af858fb9a8177",
+      "5cfb41d566ea39c125c19522e5171472c875a70868e9af6ea0de66e01a314bce",
+      "99b6486b1babc1821eff97985e57394091a1aafe8b446f13ca01b7f3efa275bd"
     ]
   },
   "available_components": [],

@@ -10,12 +10,13 @@
       "VerifyService",
       "Logout"
     ],
-    "expected": [
-      "Login",
-      "ShowOnt",
-      "CreateService",
-      "VerifyService",
-      "Logout"
+    "expected_tag": "77e8cc95936598fee3d327b9a5f82513dab5a05ee9e19c1049aca5f72bac25d0",
+    "expected_step_tags": [
+      "736aebe83d8dd0ba134b63789ad8ee4201dface50e6073654d19a202787d02ea",
+      "925ffc7425b3d9c7bea245b8738d27376b04f21c775b34a47bc14275515f5ce4",
+      "8ffe5ce83b8dadb816d31c6a68ff856bc6a28e8099add56a541cedd225e34246",
+      "77863235e883dc7292508b0a14da42333db42dbe90ccc62f61b04595d75a8c61",
+      "77e8cc95936598fee3d327b9a5f82513dab5a05ee9e19c1049aca5f72bac25d0"
     ]
   },
   "available_components": [

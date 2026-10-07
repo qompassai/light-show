@@ -28,7 +28,7 @@
           "To allow easier identification of circuit conductors during maintenance",
           "To meet the minimum fill requirements of Table 1, Chapter 9"
         ],
-        "correct_idx": 1,
+        "correct_tag": "6961243a617fe32fd56b3302218240069c8394e7ac7507987884d17ec8855db0",
         "explanation": "NEC 300.3(B) requires all conductors of the same circuit \u2014 including the neutral and equipment grounding conductor \u2014 to be grouped together in the same raceway, cable, or trench. In ferrous (magnetic) metal raceways and enclosures, NEC 300.20(A) explains that these conductors must be arranged so as to avoid heating the surrounding ferrous metal by induction. Grouping all phase, grounded, and equipment grounding conductors together causes their magnetic fields to largely cancel, which prevents inductive heating of ferrous metal raceways and enclosures, reduces impedance, and avoids overheated conduit and boxes.",
         "article_ref": "NEC 300.3(B)",
         "domain": "WiringMethods"
@@ -42,7 +42,7 @@
           "A minimum of \u00bd-inch conduit sleeve through the framing member",
           "No protection is required if the cable is rated at 600V"
         ],
-        "correct_idx": 1,
+        "correct_tag": "7a27d5c8015c77a34bee95f445386bb6850c212143bd956d2158fbde024f2333",
         "explanation": "NEC 300.4(A)(1) requires that where a cable is installed through bored holes in wood framing members and those holes are within 1\u00bc inches of the nearest edge of the framing member, a steel plate or bushing at least 1/16 inch thick shall be installed to protect the cable from nails or screws driven through the finished surface. This prevents fasteners during drywall installation or finishing work from penetrating the cable and causing a fault.",
         "article_ref": "NEC 300.4(A)",
         "domain": "WiringMethods"
@@ -56,7 +56,7 @@
           "Rigid metal conduit (RMC) or intermediate metal conduit (IMC) \u2014 6 inches",
           "Rigid nonmetallic conduit (Schedule 40 PVC) \u2014 12 inches"
         ],
-        "correct_idx": 2,
+        "correct_tag": "71b0b023164023da8f08c0e6c33c3053e107ddc67b1e720f193975b21eb88662",
         "explanation": "NEC Table 300.5 specifies minimum cover requirements for underground wiring. Rigid metal conduit (RMC) and intermediate metal conduit (IMC) require the least depth \u2014 only 6 inches of cover \u2014 because their rigid metal construction provides the greatest physical protection. Direct burial cables require 24 inches, nonmetallic conduit (Schedule 40) requires 18 inches under most conditions, and 12 inches applies under certain conditions with concrete encasement.",
         "article_ref": "NEC 300.5",
         "domain": "WiringMethods"
@@ -70,7 +70,7 @@
           "A raceway using the ceiling grid T-bar or hanger wires as support",
           "A conduit supported from unistrut attached to concrete deck"
         ],
-        "correct_idx": 2,
+        "correct_tag": "d6c3c95cdee6143735b8895c9ba212ace8c95644a3a60a82ae3e3bf90b40387f",
         "explanation": "NEC 300.11(B) requires that wiring systems installed above suspended ceilings be supported independently of the ceiling grid and its support wires. Support wires that do not provide secure support shall not be the sole support, and cables and raceways shall not be supported by ceiling grids. Wiring within the cavity of a ceiling assembly must be supported by its own independent means attached to the building structure, not by the ceiling T-bars or hanger wires. Using the ceiling grid T-bar or its hanger wires as support for a raceway therefore violates this requirement.",
         "article_ref": "NEC 300.11(B)",
         "domain": "WiringMethods"
@@ -84,7 +84,7 @@
           "8 inches total, measured from the back of the box",
           "4 inches total free conductor with no minimum extension requirement"
         ],
-        "correct_idx": 1,
+        "correct_tag": "63d388a8dcadc12c729d7f3acab8eec236c3e20a5d2bb2e09ced85cbaae0f266",
         "explanation": "NEC 300.14 requires a minimum of 6 inches of free conductor at each outlet, junction, and switch point for splices or connection to devices. Additionally, where a conductor is less than 6 inches in length and the box opening is less than 8 inches in any direction, the conductors must extend at least 3 inches outside the front opening of the box. This ensures sufficient conductor length for safe splicing and device connections without straining the termination.",
         "article_ref": "NEC 300.14",
         "domain": "WiringMethods"
@@ -98,7 +98,7 @@
           "ANSI/UL standards for the specific wiring method only",
           "Local jurisdictional amendments and manufacturer installation instructions"
         ],
-        "correct_idx": 1,
+        "correct_tag": "1a6e9bda9c9a6ea00bfcd34d05a9ffaa1d06f5ea1436e143a91c20d54be44ec7",
         "explanation": "NEC 300.17 limits the number and size of conductors that may be installed in a raceway and directs the installer to the fill tables in Chapter 9 of the NEC for compliance. Table 1 specifies maximum fill percentages (53% for one conductor, 31% for two conductors, and 40% for three or more conductors in most raceways), while Tables 4 through 9 provide raceway internal areas and conductor cross-sectional areas needed to perform fill calculations. Together, these tables ensure that raceways are sized to allow heat dissipation and safe installation and withdrawal of conductors without damaging insulation.",
         "article_ref": "NEC 300.17",
         "domain": "WiringMethods"
@@ -112,7 +112,7 @@
           "Multiply the conductor's base ampacity by both factors applied together (multiply them together)",
           "Apply the temperature correction factor first to get a new base ampacity, then use that value for fill adjustment only if required by the AHJ"
         ],
-        "correct_idx": 2,
+        "correct_tag": "69a79c4049c773d6693c3f04cf73fd1eb6e528d5d8880b9c37ab771ea0d833a5",
         "explanation": "Per NEC 310.15, when both ambient temperature correction (for temperatures above the conductor's rated ambient) and conductor adjustment factors (for more than three current-carrying conductors) apply, both factors must be applied simultaneously by multiplying them together with the base ampacity. The corrected ampacity equals the base ampacity multiplied by the temperature correction factor multiplied by the adjustment factor. Applying only one factor or choosing whichever is more restrictive does not correctly implement the NEC requirements for conditions of use.",
         "article_ref": "NEC 310.15",
         "domain": "WiringMethods"
@@ -126,7 +126,7 @@
           "Cables shall maintain a minimum bending radius of 5\u00d7 the cable diameter at the cabinet entry",
           "Cables entering metal cabinets must use insulated bushings at each entry point"
         ],
-        "correct_idx": 1,
+        "correct_tag": "44798f12d3c75c44c876ea825bf98ee312272f1331b2c888dcda7a4d3b1dc96e",
         "explanation": "NEC 312.5(C) requires that where cable is used, each cable entering a cabinet, cutout box, or meter socket enclosure be secured to the enclosure with fittings listed for the cable type. Securing the cable at its point of entry prevents the cable from being pulled out of the enclosure due to tension on the run, which could loosen terminations and create a shock or arc hazard. Cable clamps, connectors, or other listed fittings are used to provide this required mechanical support and strain relief.",
         "article_ref": "NEC 312.5(C)",
         "domain": "WiringMethods"
@@ -140,7 +140,7 @@
           "10 times the trade size of the largest raceway",
           "12 times the trade size of the largest raceway"
         ],
-        "correct_idx": 1,
+        "correct_tag": "efa28bb74cb548d62650905dcb8e9e26601c77d08f374e305a28a289098c4dda",
         "explanation": "NEC 314.28(A)(1) requires that for a straight pull, the minimum length of a pull box or junction box shall be not less than 8 times the trade size (nominal diameter) of the largest raceway entering the box in the direction of the pull. This dimension provides adequate space for conductors to be pulled straight through the enclosure without excessive bending or damage to the insulation. For example, a straight pull involving a 3-inch raceway requires a box length of at least 24 inches (8 \u00d7 3) in the direction of the pull.",
         "article_ref": "NEC 314.28(A)",
         "domain": "WiringMethods"
@@ -154,7 +154,7 @@
           "RMC is permitted in commercial and industrial occupancies only",
           "RMC is permitted only where subject to physical damage"
         ],
-        "correct_idx": 1,
+        "correct_tag": "83ef36089cbf90a2f0e690dee295b330355d4e28104538cbb6bbc167e1c070d2",
         "explanation": "NEC 344.10 states that rigid metal conduit (RMC) shall be permitted under all atmospheric conditions and occupancies, including direct burial in the earth and embedment in concrete. This makes RMC one of the most universally permitted wiring methods in the NEC, suitable for wet, damp, dry, corrosive, and hazardous locations. Its heavy steel wall construction provides superior mechanical protection compared to many other conduit types.",
         "article_ref": "NEC 344.10",
         "domain": "WiringMethods"

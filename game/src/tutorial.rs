@@ -631,7 +631,7 @@ fn watch_aino_triage(
     if !triage.acked.is_empty() {
         seq.stage_segment(bank, Companion::Aino, TutorialStage::FirstPlacement);
     }
-    if triage.is_complete(&def.expected_order) {
+    if triage.is_complete(&level.id, def) {
         seq.stage_segment(bank, Companion::Aino, TutorialStage::FirstVerdict);
     }
 }
@@ -665,7 +665,7 @@ fn watch_lea_quiz(
     let any_wrong = answered.iter().any(|(i, choice)| {
         quiz.questions
             .get(*i)
-            .is_some_and(|q| q.correct_idx != *choice)
+            .is_some_and(|q| !q.verify_choice(*choice))
     });
     if any_wrong {
         seq.stage_segment(bank, Companion::Lea, TutorialStage::FirstOutage);

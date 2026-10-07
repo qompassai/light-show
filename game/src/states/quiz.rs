@@ -45,7 +45,7 @@ impl QuizProgress {
         let Some(q) = quiz.questions.get(self.current) else {
             return false;
         };
-        let correct = choice == q.correct_idx;
+        let correct = q.verify_choice(choice);
         if let Some(slot) = self.answers.get_mut(self.current) {
             *slot = Some(choice);
         }
@@ -319,11 +319,14 @@ pub(crate) fn handle_quiz_choices(
             **text = if correct {
                 "✓ Correct!".to_string()
             } else {
-                format!(
-                    "✗ Not quite — the answer was {}. {}",
-                    (b'A' + q.correct_idx as u8) as char,
-                    q.choices[q.correct_idx]
-                )
+                match q.reveal_correct() {
+                    Some(idx) => format!(
+                        "✗ Not quite — the answer was {}. {}",
+                        (b'A' + idx as u8) as char,
+                        q.choices[idx]
+                    ),
+                    None => "✗ Not quite.".to_string(),
+                }
             };
         }
         for mut text in &mut explanation {
@@ -498,7 +501,7 @@ mod tests {
                         "5".to_string(),
                         "6".to_string(),
                     ],
-                    correct_idx: 1,
+                    correct_tag: crate::answer_verify::test_tag("t-001", 1),
                     explanation: "Basic arithmetic.".to_string(),
                     article_ref: None,
                     domain: QuizDomain::Theory,
@@ -512,7 +515,7 @@ mod tests {
                         "7".to_string(),
                         "8".to_string(),
                     ],
-                    correct_idx: 1,
+                    correct_tag: crate::answer_verify::test_tag("t-002", 1),
                     explanation: "Basic arithmetic.".to_string(),
                     article_ref: None,
                     domain: QuizDomain::Theory,

@@ -28,7 +28,7 @@
           "designers and inspectors",
           "equipment and energy efficiency"
         ],
-        "correct_idx": 0,
+        "correct_tag": "5a42054ace738c0967a6f610022ad0b3cf1cbb57661e471a7a51878970101679",
         "explanation": "The NEC states that its purpose is the practical safeguarding of persons and property from hazards arising from the use of electricity. Reference: 90.2(A), 2023 NEC.",
         "article_ref": "NEC 202",
         "domain": "GeneralRequirements"
@@ -42,7 +42,7 @@
           "may or might",
           "recommended or preferred"
         ],
-        "correct_idx": 0,
+        "correct_tag": "8e014597b69d17e16241bf770e6f1c990776bc7fd113b79f6ef56f3b765f9ae1",
         "explanation": "Mandatory rules identify required or prohibited actions and are characterized by the terms shall or shall not. Reference: 90.5(A), 2023 NEC.",
         "article_ref": "NEC 202",
         "domain": "GeneralRequirements"
@@ -56,7 +56,7 @@
           "Hidden behind the building finish but shown on drawings",
           "Restricted to access by the serving utility"
         ],
-        "correct_idx": 0,
+        "correct_tag": "b25a7195c782389f8beebcd38023c4c6876fcd12e0f0b108239d87322c23c384",
         "explanation": "Accessible as applied to equipment means capable of being reached for operation, renewal, and inspection. Reference: Article 100, Accessible (as applied to equipment), 2023 NEC.",
         "article_ref": "NEC 100",
         "domain": "GeneralRequirements"
@@ -70,7 +70,7 @@
           "Only a person holding an engineering license",
           "A person who has read the equipment nameplate"
         ],
-        "correct_idx": 0,
+        "correct_tag": "92cd0e469e7c1e9d829e327824ba1da96723b12dfbccc5ad604ef36da5941329",
         "explanation": "This choice follows the Article 100 definition of Qualified Person. Reference: Article 100, Qualified Person, 2023 NEC.",
         "article_ref": "NEC 100",
         "domain": "GeneralRequirements"
@@ -84,7 +84,7 @@
           "The lowest-cost available installation method",
           "Instructions for any similar product"
         ],
-        "correct_idx": 0,
+        "correct_tag": "bb565a62c09e4b51e9f591860a30390f13b6c5b9dff2cbe0035d9a7511473739",
         "explanation": "Equipment that is listed, labeled, or identified for a use must be installed and used in accordance with instructions included in the listing, labeling, or identification. Reference: 110.3(B), 2023 NEC.",
         "article_ref": "NEC 110.3(B)",
         "domain": "GeneralRequirements"
@@ -98,7 +98,7 @@
           "To eliminate the need for overcurrent protection",
           "To prevent all current from entering the building"
         ],
-        "correct_idx": 0,
+        "correct_tag": "5455d0286ca9b888f04cd3e9c13d094df186c12d721a0f69bf677c0e9878b200",
         "explanation": "The grounding requirement states these voltage-limiting and voltage-stabilizing purposes. Reference: 250.4(A)(1), 2023 NEC.",
         "article_ref": "NEC 250.4(A)",
         "domain": "GeneralRequirements"
@@ -112,7 +112,7 @@
           "A normal load-current path through exposed metal",
           "An isolated circuit that prevents an overcurrent device from opening"
         ],
-        "correct_idx": 0,
+        "correct_tag": "c58c714f790ab6fcceffb1a35e82f2de5995b3a577d0c25133d127443b774b0c",
         "explanation": "The effective ground-fault current path must be low impedance and facilitate operation of the protective device. Reference: 250.4(A)(5), 2023 NEC.",
         "article_ref": "NEC 250.4(A)",
         "domain": "GeneralRequirements"
@@ -126,7 +126,7 @@
           "They must remain electrically isolated from one another",
           "Only a metal water pipe electrode may be used"
         ],
-        "correct_idx": 0,
+        "correct_tag": "b9ac3259dd536e2b307b7491393064a4e92f45ce738a908a9fb186c85732b013",
         "explanation": "All grounding electrodes described by the specified electrode list and present at the building or structure must be bonded together. Reference: 250.50, 2023 NEC.",
         "article_ref": "NEC 250.50",
         "domain": "GeneralRequirements"
@@ -140,7 +140,7 @@
           "Not less than 19 mm (\u00be in.)",
           "Not less than 50 mm (2 in.)"
         ],
-        "correct_idx": 0,
+        "correct_tag": "6142576440633ac7516fe30fb670369d335c28fd7cee951d25d529a90884fb15",
         "explanation": "Bored holes must place the cable or raceway at least 32 mm (1\u00bc in.) from the edge unless protected by the permitted steel protection. Reference: 300.4(A)(1), 2023 NEC.",
         "article_ref": "NEC 300.4(A)",
         "domain": "GeneralRequirements"
@@ -154,7 +154,7 @@
           "200 mm (8 in.)",
           "300 mm (12 in.)"
         ],
-        "correct_idx": 0,
+        "correct_tag": "a00e00fab7143a50e13f2a110f19b829e3f053079b8639fa2c2ae771470877a1",
         "explanation": "The general free-conductor length is at least 150 mm (6 in.). Reference: 300.14, 2023 NEC.",
         "article_ref": "NEC 150",
         "domain": "GeneralRequirements"
@@ -168,7 +168,7 @@
           "Electrical conductors connecting equipment to a premises supply",
           "Communications wiring in a residence"
         ],
-        "correct_idx": 0,
+        "correct_tag": "27ff1d1d0d84497bdf61720459dff93047d92388399b50201d468ac946f1438f",
         "explanation": "This group of installations is expressly identified as not covered. Reference: 90.2(D)(1), 2023 NEC.",
         "article_ref": "NEC 202",
         "domain": "GeneralRequirements"
@@ -182,7 +182,7 @@
           "The equipment owner",
           "Any apprentice on the project"
         ],
-        "correct_idx": 1,
+        "correct_tag": "da9ef31df3a19c0c6b2ba366a465fc75be50120c510d1b9a3940358b9be93777",
         "explanation": "These responsibilities are assigned to the authority having jurisdiction for Code enforcement. Reference: 90.4(B), 2023 NEC.",
         "article_ref": "NEC 202",
         "domain": "GeneralRequirements"
@@ -196,7 +196,7 @@
           "outlet(s)",
           "utility transformer only"
         ],
-        "correct_idx": 2,
+        "correct_tag": "9cc155a3bad063012a7a411da6cb071d2316c1ad44e5bf2f911d77fb14ed3c5b",
         "explanation": "The Article 100 definition places the branch-circuit conductors between the final overcurrent device and the outlet or outlets. Reference: Article 100, Branch Circuit, 2023 NEC.",
         "article_ref": "NEC 100",
         "domain": "GeneralRequirements"
@@ -210,7 +210,7 @@
           "They are manufactured outside the jurisdiction and need no inspection",
           "They are approved solely by the installer without evaluation"
         ],
-        "correct_idx": 1,
+        "correct_tag": "a666281610a7e4b14faf12a600a0af0371541c0fc7a23686e9a402c056f03e32",
         "explanation": "This choice states the opening requirement of the Article 100 definition of Listed. Reference: Article 100, Listed, 2023 NEC.",
         "article_ref": "NEC 100",
         "domain": "GeneralRequirements"
@@ -224,7 +224,7 @@
           "They are painted with an identifying color",
           "They are approved"
         ],
-        "correct_idx": 3,
+        "correct_tag": "0410605260f6292d50ff08dd74546a4da78dcf9173c516e51105f05e5625ed40",
         "explanation": "The general approval rule states that required or permitted conductors and equipment are acceptable only if approved. Reference: 110.2, 2023 NEC.",
         "article_ref": "NEC 110.2",
         "domain": "GeneralRequirements"
@@ -238,7 +238,7 @@
           "Earth must not be considered an effective ground-fault current path",
           "Earth is always the only permitted ground-fault current path"
         ],
-        "correct_idx": 2,
+        "correct_tag": "15a838950cf944c1916da3ce77e9a05af7bf8ca457616b1f99108f2437b8124f",
         "explanation": "The grounding and bonding performance rule expressly states that earth is not an effective ground-fault current path. Reference: 250.4(A)(5), 2023 NEC.",
         "article_ref": "NEC 250.4(A)",
         "domain": "GeneralRequirements"
@@ -252,7 +252,7 @@
           "Exactly 1 ohm",
           "10 ohms or more"
         ],
-        "correct_idx": 1,
+        "correct_tag": "b9145582bb9b101277000249a702de2ab9ef452e9a48ad0308325d2edd50bfef",
         "explanation": "The supplemental-electrode exception applies where a single rod, pipe, or plate electrode has a resistance to earth of 25 ohms or less. Reference: 250.53(A)(2), Exception, 2023 NEC.",
         "article_ref": "NEC 250.53(A)",
         "domain": "GeneralRequirements"
@@ -266,7 +266,7 @@
           "At least 6.0 m (20 ft) of bare copper not smaller than 2 AWG",
           "At least 3.0 m (10 ft) of insulated copper not smaller than 14 AWG"
         ],
-        "correct_idx": 2,
+        "correct_tag": "247a0285dedfeaf7a9f89b1f17771466389d2a2638c894f28d010c27873d28b6",
         "explanation": "A ground ring consists of at least 6.0 m (20 ft) of bare copper conductor not smaller than 2 AWG in direct contact with earth. Reference: 250.52(A)(4), 2023 NEC.",
         "article_ref": "NEC 250.52(A)",
         "domain": "GeneralRequirements"
@@ -280,7 +280,7 @@
           "Yes, if plastic cable ties are used",
           "Yes, in every installation"
         ],
-        "correct_idx": 1,
+        "correct_tag": "f512e1fea0a12326d080b4770babd7d913671d877a93522a7d25b93b86aba467",
         "explanation": "The general securing-and-supporting rule states that cables and raceways must not be supported by ceiling grids. Reference: 300.11(B), 2023 NEC.",
         "article_ref": "NEC 300.11(B)",
         "domain": "GeneralRequirements"
@@ -294,7 +294,7 @@
           "They must be filled only with wood blocking",
           "They must be firestopped using approved methods to maintain the fire-resistance rating"
         ],
-        "correct_idx": 3,
+        "correct_tag": "1d8d6b9745cd05ea6b5833360946a14590e4b2639a6f9e0ebef911e8efd8da42",
         "explanation": "The NEC requires approved firestopping methods that maintain the fire-resistance rating. Reference: 300.21, 2023 NEC.",
         "article_ref": "NEC 300.21",
         "domain": "GeneralRequirements"

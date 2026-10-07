@@ -29,15 +29,22 @@ pub struct TriageProgress {
 
 impl TriageProgress {
     /// True when the player has acked exactly the expected order.
-    pub fn is_complete(&self, expected: &[u8]) -> bool {
-        crate::level::verify_triage_order(expected, &self.acked)
+    pub fn is_complete(&self, level_id: &str, triage: &crate::level::AlarmTriageDef) -> bool {
+        crate::level::verify_triage_order(level_id, triage, &self.acked)
     }
 
     /// Record a click. Returns `true` when the pick was the next
     /// expected alarm id (appended), `false` on a wrong pick
-    /// (wrong-pick counter bumped, nothing appended).
-    pub fn push(&mut self, alarm_id: u8, expected: &[u8]) -> bool {
-        let next_ok = expected.get(self.acked.len()) == Some(&alarm_id);
+    /// (wrong-pick counter bumped, nothing appended). The pick is
+    /// checked against the step tag for this position — the expected
+    /// order itself is never held.
+    pub fn push(
+        &mut self,
+        alarm_id: u8,
+        level_id: &str,
+        triage: &crate::level::AlarmTriageDef,
+    ) -> bool {
+        let next_ok = triage.step_matches(level_id, &self.acked, alarm_id);
         if next_ok {
             self.acked.push(alarm_id);
             true
@@ -127,7 +134,7 @@ pub(crate) fn setup_triage_console(
             ));
             root.spawn((
                 TriageStatusLine,
-                Text::new(triage_status_text(triage.expected_order.len(), 0)),
+                Text::new(triage_status_text(triage.expected_len(), 0)),
                 TextFont {
                     font: body.clone().into(),
                     font_size: FontSize::Px(14.0 * FONT_SIZE_ADJUST),
@@ -227,7 +234,7 @@ fn handle_triage_buttons(
         if progress.acked.contains(&button.0) {
             continue;
         }
-        let ok = progress.push(button.0, &triage.expected_order);
+        let ok = progress.push(button.0, &level.id, triage);
         if ok {
             sfx.play(&mut commands, crate::audio::SfxKind::Click);
         } else {
@@ -235,7 +242,7 @@ fn handle_triage_buttons(
         }
         let done = progress.acked.len();
         for mut text in &mut status {
-            **text = triage_status_text(triage.expected_order.len(), done);
+            **text = triage_status_text(triage.expected_len(), done);
         }
         for mut text in &mut wrongs {
             **text = format!("Wrong picks: {}", progress.wrong_picks);
@@ -259,49 +266,87 @@ mod tests {
     use super::*;
     use crate::level::verify_triage_order;
 
+    const LEVEL_ID: &str = "console-test";
+
     fn expected() -> Vec<u8> {
         vec![3, 1, 2]
+    }
+
+    /// The def under test: `expected()` as keyed tags under the
+    /// resolved key, built the way the level-data migration builds
+    /// them (full-order tag + one step tag per prefix).
+    fn def() -> crate::level::AlarmTriageDef {
+        let exp = expected();
+        crate::level::AlarmTriageDef {
+            alarms: Vec::new(),
+            expected_order_tag: crate::answer_verify::test_tag_for(
+                "alarm_triage",
+                LEVEL_ID,
+                &crate::level::serialize_alarm_order(&exp),
+            ),
+            expected_step_tags: (1..=exp.len())
+                .map(|n| {
+                    crate::answer_verify::test_tag_for(
+                        "alarm_triage",
+                        LEVEL_ID,
+                        &crate::level::serialize_alarm_order(&exp[..n]),
+                    )
+                })
+                .collect(),
+        }
+    }
+
+    fn empty_def() -> crate::level::AlarmTriageDef {
+        crate::level::AlarmTriageDef {
+            alarms: Vec::new(),
+            expected_order_tag: String::new(),
+            expected_step_tags: Vec::new(),
+        }
     }
 
     #[test]
     fn triage_push_appends_in_order() {
         let mut p = TriageProgress::default();
-        assert!(p.push(3, &expected()));
-        assert!(p.push(1, &expected()));
-        assert!(!p.is_complete(&expected()));
-        assert!(p.push(2, &expected()));
-        assert!(p.is_complete(&expected()));
+        let def = def();
+        assert!(p.push(3, LEVEL_ID, &def));
+        assert!(p.push(1, LEVEL_ID, &def));
+        assert!(!p.is_complete(LEVEL_ID, &def));
+        assert!(p.push(2, LEVEL_ID, &def));
+        assert!(p.is_complete(LEVEL_ID, &def));
     }
 
     #[test]
     fn triage_wrong_pick_not_appended() {
         let mut p = TriageProgress::default();
-        assert!(!p.push(1, &expected()));
+        let def = def();
+        assert!(!p.push(1, LEVEL_ID, &def));
         assert_eq!(p.wrong_picks, 1);
         assert!(p.acked.is_empty());
         // Correct first pick still works after a wrong one.
-        assert!(p.push(3, &expected()));
+        assert!(p.push(3, LEVEL_ID, &def));
         assert_eq!(p.acked, vec![3]);
     }
 
     #[test]
     fn verify_triage_order_cases() {
         let exp = expected();
-        assert!(verify_triage_order(&exp, &exp));
-        assert!(!verify_triage_order(&exp, &[]));
-        assert!(!verify_triage_order(&[], &[]));
-        assert!(!verify_triage_order(&[], &[3]));
+        let def = def();
+        assert!(verify_triage_order(LEVEL_ID, &def, &exp));
+        assert!(!verify_triage_order(LEVEL_ID, &def, &[]));
+        assert!(!verify_triage_order(LEVEL_ID, &empty_def(), &[]));
+        assert!(!verify_triage_order(LEVEL_ID, &empty_def(), &[3]));
         let swapped = vec![1, 3, 2];
-        assert!(!verify_triage_order(&exp, &swapped));
+        assert!(!verify_triage_order(LEVEL_ID, &def, &swapped));
         let short = vec![3, 1];
-        assert!(!verify_triage_order(&exp, &short));
+        assert!(!verify_triage_order(LEVEL_ID, &def, &short));
     }
 
     #[test]
     fn triage_reset_clears_state() {
         let mut p = TriageProgress::default();
-        p.push(3, &expected());
-        p.push(9, &expected());
+        let def = def();
+        p.push(3, LEVEL_ID, &def);
+        p.push(9, LEVEL_ID, &def);
         p.reset();
         assert!(p.acked.is_empty());
         assert_eq!(p.wrong_picks, 0);

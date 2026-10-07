@@ -28,7 +28,7 @@
           "Electrical wiring of residential structures not exceeding three stories and including not more than two dwelling units",
           "Electrical wiring of any residential structure regardless of stories or number of dwelling units"
         ],
-        "correct_idx": 0,
+        "correct_tag": "9eb2a2af5d2b9496ebaed69f425a83702b2bfe201e6f968c173f0868b8871da9",
         "explanation": "RCW 19.28.006: 'Basic electrical work Class A' means electrical wiring of residential structures not exceeding three stories in height and including not more than four dwelling units, or agricultural buildings.",
         "article_ref": "NEC 006",
         "domain": "WashingtonLaw"
@@ -42,7 +42,7 @@
           "Class B covers agricultural buildings only; Class A covers residential structures",
           "Class B covers structures not exceeding two stories; Class A covers structures not exceeding three stories"
         ],
-        "correct_idx": 0,
+        "correct_tag": "cb8a0adbb12aafe8d9f73b6472b62aa8bc94ec694cbc24cafadbd1a579a570a9",
         "explanation": "RCW 19.28.006: 'Basic electrical work Class B' means electrical wiring of residential structures not exceeding three stories in height and including not more than one dwelling unit, whereas Class A allows up to four dwelling units.",
         "article_ref": "NEC 006",
         "domain": "WashingtonLaw"
@@ -56,7 +56,7 @@
           "A member of the Washington State electrical board",
           "A person who supervises trainee electricians on a job site"
         ],
-        "correct_idx": 0,
+        "correct_tag": "6f011f6bd83596ed7ffaecb741125de2793082459aa5d199d3a1bf14e3efec5e",
         "explanation": "RCW 19.28.006: 'Administrator' means the person who qualifies for a contractor's license by passing the required examinations.",
         "article_ref": "NEC 006",
         "domain": "WashingtonLaw"
@@ -70,7 +70,7 @@
           "Washington State Building Code Council",
           "The Governor's Office of Regulatory Compliance"
         ],
-        "correct_idx": 0,
+        "correct_tag": "b1ffc74cc47c9a35246f1c57d9985fb241f9de5175663c6aeab491c8d12a617e",
         "explanation": "RCW 19.28.006: 'Board' means the Washington State electrical board established under this chapter.",
         "article_ref": "NEC 006",
         "domain": "WashingtonLaw"
@@ -84,7 +84,7 @@
           "Installation of any new equipment in place of removed outdated equipment",
           "Repair of existing equipment without substitution of any components"
         ],
-        "correct_idx": 0,
+        "correct_tag": "b4e6ede135d0b878ea28c84f82f47ed00aed2533db80a16ffca444a516cd5ca0",
         "explanation": "RCW 19.28.006: 'Like-in-kind' means replacement of existing equipment with equipment of the same type and rating.",
         "article_ref": "NEC 006",
         "domain": "WashingtonLaw"
@@ -98,7 +98,7 @@
           "36 calendar months",
           "18 calendar months"
         ],
-        "correct_idx": 0,
+        "correct_tag": "6e53ec311111c7bb5f678a6fef08fe0ef27d888707b3402880713f4cbc56eb11",
         "explanation": "RCW 19.28.041: Electrical contractor licenses expire 24 calendar months after the date of issuance.",
         "article_ref": "NEC 041",
         "domain": "WashingtonLaw"
@@ -112,7 +112,7 @@
           "$2,000",
           "$10,000"
         ],
-        "correct_idx": 0,
+        "correct_tag": "b0c04d2fa4f0abf8ee3e89619bebe408aa475eb547b902eb0d46a2215391d404",
         "explanation": "RCW 19.28.041 and RCW 19.28.071: The required bond is $4,000 with the state of Washington as obligee, or a cash deposit of $4,000 as an alternative.",
         "article_ref": "NEC 041",
         "domain": "WashingtonLaw"
@@ -126,7 +126,7 @@
           "Workers' compensation account number",
           "Excise tax registration number"
         ],
-        "correct_idx": 0,
+        "correct_tag": "92019c9c71c0526a21e2de50aa4857ff3a650d2aa0abc17b70c4b92190fac4f3",
         "explanation": "RCW 19.28.041: Required application elements include UBI number, workers' compensation account number, employment security account number, and excise tax registration number. A journey level certificate is not listed as a contractor license application requirement.",
         "article_ref": "NEC 041",
         "domain": "WashingtonLaw"
@@ -140,7 +140,7 @@
           "A state-licensed inspector or department employee",
           "A board-approved safety officer"
         ],
-        "correct_idx": 0,
+        "correct_tag": "b215011fd2998869881e6ee14e5d76ada95ea143336fb81079c44875c9fa3eb5",
         "explanation": "RCW 19.28.041: An electrical contractor license must designate a master electrician or administrator to qualify the license.",
         "article_ref": "NEC 041",
         "domain": "WashingtonLaw"
@@ -154,7 +154,7 @@
           "24 months",
           "18 months"
         ],
-        "correct_idx": 0,
+        "correct_tag": "1e55e2ad150b0d9dc471ff82ad446f0429ea9d29b8004b6bfbd3c19564c2d75d",
         "explanation": "RCW 19.28.091: The owner of a single-family dwelling may perform their own electrical work without a contractor license, provided the work is not for hire and the property is not offered for sale within 12 months of the work being completed.",
         "article_ref": "NEC 091",
         "domain": "WashingtonLaw"

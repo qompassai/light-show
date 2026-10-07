@@ -28,7 +28,7 @@
           "144 V",
           "60 V"
         ],
-        "correct_idx": 1,
+        "correct_tag": "51fe00940001109b9e4679886d075e313e927e4df1cf28268e2ef5e7acd71954",
         "explanation": "Ohm's Law: V = I \u00d7 R = 5 A \u00d7 24 \u03a9 = 120 V.",
         "article_ref": "NEC 120",
         "domain": "Theory"
@@ -42,7 +42,7 @@
           "960 \u03a9",
           "8 \u03a9"
         ],
-        "correct_idx": 1,
+        "correct_tag": "db07b695d94ee02166c10f3443c1a9352770a9e33a67dc8dac5974cda554dbd3",
         "explanation": "Ohm's Law: R = V / I = 120 V / 8 A = 15 \u03a9.",
         "article_ref": "NEC 120",
         "domain": "Theory"
@@ -56,7 +56,7 @@
           "Voltage and current are perfectly in phase",
           "Voltage and current are 180\u00b0 out of phase"
         ],
-        "correct_idx": 2,
+        "correct_tag": "55a1c9b392986b62856caa3c5b8244fd7f7832d7af9ef36bc96de3d8511ecd32",
         "explanation": "A power factor of 1.0 indicates a purely resistive load where voltage and current waveforms are perfectly in phase \u2014 General Theory (Power Factor).",
         "article_ref": null,
         "domain": "Theory"
@@ -70,7 +70,7 @@
           "Isolation transformer with 1:1 ratio",
           "Autotransformer"
         ],
-        "correct_idx": 1,
+        "correct_tag": "2b5439a65fdc5a5340bff48cf575d9c01dbb49628870623ea1ffa9b4ef16ec25",
         "explanation": "When the secondary (Ns) has more turns than the primary (Np), the transformer steps voltage up \u2014 General Theory (Transformers).",
         "article_ref": "NEC 400",
         "domain": "Theory"
@@ -84,7 +84,7 @@
           "120 V",
           "48 V"
         ],
-        "correct_idx": 1,
+        "correct_tag": "aeec3abcdcf1354a9e9c0b0ea684a1b38692ed8ec71d3a297f4696d495096cdc",
         "explanation": "Turns ratio: Vs = Vp \u00d7 (Ns/Np) = 240 \u00d7 (50/200) = 60 V \u2014 General Theory (Transformers).",
         "article_ref": "NEC 240",
         "domain": "Theory"
@@ -98,7 +98,7 @@
           "400 Hz",
           "25 Hz"
         ],
-        "correct_idx": 1,
+        "correct_tag": "3521278f0e10a074deb682bf9bcef317a39ad7bd5d445c56ab85efefe0058736",
         "explanation": "The US AC grid operates at 60 Hz \u2014 General Theory (AC Fundamentals).",
         "article_ref": null,
         "domain": "Theory"
@@ -112,7 +112,7 @@
           "240 V",
           "170 V"
         ],
-        "correct_idx": 1,
+        "correct_tag": "743006e866b5885995b8d0366bf8cc0750bd782d4509bdaad98349305892a030",
         "explanation": "Vrms = Vpeak \u00d7 0.707 = 170 \u00d7 0.707 \u2248 120 V \u2014 General Theory (AC Waveforms).",
         "article_ref": "NEC 707",
         "domain": "Theory"
@@ -126,7 +126,7 @@
           "Xc remains constant",
           "Xc doubles with each octave increase"
         ],
-        "correct_idx": 1,
+        "correct_tag": "8342584331904c8b5f2693f7f76ea14ca7cff3d895905c55b5612948bf3474a4",
         "explanation": "Xc = 1/(2\u03c0fC): as frequency (f) increases, Xc decreases \u2014 General Theory (Reactance).",
         "article_ref": null,
         "domain": "Theory"
@@ -140,7 +140,7 @@
           "XL increases",
           "XL becomes purely resistive"
         ],
-        "correct_idx": 2,
+        "correct_tag": "c730fd1fe3119729d2727b9570b6d2844b8c290ce6838f867f695bd5576ffe5f",
         "explanation": "XL = 2\u03c0fL: as frequency (f) increases, XL increases \u2014 General Theory (Reactance).",
         "article_ref": null,
         "domain": "Theory"
@@ -154,7 +154,7 @@
           "Resistance of the wire insulation",
           "Electrostatic charge on the wire"
         ],
-        "correct_idx": 1,
+        "correct_tag": "2a53bf020f72a7f70de4f22ef2778464d44aafa48082cfaabb7a839a9ecb2e63",
         "explanation": "A clamp-on ammeter uses electromagnetic induction, sensing the magnetic field around the conductor without interrupting the circuit \u2014 General Theory (Test Equipment).",
         "article_ref": null,
         "domain": "Theory"

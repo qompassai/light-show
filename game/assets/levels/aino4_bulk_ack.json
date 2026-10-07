@@ -32,13 +32,14 @@
         "summary": "Info: config backup complete"
       }
     ],
-    "expected_order": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5
+    "expected_order_tag": "26504fd2540e710d62285c576ed0ca886fc3935679e452251476d6e0ce4a33ba",
+    "expected_step_tags": [
+      "14f65d6fdef477b196904c6697c601f878808f9ec5ebd394916c75274bd9c2f1",
+      "76c9ed10dd171941fa69e6b0e12fb7e736e31e9d958ff8740ecf9cb475e150b2",
+      "98789209e659c91304f063da7dc215226de2f499025a7bcdf6bb57f252d8cb54",
+      "ac0ce1712c97ae34d345483ef90cf14129cb85057b09b79945af82e1c10f8980",
+      "ad47e37663fdfbbdce9deb6612134afc8a95e55bb8805017339a59320bdd45aa",
+      "26504fd2540e710d62285c576ed0ca886fc3935679e452251476d6e0ce4a33ba"
     ]
   },
   "api_sequence": null,

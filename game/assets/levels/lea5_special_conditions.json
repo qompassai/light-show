@@ -28,7 +28,7 @@
           "It may be unlisted when installed indoors",
           "It must be approved only by the serving utility"
         ],
-        "correct_idx": 0,
+        "correct_tag": "982863f7ab3f75982c51e63aa5f4539ea490a51f88c7df433d7a1bc688f37e2a",
         "explanation": "Equipment used to interconnect electric power production sources must be listed for the intended use.",
         "article_ref": "NEC 705.6",
         "domain": "SpecialConditions"
@@ -42,7 +42,7 @@
           "Disconnect one ungrounded conductor at a time",
           "Open only the equipment grounding conductor"
         ],
-        "correct_idx": 0,
+        "correct_tag": "7f54dcf223ab428fffe4ea3a292f0c3e6666a1c74fed307c21f95fe3439c5656",
         "explanation": "The source disconnecting means must simultaneously disconnect all ungrounded conductors from all other conductors.",
         "article_ref": "NEC 705.20",
         "domain": "SpecialConditions"
@@ -56,7 +56,7 @@
           "Inside a locked utility transformer enclosure",
           "Anywhere on the premises if shown on drawings"
         ],
-        "correct_idx": 0,
+        "correct_tag": "379a5f0c774b7a08b63adf385d94ae29d80abab3324316899a06d48a239eb708",
         "explanation": "The source disconnecting means is required to be in a readily accessible location.",
         "article_ref": "NEC 705.20",
         "domain": "SpecialConditions"
@@ -70,7 +70,7 @@
           "Listing is required only when installed outdoors",
           "No listing is required if the system is field assembled"
         ],
-        "correct_idx": 0,
+        "correct_tag": "3192f53e351f247d817986ee050acc6ef605b140eafab06939524413d12e9866",
         "explanation": "The NEC requires an energy storage system to be listed.",
         "article_ref": "NEC 706.5",
         "domain": "SpecialConditions"
@@ -84,7 +84,7 @@
           "Only the serving utility may test the system",
           "Commissioning may be omitted when the system is listed"
         ],
-        "correct_idx": 0,
+        "correct_tag": "a6d38745c220adee475b2702ac195cd940c2306af04f28b344f6172b7d286563",
         "explanation": "Energy storage systems within the rule are required to be commissioned upon installation.",
         "article_ref": "NEC 706.7(A)",
         "domain": "SpecialConditions"
@@ -98,7 +98,7 @@
           "7.5 m (25 ft)",
           "15 m (50 ft)"
         ],
-        "correct_idx": 0,
+        "correct_tag": "c4b276ee809b65ea430d4730a4d149f43d2730f80ef80b6d5d14c5003c6aaf7a",
         "explanation": "A disconnect located within sight of the energy storage system must be no more than 3 m (10 ft) from the system.",
         "article_ref": "NEC 706.15(B)",
         "domain": "SpecialConditions"
@@ -112,7 +112,7 @@
           "Flexible cord run openly",
           "Unsupported nonmetallic cable"
         ],
-        "correct_idx": 0,
+        "correct_tag": "f3ea061308785909e22102cb234b02c419994eb4efa7260ca574fb42d2e6e5bd",
         "explanation": "Rigid metal conduit is one of the wiring methods specifically permitted for COPS wiring protected against physical damage.",
         "article_ref": "NEC 708.10(C)(1)",
         "domain": "SpecialConditions"
@@ -126,7 +126,7 @@
           "For 50 percent of the connected load",
           "For lighting loads only"
         ],
-        "correct_idx": 0,
+        "correct_tag": "89275aa09a67d6ada6d3c8bc5e5932bb1f9ed94cb0eb2de916e62a7b66e73173",
         "explanation": "The COPS must have adequate capacity and rating for all loads expected to operate simultaneously.",
         "article_ref": "NEC 708.22(A)",
         "domain": "SpecialConditions"
@@ -140,7 +140,7 @@
           "The utility account number",
           "The conductor color code for every branch circuit"
         ],
-        "correct_idx": 0,
+        "correct_tag": "f3307fe42b4a94e56200930478bcb8fab9c398364e90f616384f34fb1b0145fa",
         "explanation": "The plaque or directory must denote the location of each power-source disconnecting means for the building or structure.",
         "article_ref": "NEC 710.10",
         "domain": "SpecialConditions"
@@ -154,7 +154,7 @@
           "It must be sized at exactly twice the connected load",
           "Its rating is unrestricted when loads are manually selected"
         ],
-        "correct_idx": 0,
+        "correct_tag": "8bf53252e822fab12c29218d927647f2dc66522d9f0285fe8bae1d4f4cba2899",
         "explanation": "A stand-alone system must have capacity and rating sufficient for all equipment intended to operate simultaneously.",
         "article_ref": "NEC 710.15(A)",
         "domain": "SpecialConditions"

@@ -27,12 +27,13 @@
         "summary": "Info: backup path active"
       }
     ],
-    "expected_order": [
-      0,
-      1,
-      2,
-      3,
-      4
+    "expected_order_tag": "65cb48b47f2b4f1b321ec9234ac1e49a728763547e0f46c96f254398addad9ad",
+    "expected_step_tags": [
+      "db0f5c57f609f325f8ffbacfe3be9539a3ea3cd230d9491eb0157171c6f73f9f",
+      "678dbbb92c36e72fea345c27ee58a0c48b16f76c72826ca762fd6cb2855b48b4",
+      "96d331b9195f8b6830a88c7927b0d97018155db81359c7f426fedaed964293ae",
+      "dec443379b2f1606081a29fe821a263366d9578cdc2067591aa87c408960316b",
+      "65cb48b47f2b4f1b321ec9234ac1e49a728763547e0f46c96f254398addad9ad"
     ]
   },
   "api_sequence": null,
