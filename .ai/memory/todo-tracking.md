@@ -69,3 +69,14 @@ for issues, persistent memory updated, and commit/push as needed."
   (in progress).
 - **Publication**: F-Droid Gates 1-4 + Play prep in progress. Gate 5
   (GitLab MR) + signing keys + Play upload are Matt-only.
+
+
+## Completed (2026-10-07, finish-up program)
+- Phase 1 landing: README gif fix, pill-gate patch, responsive
+  dimensions, title art, 330-file pill face fleet (game/assets/art/faces).
+- Tutorials for all 8 companions (banks + mirrors, pill Emotion
+  transport, tutorial.rs sequencer, tutorials_seen save field).
+- Field school scenarios fj1/fj2/sp1 (SCENARIO_SOURCES, out-of-track).
+- Astra slices 1-8 merged (verification states, consoles, badges;
+  level_badges save field; G.fast fiction per Matt ruling).
+- Suite: 789 tests passing, 0 failures. Remote main == ec5a6e5.
