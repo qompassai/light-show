@@ -48,7 +48,7 @@ School."*
 - Expression portraits: `assets/art/expressions/` — alarmed, blush,
   celebrate, pout, wink (painterly keepers; pulled into the repo
   2026-10-06, completing the mains' sets).
-- Idle/profile: `assets/art/companions/seraphine_animated.gif`,
+- Idle/profile: `assets/art/companions/seraphine_animated.gif` (byte-duplicate of the mature GIF; quarantined 2026-10-07),
   `_animated_base.gif`, `_animated_mature.gif`, `_animated_mature.png`,
   `_profile_64.png`.
 - Dialogue: `game/assets/dialogue/seraphine_en.json` (full bank).
