@@ -313,7 +313,7 @@ fn show_results(
     // Astra §2a: the results screen renders the same verification
     // vector as the live ledger — per-state verdicts plus each
     // failing state's own feedback line.
-    let mechanics = crate::astra::mechanic_states(&level, astra.ident());
+    let mechanics = crate::astra::mechanic_states(&level, &astra);
     let state_lines = level.verification_states(
         &live.graph,
         live.tx_dbm,

@@ -72,5 +72,8 @@
   ],
   "tutorial_identification": [
     "New bench rule: identify before you amplify. Attach the remote at the drop, test every candidate in the closet, and let the mapper — not a handwritten label — tell you which run is ours."
+  ],
+  "service_fail": [
+    "Continuity's fine, the level's fine — and service is still drowning. That's not a gain problem, that's a bad piece of plant. Find it and swap it."
   ]
 }

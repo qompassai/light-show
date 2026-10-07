@@ -33,7 +33,7 @@ fn update_ledger_text(
     level: Res<LevelDef>,
     active_outage: Res<ActiveOutage>,
     cores: Res<Cores>,
-    ident: Option<Res<crate::states::identification::IdentificationProgress>>,
+    astra: crate::astra::AstraProgress,
     mut query: Query<&mut Text, With<LedgerText>>,
 ) {
     let outage_suffix = active_outage
@@ -53,7 +53,7 @@ fn update_ledger_text(
     // same vector the results screen uses — one source, two surfaces.
     // Mechanic states are assembled in `crate::astra` from the live
     // progress resources.
-    let mechanics = crate::astra::mechanic_states(&level, ident.as_deref());
+    let mechanics = crate::astra::mechanic_states(&level, &astra);
     let states = crate::level::states_summary(&level.verification_states(
         &live.graph,
         live.tx_dbm,

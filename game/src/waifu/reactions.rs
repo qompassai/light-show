@@ -166,10 +166,13 @@ pub enum ReactionTrigger {
     /// (Astra §2b). Fires only on Ondine's track; the key exists in
     /// every main bank so resolution never falls through.
     IdentificationWrong,
+    /// The Service (CNR) state failed while Carrier Level passed —
+    /// the C3 moment (Astra §2c). Fired by the astra attempt watcher.
+    ServiceStateFail,
 }
 
 impl ReactionTrigger {
-    pub const ALL: [ReactionTrigger; 9] = [
+    pub const ALL: [ReactionTrigger; 10] = [
         ReactionTrigger::FirstPlacement,
         ReactionTrigger::SegmentComplete,
         ReactionTrigger::TooHot,
@@ -179,6 +182,7 @@ impl ReactionTrigger {
         ReactionTrigger::IdleNudge,
         ReactionTrigger::OutageStart,
         ReactionTrigger::IdentificationWrong,
+        ReactionTrigger::ServiceStateFail,
     ];
 }
 
@@ -196,6 +200,7 @@ pub fn trigger_spec(trigger: ReactionTrigger) -> (&'static str, Emotion) {
         ReactionTrigger::IdleNudge => ("idle_nudge", Emotion::Playful),
         ReactionTrigger::OutageStart => ("outage_start", Emotion::Surprised),
         ReactionTrigger::IdentificationWrong => ("identification_wrong", Emotion::Annoyed),
+        ReactionTrigger::ServiceStateFail => ("service_fail", Emotion::Worried),
     }
 }
 

@@ -33,5 +33,11 @@
     "edge_to": 2,
     "fires_after_seconds": 15.0,
     "kind": "IngressNoise"
+  },
+  "defective_edge":   {
+      "from": 1,
+      "to": 2,
+      "floor_penalty_dbmv": 36.0,
+      "spare_label": "Bench-tested jumper J-5"
   }
 }

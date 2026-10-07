@@ -98,6 +98,8 @@ fn playthrough_app() -> App {
     app.init_resource::<crate::states::triage_console::TriageProgress>();
     app.init_resource::<crate::states::quiz::QuizProgress>();
     app.init_resource::<crate::states::identification::IdentificationProgress>();
+    app.init_resource::<crate::states::jumper::JumperProgress>();
+    app.init_resource::<crate::astra::AttemptTelemetry>();
     app.add_plugins((
         MenuPlugin,
         CompanionSelectPlugin,
@@ -897,6 +899,8 @@ fn playthrough_app_with_full_ui() -> App {
         crate::states::quiz::QuizPlugin,
         crate::states::triage_console::TriageConsolePlugin,
         crate::states::identification::IdentificationConsolePlugin,
+        crate::states::jumper::JumperConsolePlugin,
+        crate::astra::AstraPlugin,
         crate::waifu::dialogue_ui::DialogueUiPlugin,
     ));
     app
@@ -980,6 +984,14 @@ fn production_plugin_set_no_b0001_on_level_load() {
     assert!(
         entity_count::<crate::states::identification::IdentificationButton>(&mut ident_app) > 0,
         "the identification console must spawn its buttons on c1l1"
+    );
+
+    // Ondine's c1l5 carries the defective jumper (Astra §2c).
+    let mut jumper_app = playthrough_app_with_full_ui();
+    jump_to_level(&mut jumper_app, Companion::Coax, level_index_for_id("c1l5"));
+    assert!(
+        entity_count::<crate::states::jumper::JumperButton>(&mut jumper_app) > 0,
+        "the jumper console must spawn its buttons on c1l5"
     );
 }
 

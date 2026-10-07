@@ -172,6 +172,12 @@ impl DialogueBank {
                     "That tone reads on the wrong fiber. Label discipline exists so the next tech doesn't inherit our guesses.",
                 ],
             ),
+            (
+                "service_fail",
+                &[
+                    "Light's in window and the service still fails — read the budget again. The failure is in the plant, not the launch.",
+                ],
+            ),
         ])
     }
 
@@ -295,6 +301,12 @@ impl DialogueBank {
                 "identification_wrong",
                 &[
                     "That mapper reading doesn't match the work order. Wrong run — test them, don't trust handwriting.",
+                ],
+            ),
+            (
+                "service_fail",
+                &[
+                    "Continuity's fine, the level's fine — and service is still drowning. That's not a gain problem, that's a bad piece of plant. Find it and swap it.",
                 ],
             ),
             (
@@ -431,6 +443,12 @@ impl DialogueBank {
                     "Wrong run selected. In my world that's associating to the neighbor's AP — same lesson: verify the ID before you trust the link.",
                 ],
             ),
+            (
+                "service_fail",
+                &[
+                    "RSSI healthy, SNR failing — loud is not clear. Something is raising your floor, and more power won't fix it.",
+                ],
+            ),
         ])
     }
 
@@ -554,6 +572,12 @@ impl DialogueBank {
                 "identification_wrong",
                 &[
                     "Wrong drop. A mislabeled run is exactly how a neighbor's port gets pulled — verify before you disconnect anything.",
+                ],
+            ),
+            (
+                "service_fail",
+                &[
+                    "Link light's green and the service still fails. Continuity is not acceptance — test the service, not just the wire.",
                 ],
             ),
         ])

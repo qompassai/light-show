@@ -69,5 +69,8 @@
   ],
   "identification_wrong": [
     "That tone reads on the wrong fiber. Label discipline exists so the next tech doesn't inherit our guesses."
+  ],
+  "service_fail": [
+    "Light's in window and the service still fails — read the budget again. The failure is in the plant, not the launch."
   ]
 }

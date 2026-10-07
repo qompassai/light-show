@@ -36,6 +36,7 @@ impl Plugin for PlayingPlugin {
                     super::api_console::setup_api_console,
                     super::triage_console::setup_triage_console,
                     super::identification::setup_identification_console,
+                    super::jumper::setup_jumper_console,
                     super::quiz::setup_quiz_ui,
                 )
                     .chain(),

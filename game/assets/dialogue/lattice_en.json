@@ -69,5 +69,8 @@
   ],
   "identification_wrong": [
     "Wrong drop. A mislabeled run is exactly how a neighbor's port gets pulled — verify before you disconnect anything."
+  ],
+  "service_fail": [
+    "Link light's green and the service still fails. Continuity is not acceptance — test the service, not just the wire."
   ]
 }

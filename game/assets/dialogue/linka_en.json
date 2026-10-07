@@ -69,5 +69,8 @@
   ],
   "identification_wrong": [
     "Wrong run selected. In my world that's associating to the neighbor's AP — same lesson: verify the ID before you trust the link."
+  ],
+  "service_fail": [
+    "RSSI healthy, SNR failing — loud is not clear. Something is raising your floor, and more power won't fix it."
   ]
 }
