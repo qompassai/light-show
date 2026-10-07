@@ -166,6 +166,135 @@ impl DialogueBank {
                     "Take your time. The light's patient, even if the outage clock isn't.",
                 ],
             ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "The bench is simple: tap an open span between two points, then pick the component that fills it — a splice, a span, a splitter. Placed something wrong? Tap it again and swap it. Nothing is final until the light adds up.",
+                    "Watch the path light up as you build. A finished route from OLT to ONT is a route I can measure — and I will measure it, out loud, every time.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "Here's the only math that matters: launch power, minus every loss on the path, equals receive power. Fiber eats about 0.28 dB per kilometre at 1490. A fusion splice costs 0.075 dB, a mechanical one 0.4 — cheap now, expensive across forty splices.",
+                    "And when you meet a splitter, respect it: a 1x4 takes 7.3 dB off the top before your signal does anything else. Splitters are where budgets go to be humbled.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Welcome to Splice School — I'm Séraphine, and I teach fiber. Every level I give you works the same way: light leaves the OLT at a launch power, the plant takes its cut, and what's left has to land inside the ONT's receive window.",
+                    "Too little light and the receiver starves — TOO LOW. Too much and you cook the photodiode — TOO HOT. Your whole job is the number in between. Route the light, hit the window.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "Storm school, one lesson early: spans fail. Aerial plant takes wind damage, buried plant takes backhoes. When light dies mid-level, don't panic and don't rebuild — reroute onto the protection path and restore service first. The post-mortem can wait; the customer can't.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "First splice placed — good. See how the ledger updated? Every component you place writes a line: what it is, what it cost. That ledger is the OTDR's diary. Read it and you'll never guess at a fault again.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "There's your first verdict, and the ledger underneath tells you WHY — which span ate what, down to the tenth of a dB. TOO LOW means add light or cut loss; TOO HOT means pad it down. Never argue with a verdict. Follow the loss.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "One more thing before you run solo: parts you fry — components that go TOO HOT — come back as cores at results. The Warehouse trades in dead parts, so even a cooked amplifier isn't a total loss. Bank them, spend them, and try not to make a habit of cooking my inventory.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "Last thing, and it will matter more than anything I taught today: fiber has a name, and the name is a color pair — the tube it rides in, and its own color inside the tube. Blue tube, orange strand is a different fiber from orange tube, blue strand. When we reach the splice tray, that pair is the only identity a strand has. Verify the pair, then verify the light.",
+                ],
+            ),
+            (
+                "fj_coda_cat3",
+                &[
+                    "One more call before we roll: the neighbor's landline is dead. Don't guess — test. The Klein tester condemns the Cat 3 run in one pass: BAD CABLE. Swap the run, retest, dial tone. The tester verdict, not hope, is what condemns a cable. Write it in the notes and go home clean.",
+                ],
+            ),
+            (
+                "fj_demarc_trap",
+                &[
+                    "Survey skepticism, free of charge: the obvious box on the south wall belongs to the legacy carrier and it is NOT the demarc. The real demarc is on the roof, where the aerial path has been telling you to look all along. Verify the demarc. The obvious box lies.",
+                ],
+            ),
+            (
+                "fj_partial_warning",
+                &[
+                    "Stop and read the ledger before you call that done. You fixed one fault and left the other — the bleed and the dead splitter are separate line items, and the meter grades the whole path, not your effort. Both repairs, then re-measure.",
+                ],
+            ),
+            (
+                "fj_survey_ports",
+                &[
+                    "Ports one through four: about -25.00, every one. When all four legs read the same weak number, the fault is upstream and shared — the feed — not four coincidentally identical legs. Uniform readings indict the common path. Remember that shape.",
+                ],
+            ),
+            (
+                "fj_survey_sb",
+                &[
+                    "Meter at the SB: -25.45 dBm. For this plant that's a whisper — the receiver is straining to hear it. Write it down. A survey you can't quote from memory is a survey you'll redo from a ladder.",
+                ],
+            ),
+            (
+                "fj_survey_vfl",
+                &[
+                    "VFL out. There — light bleeding at the splice, and again in the white feed at the center block. Two faults, both visible, both in the ledger the moment you know where to look. This is why we measure before we touch: the plant was confessing the whole time.",
+                ],
+            ),
+            (
+                "fj_swap_done",
+                &[
+                    "New 1x4 in, tails redressed, port four capped — a capped port is a port that can't collect water, dirt, or regrets. Putty the vault and the handhole, tag the drop, and re-measure everything. The job isn't the repair. The job is the proof.",
+                ],
+            ),
+            (
+                "sp_beat1_clear",
+                &[
+                    "One tube down. Notice you never counted strands — you matched colors and the colors told the truth, because inside one tube they can't repeat. Hold onto how easy that felt. It's about to stop being true.",
+                ],
+            ),
+            (
+                "sp_beat2_trap",
+                &[
+                    "Stop. Look at fibers 2 and 13 before you touch anything: blue-orange and orange-blue. Same two colors, opposite chairs. If your hands splice by color memory here, you will light the wrong house beautifully. Pair first. Always.",
+                ],
+            ),
+            (
+                "sp_beat3_numbers",
+                &[
+                    "Numbers only now. Decode before you reach: fiber 26 — green tube, orange strand. The chart is not a crutch, it's the work order's other half. Fluency is just the chart, memorized by your hands.",
+                ],
+            ),
+            (
+                "sp_chart_handover",
+                &[
+                    "Before the tray opens, the chart — I'm putting it in your hands, not on a poster. Twelve colors, one sequence: blue, orange, green, brown, slate, white, red, black, yellow, violet, rose, aqua. Tubes wear it. Strands wear it again. A fiber's name is where the two cross.",
+                ],
+            ),
+            (
+                "sp_damaged_strand",
+                &[
+                    "That strand is crushed — see the tray-edge damage? Do not force a match that isn't there. Exclude it, take the designated spare, and write the swap on the work order so the next tech's chart matches the tray. A splice tray is a document. Author it like one.",
+                ],
+            ),
+            (
+                "sp_wrap",
+                &[
+                    "Tray closed, every drop lit by its own fiber. That's the whole craft in one sentence: identity before neatness, the pair before the light. The next tray you open alone will have worse lighting and no one narrating. You'll hear the sequence anyway.",
+                ],
+            ),
         ])
     }
 
@@ -283,6 +412,57 @@ impl DialogueBank {
                 &[
                     "Meter's waiting on you. Ingress loves an idle line, you know.",
                     "Still mapping it out? Start from the tap and work back.",
+                ],
+            ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "Same bench, different plant: tap an open run, pick what fills it — coax span, tap, amplifier. Amplifiers are the fun ones: place one and the level jumps, but so does everything wrong with the signal.",
+                    "Swap freely while you learn. A cascade is a chain of decisions, and I would rather you experiment on my bench than on a live node at 2 a.m.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "Coax math: RG-6 eats roughly 5.5 dB per hundred metres, and it eats more at high frequencies than low — that's tilt, and it will matter. An amplifier gives you its gain in dB back, minus honesty: every amp adds its noise figure to the noise floor.",
+                    "Which brings us to the number that runs my whole track: carrier-to-noise. CNR is your signal measured against the noise riding with it. Levels can be perfect while CNR fails — a loud, dirty signal is still a failed signal.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Ondine, coax. Forget everything fiber taught you about light — here we move RF, and we measure it in dBmV: decibels relative to one millivolt across 75 ohms. The headend launches hot, the plant bleeds level with distance, and the customer's tap has to land in its window.",
+                    "Your job on my levels: balance the cascade. Every amplifier you place adds gain AND noise. Level is easy to buy. Clean level is the craft.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "Ingress. Learn the word. A cracked shield, a loose connector, a corroded fitting — every breach lets the outside world's RF leak INTO my plant, and it all lands on the return path. When an ingress storm starts, your noise floor climbs about a dB every ten seconds. The fix is never a bigger amplifier. Amplify ingress and you've built a louder problem.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "Placed. Now read the ledger the coax way: it tracks your level in dBmV AND your carrier-to-noise, hop by hop. When a reading confuses you, the hop where the numbers bent is the hop that did it.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "First verdict. On coax you get three ways to fail: TOO LOW is starvation, TOO HOT is distortion — an overdriven amp smears the signal across itself — and CNR TOO LOW means the carrier is drowning in noise even at a healthy level. The verdict names which one. Believe it.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "House rules: overdrive an amplifier into distortion and it comes back as a core at results — the Warehouse pays for dead parts, and Ondine's rule is that a core earned is a lesson learned. Earn a few while the stakes are fake. Out there, that amp is a truck roll.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "Unity gain is the whole philosophy, so say it with me: what the plant takes, the cascade returns — no more, no less. Balance first, bravado never. Now go balance your first cascade.",
                 ],
             ),
         ])
@@ -407,6 +587,57 @@ impl DialogueBank {
                     "Quiet air's deceptive. Pick your channel and commit.",
                 ],
             ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "The bench, RF edition: tap an open hop and fill it — a wireless hop, an amplifier, or a repeater. The repeater is the one to watch: it doesn't boost what it hears, it retransmits fresh at its own power. Completely different animal from an amp.",
+                    "Distances are printed on every hop. Geometry is a component too — sometimes the best part you can place is a shorter path.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "Wireless math starts with the cruel one: free-space path loss. Double the distance at 2.4 GHz and you pay about 6 dB for it. Four hundred metres costs you roughly 92 dB before weather, walls, or bad luck get a vote.",
+                    "Then the number I actually grade: SNR. Your receiver hears signal and noise together; what matters is the gap between them. I'll quote you RSSI all day, but a strong RSSI with a stronger noise floor is a failing link wearing a costume.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Linka. I run wireless, which means I run the discipline of RSSI: received signal strength, in dBm, measured at the far end of a hop that would love to fail. Your job on my levels: close the link — land the receive level inside the window with a signal-to-noise ratio that holds.",
+                    "Anyone can shout across a field. We engineer links that still work when the band gets crowded and the weather turns.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "That's interference arriving. A co-channel network, a noisy neighbor AP, a microwave with a death wish — interference raises the effective noise floor and your SNR margin evaporates even though your RSSI never moved. When it starts: don't just add power. Change the geometry, change the channel plan in your head, or bridge the bad stretch with a repeater and reset the fight on your terms.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "Hop placed. Read the ledger my way: per-hop RSSI and the running SNR. The hop where SNR sags is where your link budget went — find it before it finds you at install time.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "First verdict, RF rules: TOO LOW means the receiver can't hear you — path loss won. TOO HOT means you're blasting the front end into compression. And SNR TOO LOW is the subtle one: plenty of signal, not enough of it standing above the noise. Three different diseases, three different cures. The verdict tells you which patient you have.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "Salvage rules, wireless edition: cook a receiver front end with a TOO HOT blast and the dead radio comes back as a core at results. The Warehouse pays, I learn what you did, and somewhere a WASPy little access point gets a second life. Still — measure twice, transmit once.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "Close the link, keep the margin, respect the noise floor. That's the whole religion. Now — two sites, one field, no cable to save you. Show me a link budget.",
+                ],
+            ),
         ])
     }
 
@@ -526,6 +757,56 @@ impl DialogueBank {
                     "Take your time. The link lights aren't going anywhere.",
                 ],
             ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "The bench, structured-cabling edition: tap an open run, choose the copper that fills it — or the switch that breaks it up. Placement is commitment here: a run you place is a run some future tech has to live with. Place like you'll be the one tracing it at midnight. Because you will.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "My math has no decibels, and it is not softer for it. Three hard constraints: one hundred metres per copper segment — that is the wall, and physics does not negotiate. Bandwidth: the far end must still get the megabits the level demands. And PoE: add up every powered device's draw and check it against the budget before you admire your topology.",
+                    "Violate any one of the three and the level fails, even if the other two are beautiful. Constraints are not suggestions with better PR.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Lattice. Wired Ethernet. My levels don't grade light or RF — they grade whether your link obeys the physics of copper and the arithmetic of power. The objective on every one: connect the endpoint, inside the distance wall, at the bandwidth demanded, within the PoE budget.",
+                    "Fiber gets the glory. Copper gets the building. Learn it properly.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "When something on my track goes down mid-level, it will not be romantic. It will be a switch out of PoE budget, a run past the wall, a link negotiated down to nothing. Read the failure as a constraint violation, find which of the three you broke, and fix the cause — not the symptom.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "Placed. The ledger on my track is a checklist: segment lengths against the wall, delivered bandwidth against the demand, PoE draw against the budget. Green across the board or it isn't done. 'Mostly connected' is a helpdesk ticket, not a result.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "First verdict. My verdicts name the broken constraint: TOO LONG, UNDER-BANDWIDTH, or OVER BUDGET. No mysteries, no vibes. If you take one habit from me, take this: when a link fails, ask which rule it broke before you touch a single cable.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "The Warehouse pays cores for parts you kill — and on my track the classic corpse is a PoE-starved switch or a switch you cooked by ignoring its budget. A core is a receipt for a lesson. Collect the lesson, skip the receipt where you can.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "One hundred metres. Full bandwidth. Inside the power budget. Three sentences, whole career. Now — the IDF is sixty-five metres from the closet and the desk is sixty-five past that. Do the arithmetic before you touch the bench.",
+                ],
+            ),
         ])
     }
 
@@ -551,6 +832,55 @@ impl DialogueBank {
                     "That's how you do a bulk turn-up. Nice work.",
                 ],
             ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "Your console here is the subscriber list and the profile catalog. Match each ONT to the service profile its subscriber actually bought — tier, technology, the works — then turn it up. The bench is provisioning, and provisioning punishes assumption.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "My arithmetic is per-subscriber: nine ONTs, nine demanded profiles, and the turn-up only counts when EVERY subscriber verifies against its own demand. One wrong tier isn't a rounding error — it's a customer paying for gigabit and testing at a hundred. The system will tell you which line failed. Systems are honest that way. People improvise.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Clara. Provisioning. On my track you don't route light — the plant is built, the ONTs are registered, and the office has already created the subscribers. Your job is the turn-up: assign the right GPON or XGS profile to every subscriber so the service they bought is the service that verifies.",
+                    "Fiber crews move light. I make light mean something. Precision is the whole personality.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "When a profile audit or an outage hits my track, work the list, not your feelings: which subscribers are down, which are merely mis-provisioned, and which were never right in the first place are three different problems wearing one red icon.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "First assignment made. Notice the console verifies the subscriber immediately — profile against demand, line by line. That instant honesty is the difference between provisioning and guessing.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "There's your first verdict: mismatch, named by subscriber. On my levels a failure is never 'somewhere in the network' — it is a specific ONT, a specific profile, a specific wrong assumption. Fix the named thing.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "The Warehouse still pays cores for hardware you kill on my track — a dead-box swap done carelessly is how ONTs become inventory. Provision first, swap second, and the cores you earn will be the honest kind.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "Registration IDs issued, profiles demanded, excuses not accepted. Nine subscribers are waiting for their first turn-up. Make each one verify.",
+                ],
+            ),
         ])
     }
 
@@ -568,6 +898,55 @@ impl DialogueBank {
                 &[
                     "Alarms acknowledged, severity correct, dispatch clean. Solid shift.",
                     "Cascading fault contained before it spread. That's the job.",
+                ],
+            ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "Your controls are the board itself: click an alarm to acknowledge it, work it, clear it. Acknowledging is a promise, not a dismissal — an acked alarm is an alarm with your name on it. Choose your promises like a professional.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "The math of a NOC is triage arithmetic: severity times scope, divided by time. A critical alarm on one card is a ticket. The same alarm on forty elements is a fiber cut with good PR. Count what's actually down before you decide what's loudest — the cascade always points back to one root that is quieter than its children.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Welcome to the NOC — Aino. My track is the alarm board: everything the network feels, it reports here, all at once, at 3 a.m., in red. Your job is not to fix plant — the crews do that. Your job is to know, faster than anyone, WHAT broke, WHERE, and what can safely wait until morning.",
+                    "One alarm on the board tonight. That restraint will not last. Nothing on this board ever stays at one.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "There — the board just lit up. This is a cascade: one root fault, a dozen child alarms, all shouting at once. Do not work them top to bottom. Find the parent — the cut, the card, the power event — acknowledge THAT, and watch half the board explain itself.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "Acknowledged — correctly, and on the root. See how the board settles when the first action is the right one? A NOC runs on exactly that: the discipline to diagnose before motion.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "Your first verdict on my track is a judgment call graded like math: cleared, escalated, or safely deferred. All three are legitimate — at the right time, for the right alarm. The board remembers which you chose and why.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "Cores, NOC edition: when field crews cook hardware on a repair, the dead parts bank as cores at results. Your contribution to that economy is simpler — the faster you name the root, the fewer parts die looking for it.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "The alarms never sleep, so we learn to. Triage calmly, acknowledge honestly, chase roots instead of noise. Your first shift starts now — one alarm, for now.",
                 ],
             ),
         ])
@@ -589,6 +968,55 @@ impl DialogueBank {
                     "Clean handoff, documented splits. A proper build.",
                 ],
             ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "Out here the bench is the last hundred meters: the drop, the slack, the ONT, your meter. Place each run like you're the one who'll re-enter this closure in February, in the rain, with a headlamp dying. Dress your slack. Label your work. Future you is also a person.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "Field math is the fiber budget with mud on it: the feeder is already lit and already spent its dB getting here. What's left at the drop is what you have — measure it at the ONT before you commit to anything. A reading in window is a promise you can keep. A reading you didn't take is a callback you're scheduling.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Hikari — field installations. Séraphine teaches the physics of light; my track is where light meets a customer's actual house. Your job: the drop install, done to standard, measured at the ONT, certified before you leave the driveway.",
+                    "My mentor's rule, and now yours: nobody certifies a number they didn't measure. We start there.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "Out here 'outage' has a smell: a dirty drop, a bend in the wall, a connector somebody's thumb lived on. When a reading dies on my track, check the last thing human hands touched before you blame the plant. It's the hands. It's always the hands.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "First run placed. Look at the slack you left and the bend you didn't — that neatness is not vanity, it's the next tech's troubleshooting time, bought in advance.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "There's your first field verdict, and it came from a measurement, not an opinion: in window, or it isn't. If it isn't, the ledger walks the loss back to the exact run that ate it. Field rule: believe the meter, then fix the meter's story.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "Kill a part in the field — cook it, crack it, contaminate it past cleaning — and it banks as a core at results. The Warehouse pays either way, but a clean install record pays better: callbacks are the only debt this job charges interest on.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "Fresh drop, lit feeder, one house that wants its internet. Measure at the ONT, certify what you measured, and leave the closure prettier than you found it. Go.",
+                ],
+            ),
         ])
     }
 
@@ -606,6 +1034,55 @@ impl DialogueBank {
                 &[
                     "Article mastered. You're thinking like a telecom administrator.",
                     "Timed retrieval, clean answer. The exam won't know what hit it.",
+                ],
+            ),
+            (
+                "tutorial_briefing_gestures",
+                &[
+                    "The controls are a question, four answers, and your judgment. No bench, no components — the component under test is you. Answer, get the reasoning, and let the reasoning argue back. That argument is where the learning lives.",
+                ],
+            ),
+            (
+                "tutorial_briefing_math",
+                &[
+                    "There is no budget math here — there is something less forgiving: thresholds. Seventy percent to pass, because the field does not grade on a curve and neither does the exam. The Articles are the budget: Article 90 tells you what the Code is FOR, Article 100 gives you the words — and in this trade, the words are load-bearing — and Article 110 tells you how work gets approved and done.",
+                ],
+            ),
+            (
+                "tutorial_briefing_objective",
+                &[
+                    "Léa. Study hall. My track is the theory underneath everyone else's hands: the National Electrical Code as it applies to communications work — grounding, wiring methods, hazardous locations, the law of the state you'll pull permits in.",
+                    "The others teach you to do the work. I teach you why the work is legal, safe, and insurable. Both halves are the trade.",
+                ],
+            ),
+            (
+                "tutorial_first_outage",
+                &[
+                    "When a question 'goes down' — when you're sure and the answer says otherwise — that is your outage, and the repair is the same as theirs: find the root. Which definition did you skim? Which exception did you miss? The Code rewards the reader who checks the exception before the rule finishes loading.",
+                ],
+            ),
+            (
+                "tutorial_first_placement",
+                &[
+                    "First answer in. Notice I give you the reasoning either way — a correct guess and a correct understanding score identically today and diverge completely on the exam. We're building the second one.",
+                ],
+            ),
+            (
+                "tutorial_first_verdict",
+                &[
+                    "Your verdicts here are scores, and a score is a map: it shows which Article is load-bearing and which is drywall. Fail a section and the map tells you where to study — that is a kinder diagnostic than any meter the others own.",
+                ],
+            ),
+            (
+                "tutorial_scoring_cores",
+                &[
+                    "No hardware dies in study hall, so cores here are simpler: pass cleanly and the Warehouse honors the scholarship. The real salvage is different — every wrong answer you repair now is a violation you don't install later.",
+                ],
+            ),
+            (
+                "tutorial_wrap",
+                &[
+                    "Articles 90, 100, 110 — purpose, definitions, requirements. Ten questions, seventy percent, no timer but mine. Open the book in your head, and begin.",
                 ],
             ),
         ])
@@ -756,6 +1233,98 @@ mod tests {
                 .unwrap_or_else(|e| panic!("mirror {path} does not parse: {e}"));
             let bank = DialogueBank::load_default(companion);
             assert_eq!(mirror.lines, bank.lines, "mirror {stem}_en.json drifted from the compiled bank");
+        }
+    }
+
+    const TUTORIAL_KEYS: &[&str] = &[
+        "tutorial_briefing_objective",
+        "tutorial_briefing_gestures",
+        "tutorial_briefing_math",
+        "tutorial_first_placement",
+        "tutorial_first_verdict",
+        "tutorial_first_outage",
+        "tutorial_scoring_cores",
+        "tutorial_wrap",
+    ];
+
+    const ALL_COMPANIONS: &[Companion] = &[
+        Companion::Fiber,
+        Companion::Coax,
+        Companion::Mobile,
+        Companion::Ethernet,
+        Companion::Clara,
+        Companion::Aino,
+        Companion::Hikari,
+        Companion::Lea,
+    ];
+
+    #[test]
+    fn all_eight_banks_carry_their_eight_tutorial_keys() {
+        // Specialists included explicitly: the completeness loops
+        // above iterate Companion::ALL (the four mains only), so
+        // specialist tutorial drift would otherwise be silent.
+        for companion in ALL_COMPANIONS {
+            let bank = DialogueBank::load_default(*companion);
+            for key in TUTORIAL_KEYS {
+                assert!(
+                    bank.lines.get(*key).is_some_and(|l| !l.is_empty()),
+                    "{companion:?} is missing tutorial lines for '{key}'"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn seraphine_bank_carries_the_field_job_and_splice_keys() {
+        const SCENARIO_KEYS: &[&str] = &[
+            "fj_coda_cat3",
+            "fj_demarc_trap",
+            "fj_partial_warning",
+            "fj_survey_ports",
+            "fj_survey_sb",
+            "fj_survey_vfl",
+            "fj_swap_done",
+            "sp_beat1_clear",
+            "sp_beat2_trap",
+            "sp_beat3_numbers",
+            "sp_chart_handover",
+            "sp_damaged_strand",
+            "sp_wrap",
+        ];
+        let bank = DialogueBank::load_default(Companion::Fiber);
+        for key in SCENARIO_KEYS {
+            assert!(
+                bank.lines.get(*key).is_some_and(|l| !l.is_empty()),
+                "seraphine is missing scenario lines for '{key}'"
+            );
+        }
+    }
+
+    #[test]
+    fn specialist_json_mirrors_match_the_compiled_banks() {
+        // The four specialist mirrors were created with the tutorial
+        // pass; pin them to the compiled banks like the mains' mirror
+        // test does, so they cannot drift silently either.
+        for companion in [
+            Companion::Clara,
+            Companion::Aino,
+            Companion::Hikari,
+            Companion::Lea,
+        ] {
+            let stem = companion.picker_stem();
+            let path = format!(
+                "{}/assets/dialogue/{stem}_en.json",
+                env!("CARGO_MANIFEST_DIR")
+            );
+            let text = std::fs::read_to_string(&path)
+                .unwrap_or_else(|e| panic!("mirror {path} unreadable: {e}"));
+            let mirror: DialogueBank = serde_json::from_str(&text)
+                .unwrap_or_else(|e| panic!("mirror {path} does not parse: {e}"));
+            let bank = DialogueBank::load_default(companion);
+            assert_eq!(
+                mirror.lines, bank.lines,
+                "mirror {stem}_en.json drifted from the compiled bank"
+            );
         }
     }
 

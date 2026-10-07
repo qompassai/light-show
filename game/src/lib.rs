@@ -25,6 +25,7 @@ mod salvage;
 pub mod save;
 pub mod shaders;
 mod states;
+pub mod tutorial;
 mod ui;
 pub mod waifu;
 pub mod warehouse;
@@ -209,6 +210,10 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
         .add_plugins(waifu::SeraphinePlugin)
         .add_plugins(waifu::dialogue_ui::DialogueUiPlugin)
         .add_plugins(waifu::reactions::ReactionsPlugin)
+        // After ReactionsPlugin (PillInbox) and PlayingPlugin: its
+        // OnEnter(Playing) staging runs after setup_level, and its
+        // feed system moves staged lines into the pill inbox.
+        .add_plugins(tutorial::TutorialPlugin)
         .add_plugins(fx::FxPlugin)
         .add_plugins(ui::LedgerUiPlugin)
         .add_plugins(ui::ButtonStylePlugin)

@@ -66,5 +66,31 @@
   "idle_nudge": [
     "Still measuring? Start with the longest run — it's the usual suspect.",
     "Take your time. The link lights aren't going anywhere."
+  ],
+  "tutorial_briefing_gestures": [
+    "The bench, structured-cabling edition: tap an open run, choose the copper that fills it — or the switch that breaks it up. Placement is commitment here: a run you place is a run some future tech has to live with. Place like you'll be the one tracing it at midnight. Because you will."
+  ],
+  "tutorial_briefing_math": [
+    "My math has no decibels, and it is not softer for it. Three hard constraints: one hundred metres per copper segment — that is the wall, and physics does not negotiate. Bandwidth: the far end must still get the megabits the level demands. And PoE: add up every powered device's draw and check it against the budget before you admire your topology.",
+    "Violate any one of the three and the level fails, even if the other two are beautiful. Constraints are not suggestions with better PR."
+  ],
+  "tutorial_briefing_objective": [
+    "Lattice. Wired Ethernet. My levels don't grade light or RF — they grade whether your link obeys the physics of copper and the arithmetic of power. The objective on every one: connect the endpoint, inside the distance wall, at the bandwidth demanded, within the PoE budget.",
+    "Fiber gets the glory. Copper gets the building. Learn it properly."
+  ],
+  "tutorial_first_outage": [
+    "When something on my track goes down mid-level, it will not be romantic. It will be a switch out of PoE budget, a run past the wall, a link negotiated down to nothing. Read the failure as a constraint violation, find which of the three you broke, and fix the cause — not the symptom."
+  ],
+  "tutorial_first_placement": [
+    "Placed. The ledger on my track is a checklist: segment lengths against the wall, delivered bandwidth against the demand, PoE draw against the budget. Green across the board or it isn't done. 'Mostly connected' is a helpdesk ticket, not a result."
+  ],
+  "tutorial_first_verdict": [
+    "First verdict. My verdicts name the broken constraint: TOO LONG, UNDER-BANDWIDTH, or OVER BUDGET. No mysteries, no vibes. If you take one habit from me, take this: when a link fails, ask which rule it broke before you touch a single cable."
+  ],
+  "tutorial_scoring_cores": [
+    "The Warehouse pays cores for parts you kill — and on my track the classic corpse is a PoE-starved switch or a switch you cooked by ignoring its budget. A core is a receipt for a lesson. Collect the lesson, skip the receipt where you can."
+  ],
+  "tutorial_wrap": [
+    "One hundred metres. Full bandwidth. Inside the power budget. Three sentences, whole career. Now — the IDF is sixty-five metres from the closet and the desk is sixty-five past that. Do the arithmetic before you touch the bench."
   ]
 }

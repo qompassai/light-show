@@ -1,0 +1,35 @@
+{
+  "greeting": [
+    "Clara here. Let's get these ONTs provisioned right the first time.",
+    "Calix CMS is warmed up. What's our turn-up target today?"
+  ],
+  "level_win": [
+    "Clean provisioning run. Every subscriber lit, first try.",
+    "That's how you do a bulk turn-up. Nice work."
+  ],
+  "tutorial_briefing_gestures": [
+    "Your console here is the subscriber list and the profile catalog. Match each ONT to the service profile its subscriber actually bought — tier, technology, the works — then turn it up. The bench is provisioning, and provisioning punishes assumption."
+  ],
+  "tutorial_briefing_math": [
+    "My arithmetic is per-subscriber: nine ONTs, nine demanded profiles, and the turn-up only counts when EVERY subscriber verifies against its own demand. One wrong tier isn't a rounding error — it's a customer paying for gigabit and testing at a hundred. The system will tell you which line failed. Systems are honest that way. People improvise."
+  ],
+  "tutorial_briefing_objective": [
+    "Clara. Provisioning. On my track you don't route light — the plant is built, the ONTs are registered, and the office has already created the subscribers. Your job is the turn-up: assign the right GPON or XGS profile to every subscriber so the service they bought is the service that verifies.",
+    "Fiber crews move light. I make light mean something. Precision is the whole personality."
+  ],
+  "tutorial_first_outage": [
+    "When a profile audit or an outage hits my track, work the list, not your feelings: which subscribers are down, which are merely mis-provisioned, and which were never right in the first place are three different problems wearing one red icon."
+  ],
+  "tutorial_first_placement": [
+    "First assignment made. Notice the console verifies the subscriber immediately — profile against demand, line by line. That instant honesty is the difference between provisioning and guessing."
+  ],
+  "tutorial_first_verdict": [
+    "There's your first verdict: mismatch, named by subscriber. On my levels a failure is never 'somewhere in the network' — it is a specific ONT, a specific profile, a specific wrong assumption. Fix the named thing."
+  ],
+  "tutorial_scoring_cores": [
+    "The Warehouse still pays cores for hardware you kill on my track — a dead-box swap done carelessly is how ONTs become inventory. Provision first, swap second, and the cores you earn will be the honest kind."
+  ],
+  "tutorial_wrap": [
+    "Registration IDs issued, profiles demanded, excuses not accepted. Nine subscribers are waiting for their first turn-up. Make each one verify."
+  ]
+}
