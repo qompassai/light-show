@@ -1012,7 +1012,11 @@ fn production_plugin_set_no_b0001_on_level_load() {
         "the workbench console must spawn its buttons on c1l3"
     );
     let mut survey_app = playthrough_app_with_full_ui();
-    jump_to_level(&mut survey_app, Companion::Mobile, level_index_for_id("m1l2"));
+    jump_to_level(
+        &mut survey_app,
+        Companion::Mobile,
+        level_index_for_id("m1l2"),
+    );
     assert!(
         entity_count::<crate::states::survey::SurveyButton>(&mut survey_app) > 0,
         "the survey console must spawn its diagnosis buttons on m1l2"
