@@ -41,6 +41,16 @@ Suite: 789 tests passing, 0 failures.
   portraits (Companion::portrait_path, unit-test asserted) -
   code-loaded carriers stay until a replacement lands at the path.
 
+- Trailer sting pilot (2026-10-07): trailer-spec section A built as
+  code animation (PIL/numpy; build record: sandbox
+  light-show-ux/trailer-sting/BUILD-RECORD.md) from title_logo.png +
+  the canonical Seraphine/Lattice portraits. docs/media/
+  light-show-trailer.mp4 (1920x1080, 30fps, 4.0s, silent - the spec
+  music track is uncommissioned) + light-show-trailer-preview.gif
+  landed WITH the README Trailer section in f976ab5; assets_images
+  18/0, full suite 789/0. Full 75s trailer remains descoped pending
+  Matt's verdict on the pilot.
+
 ## Open questions for Matt
 - (carried by the finish-up report's starred items: release signing,
   Play upload, real-device checks, F-Droid MR)

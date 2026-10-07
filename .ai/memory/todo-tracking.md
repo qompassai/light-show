@@ -83,4 +83,7 @@ for issues, persistent memory updated, and commit/push as needed."
   assets/art/expressions/; Ondine + Linka sheets/pickers (6/6)
   installed; README idle GIFs deployed (Lattice v11 16f); two
   non-canonical GIFs quarantined out of tree.
-- Suite: 789 tests passing, 0 failures. Remote main == 5f544ff.
+- Trailer sting pilot (spec section A) rendered as code animation
+  and landed with the README Trailer section (docs/media/ mp4 +
+  preview gif).
+- Suite: 789 tests passing, 0 failures. Remote main == f976ab5.
