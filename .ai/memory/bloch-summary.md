@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791383267
-Git HEAD: 389e02f4e8caac452c745caa7f345c1ec5853e88
+Generated: 1791383590
+Git HEAD: 862bee5deeabe6a7852ada36229572fb226847e6
 
 ## Files: 5395 total
 
@@ -25,12 +25,12 @@ Git HEAD: 389e02f4e8caac452c745caa7f345c1ec5853e88
 - kotlin: 4 files
 - properties: 2 files
 - css: 1 files
-- uproject: 1 files
-- html: 1 files
-- bat: 1 files
 - nix: 1 files
 - cff: 1 files
+- bat: 1 files
 - yaml: 1 files
+- uproject: 1 files
+- html: 1 files
 
 ## Top definitions by probability
 
