@@ -13,12 +13,15 @@
 //! bubble that has been up longer than [`STALE_SECS`]; otherwise it is
 //! dropped, never queued — a busy sequence can never backlog into spam.
 //!
-//! Completion timing (playtest round 2): level-ending systems fire the
-//! completion reaction and begin the [`ResultsGate`] hold instead of
-//! requesting `Results` directly; [`drive_results_gate`] issues the
-//! transition only once the hold expires, so the reaction gets real
-//! in-level screen time (at least ~1.6 s) before the results screen can
-//! cover it.
+//! Completion timing (playtest round 2, tightened in round 3):
+//! level-ending systems fire the completion reaction and begin the
+//! [`ResultsGate`] hold instead of requesting `Results` directly;
+//! [`drive_results_gate`] issues the transition only once the hold's
+//! minimum has elapsed AND the pill has fully finished its run — the
+//! current line typed out and read, the queue and both inboxes
+//! drained (see [`pill_run_complete`]). A long completion line is
+//! therefore never flash-covered by the results screen, while a win
+//! with no line at all still gets exactly the minimum beat.
 //!
 //! Presentation (Matt's universal pill rule): the bubble described
 //! in the original spec IS the bottom pill — a rounded bar anchored
@@ -947,19 +950,72 @@ fn tick_bubble(
     }
 }
 
-/// Tick the completion hold; when it expires, request the Results
-/// transition the level-ending system deferred. This is the only
-/// system that turns a held completion into a screen change, so no
-/// reaction can be flash-covered by a state change.
+/// Whether the pill has FULLY finished its current run: no line is
+/// up in the queue, the typewriter (if one survives its line) has
+/// typed out, and no reaction or pill line is still waiting to be
+/// offered. A harness without the pill state at all counts as
+/// complete — the gate must never stall on a surface that does not
+/// exist (headless degrade, the same pattern as the gate resource
+/// itself). The driver and the pill's own tick systems are installed
+/// together by [`ReactionsPlugin`], so wherever the driver runs the
+/// queue is guaranteed to be draining.
+fn pill_run_complete(
+    bubble: Option<&BubbleState>,
+    reaction_inbox: Option<&ReactionInbox>,
+    pill_inbox: Option<&PillInbox>,
+) -> bool {
+    let Some(bubble) = bubble else {
+        return true;
+    };
+    if bubble.queue.is_active() {
+        return false;
+    }
+    if let Some(typewriter) = &bubble.typewriter {
+        if !typewriter.is_completed() {
+            return false;
+        }
+    }
+    if let Some(inbox) = reaction_inbox {
+        if !inbox.is_empty() {
+            return false;
+        }
+    }
+    if let Some(inbox) = pill_inbox {
+        if !inbox.is_empty() {
+            return false;
+        }
+    }
+    true
+}
+
+/// Tick the completion hold; once its minimum has elapsed AND the
+/// pill signals its run is complete (see [`pill_run_complete`]),
+/// release the hold and request the Results transition the
+/// level-ending system deferred. This is the only system that turns
+/// a held completion into a screen change, so no reaction can be
+/// flash-covered by a state change. When no reaction was queued the
+/// minimum is the sole condition — no phantom wait.
 fn drive_results_gate(
     time: Res<Time>,
     gate: Option<ResMut<ResultsGate>>,
+    bubble: Option<Res<BubbleState>>,
+    reaction_inbox: Option<Res<ReactionInbox>>,
+    pill_inbox: Option<Res<PillInbox>>,
     mut request: ResMut<TransitionRequest>,
 ) {
     let Some(mut gate) = gate else {
         return;
     };
-    if gate.tick(time.delta_secs()) && request.0.is_none() {
+    gate.tick(time.delta_secs());
+    if !gate.minimum_met() || request.0.is_some() {
+        return;
+    }
+    let pill_done = pill_run_complete(
+        bubble.as_deref(),
+        reaction_inbox.as_deref(),
+        pill_inbox.as_deref(),
+    );
+    if pill_done && gate.release() {
         request.0 = Some(GameState::Results);
     }
 }
@@ -1146,6 +1202,272 @@ mod tests {
         assert_eq!(
             *app.world().resource::<State<GameState>>().get(),
             GameState::Playing
+        );
+    }
+
+    // ---- completion gate: the pill finishes before Results ----
+
+    /// `reaction_test_app` plus the results gate and a fixed 0.1 s
+    /// frame step, so gate/pill timing assertions are deterministic.
+    fn gate_test_app() -> App {
+        let mut app = reaction_test_app();
+        app.init_resource::<ResultsGate>();
+        app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_millis(100),
+        ));
+        app
+    }
+
+    fn enter_outage(app: &mut App) {
+        app.world_mut()
+            .resource_mut::<NextState<GameState>>()
+            .set(GameState::OutageActive);
+        for _ in 0..4 {
+            app.update();
+        }
+        assert_eq!(
+            *app.world().resource::<State<GameState>>().get(),
+            GameState::OutageActive
+        );
+    }
+
+    /// Begin the completion hold and offer `text` to the pill — the
+    /// two halves of what a level-ending system does on a win.
+    fn begin_completion_with_line(app: &mut App, text: &str) {
+        app.world_mut().resource_mut::<ResultsGate>().begin();
+        app.world_mut()
+            .resource_mut::<PillInbox>()
+            .push_line(PillSpeaker::Companion(Companion::Fiber), text);
+    }
+
+    fn run_frames(app: &mut App, frames: usize) {
+        for _ in 0..frames {
+            app.update();
+        }
+    }
+
+    fn results_requested(app: &App) -> bool {
+        app.world().resource::<TransitionRequest>().0.is_some()
+    }
+
+    #[test]
+    fn pill_run_complete_truth_table() {
+        // No pill state at all: complete (headless degrade).
+        assert!(pill_run_complete(None, None, None));
+        let idle = BubbleState::default();
+        assert!(
+            pill_run_complete(Some(&idle), None, None),
+            "an idle pill is complete"
+        );
+        // A line up in the queue blocks.
+        let mut showing = BubbleState::default();
+        let _ = showing.queue.offer("hello".to_string(), Emotion::Neutral);
+        assert!(
+            !pill_run_complete(Some(&showing), None, None),
+            "a line up in the queue blocks"
+        );
+        // A typewriter that has not typed out blocks; completed frees.
+        let mut typing = BubbleState::default();
+        typing.typewriter = Some(Typewriter::new("hello"));
+        assert!(
+            !pill_run_complete(Some(&typing), None, None),
+            "unfinished typing blocks"
+        );
+        typing.typewriter.as_mut().expect("set above").complete();
+        assert!(
+            pill_run_complete(Some(&typing), None, None),
+            "typed-out text is complete"
+        );
+        // Work still waiting in either inbox blocks.
+        let mut reactions = ReactionInbox::default();
+        reactions.push(ReactionTrigger::LevelComplete);
+        assert!(
+            !pill_run_complete(Some(&idle), Some(&reactions), None),
+            "a pending reaction blocks"
+        );
+        let mut pill_lines = PillInbox::default();
+        pill_lines.push_line(PillSpeaker::Companion(Companion::Fiber), "queued");
+        assert!(
+            !pill_run_complete(Some(&idle), None, Some(&pill_lines)),
+            "a pending pill line blocks"
+        );
+    }
+
+    #[test]
+    fn gate_driver_without_pill_state_releases_at_the_minimum() {
+        use bevy::ecs::system::RunSystemOnce;
+        // Headless shape: gate + request + clock, but no BubbleState
+        // and no inboxes — the minimum is the sole condition.
+        let mut world = World::new();
+        world.init_resource::<Time>();
+        world.init_resource::<ResultsGate>();
+        world.init_resource::<TransitionRequest>();
+        world.resource_mut::<ResultsGate>().begin();
+        for _ in 0..17 {
+            world
+                .resource_mut::<Time>()
+                .advance_by(std::time::Duration::from_millis(100));
+            world
+                .run_system_once(drive_results_gate)
+                .expect("driver runs headless");
+        }
+        assert!(
+            world.resource::<TransitionRequest>().0.is_none(),
+            "released before the minimum"
+        );
+        world
+            .resource_mut::<Time>()
+            .advance_by(std::time::Duration::from_millis(300));
+        world
+            .run_system_once(drive_results_gate)
+            .expect("driver runs headless");
+        assert_eq!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::Results)
+        );
+    }
+
+    #[test]
+    fn gate_driver_without_a_gate_is_a_no_op() {
+        use bevy::ecs::system::RunSystemOnce;
+        let mut world = World::new();
+        world.init_resource::<Time>();
+        world.init_resource::<TransitionRequest>();
+        world
+            .run_system_once(drive_results_gate)
+            .expect("driver tolerates a missing gate");
+        assert!(world.resource::<TransitionRequest>().0.is_none());
+    }
+
+    #[test]
+    fn gate_waits_for_a_long_completion_line_to_finish() {
+        let mut app = gate_test_app();
+        enter_playing(&mut app);
+        // 100 chars: read time 1.4 + 4.5 = 5.9 s, typing ~3.3 s.
+        let line = "a".repeat(100);
+        begin_completion_with_line(&mut app, &line);
+        run_frames(&mut app, 18); // the old fixed 1.8 s hold point
+        assert!(
+            !results_requested(&app),
+            "results fired at the 1.8 s minimum while the line still runs"
+        );
+        run_frames(&mut app, 37); // 5.5 s: read time not yet elapsed
+        assert!(
+            !results_requested(&app),
+            "results fired before the read time elapsed"
+        );
+        run_frames(&mut app, 10); // 6.5 s: the line's full run is done
+        assert!(
+            results_requested(&app),
+            "results never fired after the line finished"
+        );
+    }
+
+    #[test]
+    fn gate_releases_a_short_line_at_the_minimum_not_instantly() {
+        let mut app = gate_test_app();
+        enter_playing(&mut app);
+        begin_completion_with_line(&mut app, "ok"); // read clamps to 1.6 s
+        run_frames(&mut app, 17); // 1.7 s: line done, minimum not met
+        assert!(
+            !results_requested(&app),
+            "short line flashed past before the minimum hold"
+        );
+        run_frames(&mut app, 3); // 2.0 s
+        assert!(
+            results_requested(&app),
+            "gate never released after the minimum"
+        );
+    }
+
+    #[test]
+    fn gate_without_a_line_releases_at_the_minimum_only() {
+        let mut app = gate_test_app();
+        enter_playing(&mut app);
+        app.world_mut().resource_mut::<ResultsGate>().begin();
+        run_frames(&mut app, 17);
+        assert!(!results_requested(&app), "released before the minimum");
+        run_frames(&mut app, 3);
+        assert!(
+            results_requested(&app),
+            "no-line win stalled past the minimum (phantom wait)"
+        );
+    }
+
+    #[test]
+    fn gate_holds_during_outage_until_the_line_finishes() {
+        // Outage resolutions begin the same gate from OutageActive;
+        // the one shared driver must gate there too. (Quiz
+        // completions begin it from Playing — the same driver and
+        // state arm as the Playing scenarios above.)
+        let mut app = gate_test_app();
+        enter_outage(&mut app);
+        let line = "a".repeat(100);
+        begin_completion_with_line(&mut app, &line);
+        run_frames(&mut app, 18);
+        assert!(
+            !results_requested(&app),
+            "outage results covered the line at 1.8 s"
+        );
+        run_frames(&mut app, 37);
+        assert!(!results_requested(&app));
+        run_frames(&mut app, 10);
+        assert!(results_requested(&app), "outage gate never released");
+    }
+
+    #[test]
+    fn advancing_the_line_keeps_results_on_the_read_clock() {
+        let mut app = gate_test_app();
+        enter_playing(&mut app);
+        let line = "a".repeat(100); // read time 5.9 s
+        begin_completion_with_line(&mut app, &line);
+        // 1.0 s in: still typing.
+        run_frames(&mut app, 10);
+        // The advance interaction completes the typewriter instantly
+        // — the same `Typewriter::complete` the dialogue advance path
+        // calls. The gate keys on completion state, so after this the
+        // line's READ clock is what remains.
+        let mut bubble = app.world_mut().resource_mut::<BubbleState>();
+        let typewriter = bubble.typewriter.as_mut().expect("the line is typing");
+        assert!(!typewriter.is_completed());
+        typewriter.complete();
+        drop(bubble);
+        run_frames(&mut app, 10); // 2.0 s: past minimum, typing done
+        assert!(
+            !results_requested(&app),
+            "advance skipped the read time: results followed the click, not the clock"
+        );
+        run_frames(&mut app, 45); // 6.5 s
+        assert!(
+            results_requested(&app),
+            "gate never released after the read time"
+        );
+    }
+
+    #[test]
+    fn a_second_line_extends_the_gate_until_it_finishes() {
+        let mut app = gate_test_app();
+        enter_playing(&mut app);
+        // Line A: 40 chars, read time 3.2 s.
+        begin_completion_with_line(&mut app, &"a".repeat(40));
+        // 2.1 s in: A is stale (> 2.0 s) but still up.
+        run_frames(&mut app, 21);
+        // Line B replaces A under the queue's staleness rule and runs
+        // its own full 5.9 s (until ~8.0 s).
+        app.world_mut()
+            .resource_mut::<PillInbox>()
+            .push_line(PillSpeaker::Companion(Companion::Fiber), "b".repeat(100));
+        run_frames(&mut app, 14); // 3.5 s: past A's original expiry
+        assert!(
+            !results_requested(&app),
+            "gate released on the first line's clock while the second still runs"
+        );
+        run_frames(&mut app, 40); // 7.5 s: B still reading
+        assert!(!results_requested(&app));
+        run_frames(&mut app, 11); // 8.6 s: B done
+        assert!(
+            results_requested(&app),
+            "gate never released after the second line"
         );
     }
 

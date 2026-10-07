@@ -192,18 +192,33 @@ fn drive_transition_fade(
 
 /// Applies pending [`TransitionRequest`]s instantly, bypassing the fade.
 ///
-/// Seconds a level-ending reaction (bubble + emotion) must stay
-/// visible in-level before the `Results` transition may start. The
-/// floor from the playtest is ~1.6 s of real visibility; the margin
-/// above it covers the 0.3 s fade-out that follows, so the reaction is
-/// never flash-covered by the results screen.
+/// Minimum seconds a level-ending reaction (bubble + emotion) must
+/// stay visible in-level before the `Results` transition may start.
+/// The floor from the playtest is ~1.6 s of real visibility; the
+/// margin above it covers the 0.3 s fade-out that follows, so the
+/// reaction is never flash-covered by the results screen. This is a
+/// MINIMUM, not the release condition: the transition also waits for
+/// the pill to finish the line's full run (see [`ResultsGate`]).
 pub const COMPLETION_HOLD_SECS: f32 = 1.8;
 
 /// A deferred `Results` transition: level-ending systems (win check,
 /// outage resolution, quiz scoring) `begin` the hold when they fire the
-/// completion reaction, and the reaction system
-/// (`waifu::reactions::drive_results_gate`) ticks it down and writes
-/// the actual [`TransitionRequest`] when it expires — exactly once.
+/// completion reaction. The hold has two halves:
+///
+/// * a MINIMUM of [`COMPLETION_HOLD_SECS`] — even the shortest line
+///   gets real in-level screen time, and a win with no line at all
+///   still pauses for the beat;
+/// * a completion condition owned by the caller: the results driver
+///   (`waifu::reactions::drive_results_gate`) releases the hold with
+///   [`ResultsGate::release`] only once the dialogue pill has FULLY
+///   finished its run (current line typed out and read, queue and
+///   inboxes drained), then writes the [`TransitionRequest`] — exactly
+///   once.
+///
+/// The hold stays latched after the minimum elapses
+/// ([`ResultsGate::is_holding`] remains true) so level-ending systems
+/// keep treating the completion as pending — and never re-fire —
+/// while a long line finishes.
 ///
 /// Headless harnesses that never insert this resource keep the old
 /// immediate-request behavior (callers use `Option<ResMut<ResultsGate>>`
@@ -211,12 +226,14 @@ pub const COMPLETION_HOLD_SECS: f32 = 1.8;
 #[derive(Debug, Default, Resource)]
 pub struct ResultsGate {
     remaining_secs: Option<f32>,
+    minimum_met: bool,
 }
 
 impl ResultsGate {
     /// Start (or restart) the completion hold.
     pub fn begin(&mut self) {
         self.remaining_secs = Some(COMPLETION_HOLD_SECS);
+        self.minimum_met = false;
     }
 
     /// Whether a completion is currently being held in-level.
@@ -227,17 +244,43 @@ impl ResultsGate {
     /// Cancel any pending hold (a fresh attempt supersedes it).
     pub fn clear(&mut self) {
         self.remaining_secs = None;
+        self.minimum_met = false;
     }
 
     /// Advance the hold by `dt_secs` (clamped at 0). Returns `true`
-    /// exactly once: on the tick the hold expires.
+    /// exactly once: on the tick the minimum hold elapses. The clock
+    /// does NOT release the hold — it stays latched until
+    /// [`ResultsGate::release`] or [`ResultsGate::clear`].
     pub fn tick(&mut self, dt_secs: f32) -> bool {
         let Some(remaining) = &mut self.remaining_secs else {
             return false;
         };
-        *remaining -= dt_secs.max(0.0);
+        if self.minimum_met {
+            return false;
+        }
+        *remaining = (*remaining - dt_secs.max(0.0)).max(0.0);
         if *remaining <= 0.0 {
+            self.minimum_met = true;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Whether the minimum hold has elapsed. The transition may be
+    /// released — never before this — once the caller-side completion
+    /// condition also holds.
+    pub fn minimum_met(&self) -> bool {
+        self.minimum_met
+    }
+
+    /// Release the hold so the caller can fire the transition.
+    /// Succeeds exactly once: only while holding, and only once the
+    /// minimum has elapsed. Returns whether this call released it.
+    pub fn release(&mut self) -> bool {
+        if self.remaining_secs.is_some() && self.minimum_met {
             self.remaining_secs = None;
+            self.minimum_met = false;
             true
         } else {
             false
@@ -318,28 +361,52 @@ mod tests {
     #[test]
     fn results_gate_holds_for_the_full_completion_beat() {
         // The playtest floor is ~1.6 s of in-level reaction visibility:
-        // the hold must not expire before it, and must expire exactly
-        // once shortly after.
+        // the minimum must not elapse before it, and must elapse
+        // exactly once shortly after.
         assert!(COMPLETION_HOLD_SECS >= 1.6);
         let mut gate = ResultsGate::default();
         assert!(!gate.is_holding());
         assert!(!gate.tick(1.0), "an idle gate never expires");
         gate.begin();
         assert!(gate.is_holding());
-        assert!(!gate.tick(1.6), "still holding at the 1.6 s floor");
+        assert!(!gate.tick(1.6), "minimum not met at the 1.6 s floor");
         assert!(gate.is_holding());
-        assert!(gate.tick(0.3), "expires once the hold elapses");
+        assert!(!gate.minimum_met());
+        assert!(gate.tick(0.3), "minimum elapses once the hold is up");
+        assert!(gate.minimum_met());
+        // The clock alone never releases the hold: a long completion
+        // line may still be running, so the gate stays latched until
+        // the driver releases it.
+        assert!(gate.is_holding(), "hold latches past the minimum");
+        assert!(!gate.tick(0.3), "minimum elapsing fires exactly once");
+        assert!(gate.is_holding());
+    }
+
+    #[test]
+    fn results_gate_release_requires_holding_and_minimum() {
+        let mut gate = ResultsGate::default();
+        assert!(!gate.release(), "an idle gate cannot release");
+        gate.begin();
+        assert!(!gate.release(), "no release before the minimum");
+        assert!(gate.is_holding(), "a failed release keeps the hold");
+        assert!(gate.tick(COMPLETION_HOLD_SECS));
+        assert!(gate.release(), "release succeeds once both halves hold");
         assert!(!gate.is_holding());
-        assert!(!gate.tick(0.3), "expiry fires exactly once");
+        assert!(!gate.minimum_met(), "release resets the latch");
+        assert!(!gate.release(), "release fires exactly once");
     }
 
     #[test]
     fn results_gate_clear_cancels_a_pending_hold() {
         let mut gate = ResultsGate::default();
         gate.begin();
+        assert!(gate.tick(COMPLETION_HOLD_SECS));
+        assert!(gate.minimum_met());
         gate.clear();
         assert!(!gate.is_holding());
+        assert!(!gate.minimum_met(), "clear resets the minimum latch");
         assert!(!gate.tick(COMPLETION_HOLD_SECS + 1.0));
+        assert!(!gate.release(), "a cleared gate cannot release");
     }
 
     /// Drives `drive_transition_fade` through a full request cycle and
