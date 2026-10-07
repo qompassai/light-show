@@ -66,5 +66,8 @@
   "idle_nudge": [
     "Still thinking it over? The window isn't moving — trust your worst splice.",
     "Take your time. The light's patient, even if the outage clock isn't."
+  ],
+  "identification_wrong": [
+    "That tone reads on the wrong fiber. Label discipline exists so the next tech doesn't inherit our guesses."
   ]
 }

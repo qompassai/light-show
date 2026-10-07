@@ -36,5 +36,32 @@
     "edge_to": 3,
     "fires_after_seconds": 10.0,
     "kind": "AmplifierFailure"
+  },
+  "identification":   {
+      "remote_id": "ID-4",
+      "expected_port": "Port 2",
+      "candidates": [
+          {
+              "id": "run-a",
+              "closet_label": "Port 1",
+              "handwritten_label": null,
+              "is_service_run": false,
+              "mapper_id": "ID-1"
+          },
+          {
+              "id": "run-b",
+              "closet_label": "Port 2",
+              "handwritten_label": null,
+              "is_service_run": true,
+              "mapper_id": "ID-4"
+          },
+          {
+              "id": "run-c",
+              "closet_label": "Port 3",
+              "handwritten_label": "Primary - do not touch",
+              "is_service_run": false,
+              "mapper_id": "ID-8"
+          }
+      ]
   }
 }

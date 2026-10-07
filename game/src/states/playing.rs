@@ -35,6 +35,7 @@ impl Plugin for PlayingPlugin {
                     setup_level,
                     super::api_console::setup_api_console,
                     super::triage_console::setup_triage_console,
+                    super::identification::setup_identification_console,
                     super::quiz::setup_quiz_ui,
                 )
                     .chain(),
@@ -415,6 +416,7 @@ fn check_win_condition(
     sfx: Res<crate::audio::Sfx>,
     api_progress: Res<super::api_console::ApiProgress>,
     triage_progress: Res<super::triage_console::TriageProgress>,
+    astra: crate::astra::AstraProgress,
     board_roots: Query<Entity, With<crate::board::BoardRoot>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut glow_materials: Option<ResMut<Assets<crate::shaders::GlowMaterial>>>,
@@ -446,9 +448,14 @@ fn check_win_condition(
         Some(triage) => triage_progress.is_complete(&triage.expected_order),
         None => true,
     };
+    // Astra mechanic gates (§2b–§2f): every present optional block
+    // must pass beside the board, via the one conjunction in
+    // `crate::astra` (shared with the outage resolution path).
+    let astra_ok = crate::astra::astra_gates_pass(&level, &astra);
     if !transition_pending
         && api_ok
         && triage_ok
+        && astra_ok
         && level.is_win_state(&live.graph, live.tx_dbm, live.wavelength.0)
     {
         sfx.play(&mut commands, crate::audio::SfxKind::Win);

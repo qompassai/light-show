@@ -88,5 +88,39 @@
   "wavelength": "Nm1490",
   "window_max_dbm": 15.0,
   "window_min_dbm": 0.0,
-  "world": 2
+  "world": 2,
+  "identification":   {
+      "remote_id": "ID-7",
+      "expected_port": "Port 3",
+      "candidates": [
+          {
+              "id": "run-a",
+              "closet_label": "Port 1",
+              "handwritten_label": null,
+              "is_service_run": false,
+              "mapper_id": "ID-2"
+          },
+          {
+              "id": "run-b",
+              "closet_label": "Port 2",
+              "handwritten_label": "Suite 204 drop",
+              "is_service_run": false,
+              "mapper_id": "ID-5"
+          },
+          {
+              "id": "run-c",
+              "closet_label": "Port 3",
+              "handwritten_label": null,
+              "is_service_run": true,
+              "mapper_id": "ID-7"
+          },
+          {
+              "id": "run-d",
+              "closet_label": "Port 4",
+              "handwritten_label": null,
+              "is_service_run": false,
+              "mapper_id": "ID-9"
+          }
+      ]
+  }
 }

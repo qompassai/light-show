@@ -162,10 +162,14 @@ pub enum ReactionTrigger {
     IdleNudge,
     /// A scripted outage just fired.
     OutageStart,
+    /// A wrong homerun was selected at the identification console
+    /// (Astra §2b). Fires only on Ondine's track; the key exists in
+    /// every main bank so resolution never falls through.
+    IdentificationWrong,
 }
 
 impl ReactionTrigger {
-    pub const ALL: [ReactionTrigger; 8] = [
+    pub const ALL: [ReactionTrigger; 9] = [
         ReactionTrigger::FirstPlacement,
         ReactionTrigger::SegmentComplete,
         ReactionTrigger::TooHot,
@@ -174,6 +178,7 @@ impl ReactionTrigger {
         ReactionTrigger::LevelFailed,
         ReactionTrigger::IdleNudge,
         ReactionTrigger::OutageStart,
+        ReactionTrigger::IdentificationWrong,
     ];
 }
 
@@ -190,6 +195,7 @@ pub fn trigger_spec(trigger: ReactionTrigger) -> (&'static str, Emotion) {
         ReactionTrigger::LevelFailed => ("level_failed", Emotion::Sad),
         ReactionTrigger::IdleNudge => ("idle_nudge", Emotion::Playful),
         ReactionTrigger::OutageStart => ("outage_start", Emotion::Surprised),
+        ReactionTrigger::IdentificationWrong => ("identification_wrong", Emotion::Annoyed),
     }
 }
 

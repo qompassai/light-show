@@ -33,6 +33,7 @@ fn update_ledger_text(
     level: Res<LevelDef>,
     active_outage: Res<ActiveOutage>,
     cores: Res<Cores>,
+    ident: Option<Res<crate::states::identification::IdentificationProgress>>,
     mut query: Query<&mut Text, With<LedgerText>>,
 ) {
     let outage_suffix = active_outage
@@ -50,17 +51,21 @@ fn update_ledger_text(
     );
     // Astra §2a: the independent verification states render from the
     // same vector the results screen uses — one source, two surfaces.
-    // Mechanic states join this rendering as their slices land (the
-    // full mechanic-aware assembly lives in `crate::astra`).
+    // Mechanic states are assembled in `crate::astra` from the live
+    // progress resources.
+    let mechanics = crate::astra::mechanic_states(&level, ident.as_deref());
     let states = crate::level::states_summary(&level.verification_states(
         &live.graph,
         live.tx_dbm,
         live.wavelength.0,
         active_outage.outage.as_ref(),
-        &crate::level::MechanicStates::default(),
+        &mechanics,
     ));
     for mut text in &mut query {
-        text.0 = format!("{signal}{outage_suffix}  |  {states}  |  Cores: {}", cores.0);
+        text.0 = format!(
+            "{signal}{outage_suffix}  |  {states}  |  Cores: {}",
+            cores.0
+        );
     }
 }
 

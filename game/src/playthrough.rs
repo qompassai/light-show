@@ -97,6 +97,7 @@ fn playthrough_app() -> App {
     app.init_resource::<crate::states::api_console::ApiProgress>();
     app.init_resource::<crate::states::triage_console::TriageProgress>();
     app.init_resource::<crate::states::quiz::QuizProgress>();
+    app.init_resource::<crate::states::identification::IdentificationProgress>();
     app.add_plugins((
         MenuPlugin,
         CompanionSelectPlugin,
@@ -255,6 +256,32 @@ fn drag_route(app: &mut App, from: u32, to: u32) {
 
 /// Drive a fresh app from boot to the first level of `companion`'s track
 /// through the real UI: menu → Start → companion picker → card.
+/// Drive c1l1's identification beat (Astra §2b): the Identity state
+/// gates the win, so every playthrough that clears c1l1 must identify
+/// the service run first. The harness writes console progress
+/// directly, the same way the footage driver writes quiz state; the
+/// console's own logic is unit-tested in identification.rs.
+fn complete_c1l1_identification(app: &mut App) {
+    let level = crate::level::load_level(10);
+    let def = level
+        .identification
+        .as_ref()
+        .expect("c1l1 carries an identification block");
+    let service_id = def
+        .candidates
+        .iter()
+        .find(|c| c.is_service_run)
+        .expect("well-formed identification data")
+        .id
+        .clone();
+    let mut progress = app
+        .world_mut()
+        .resource_mut::<crate::states::identification::IdentificationProgress>();
+    assert!(progress.attach_remote());
+    assert!(progress.test_candidate(def, &service_id).is_some());
+    assert!(progress.select(def, &service_id));
+}
+
 fn start_track(app: &mut App, companion: Companion) {
     settle(app);
     assert_eq!(
@@ -391,6 +418,9 @@ fn coax_track_wins_both_levels_through_real_input() {
     let mut app = playthrough_app();
     start_track(&mut app, Companion::Coax);
 
+    // c1l1 (Astra §2b): the Identity state gates the win.
+    complete_c1l1_identification(&mut app);
+
     // c1l1: the 5 dB amp lands the 35 dBmV plant in [0, 15] dBmV.
     tap_pill(&mut app, 1, 2, 0);
     assert_eq!(expect_results(&app, true), 10);
@@ -462,6 +492,7 @@ fn ethernet_track_wins_both_levels_through_real_input() {
 fn coax_storm_hot_swap_repair_wins_through_real_input() {
     let mut app = playthrough_app();
     start_track(&mut app, Companion::Coax);
+    complete_c1l1_identification(&mut app);
     tap_pill(&mut app, 1, 2, 0); // c1l1 win
     expect_results(&app, true);
     press_result_action(&mut app, ResultAction::ContinueNextLevel);
@@ -543,6 +574,7 @@ fn fiber_unprotected_span_loses_the_storm() {
 fn coax_overdriven_amp_loses_the_storm() {
     let mut app = playthrough_app();
     start_track(&mut app, Companion::Coax);
+    complete_c1l1_identification(&mut app);
     tap_pill(&mut app, 1, 2, 0); // c1l1 win
     expect_results(&app, true);
     press_result_action(&mut app, ResultAction::ContinueNextLevel);
@@ -617,6 +649,7 @@ fn tapping_empty_board_places_nothing() {
 fn retry_button_replays_the_failed_level() {
     let mut app = playthrough_app();
     start_track(&mut app, Companion::Coax);
+    complete_c1l1_identification(&mut app);
     tap_pill(&mut app, 1, 2, 0); // c1l1 win
     expect_results(&app, true);
     press_result_action(&mut app, ResultAction::ContinueNextLevel);
@@ -863,6 +896,7 @@ fn playthrough_app_with_full_ui() -> App {
         crate::states::api_console::ApiConsolePlugin,
         crate::states::quiz::QuizPlugin,
         crate::states::triage_console::TriageConsolePlugin,
+        crate::states::identification::IdentificationConsolePlugin,
         crate::waifu::dialogue_ui::DialogueUiPlugin,
     ));
     app
@@ -938,6 +972,14 @@ fn production_plugin_set_no_b0001_on_level_load() {
     assert!(
         entity_count::<crate::states::quiz::QuizChoice>(&mut quiz_app) > 0,
         "the quiz UI must spawn its choices on lea1"
+    );
+
+    // Ondine's c1l1 is an identification level (Astra §2b).
+    let mut ident_app = playthrough_app_with_full_ui();
+    jump_to_level(&mut ident_app, Companion::Coax, level_index_for_id("c1l1"));
+    assert!(
+        entity_count::<crate::states::identification::IdentificationButton>(&mut ident_app) > 0,
+        "the identification console must spawn its buttons on c1l1"
     );
 }
 

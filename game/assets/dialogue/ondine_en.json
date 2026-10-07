@@ -66,5 +66,11 @@
   "idle_nudge": [
     "Meter's waiting on you. Ingress loves an idle line, you know.",
     "Still mapping it out? Start from the tap and work back."
+  ],
+  "identification_wrong": [
+    "That mapper reading doesn't match the work order. Wrong run — test them, don't trust handwriting."
+  ],
+  "tutorial_identification": [
+    "New bench rule: identify before you amplify. Attach the remote at the drop, test every candidate in the closet, and let the mapper — not a handwritten label — tell you which run is ours."
   ]
 }

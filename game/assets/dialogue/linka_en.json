@@ -66,5 +66,8 @@
   "idle_nudge": [
     "Still scanning? Trust the RSSI trend, not the first pretty number.",
     "Quiet air's deceptive. Pick your channel and commit."
+  ],
+  "identification_wrong": [
+    "Wrong run selected. In my world that's associating to the neighbor's AP — same lesson: verify the ID before you trust the link."
   ]
 }

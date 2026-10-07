@@ -448,6 +448,7 @@ fn check_outage_resolution(
     sfx: Res<crate::audio::Sfx>,
     api_progress: Res<crate::states::api_console::ApiProgress>,
     triage_progress: Res<crate::states::triage_console::TriageProgress>,
+    astra: crate::astra::AstraProgress,
     mut gate: Option<ResMut<crate::anim::ResultsGate>>,
     mut reaction_inbox: Option<ResMut<crate::waifu::reactions::ReactionInbox>>,
 ) {
@@ -489,9 +490,12 @@ fn check_outage_resolution(
         Some(triage) => triage_progress.is_complete(&triage.expected_order),
         None => true,
     };
+    // Astra mechanic gates — same conjunction as the plain win check.
+    let astra_ok = crate::astra::astra_gates_pass(&level, &astra);
     if !transition_pending
         && api_ok
         && triage_ok
+        && astra_ok
         && level.is_win_state_with_outage(
             &live.graph,
             live.tx_dbm,

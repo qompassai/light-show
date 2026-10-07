@@ -16,6 +16,16 @@ use crate::waifu::{Cores, SelectedCompanion};
 use bevy::math::curve::{Curve, EaseFunction};
 use bevy::prelude::*;
 
+/// Persistence-side resources for `show_results`, bundled as one
+/// system parameter: the function sits at Bevy's param limit, and
+/// the Astra slices need the headroom more than they need three
+/// separate parameters.
+#[derive(bevy::ecs::system::SystemParam)]
+pub struct ResultsPersistence<'w> {
+    pub save: Option<ResMut<'w, crate::save::SaveData>>,
+    pub loadout: Option<Res<'w, crate::warehouse::Loadout>>,
+}
+
 pub struct ResultsPlugin;
 
 impl Plugin for ResultsPlugin {
@@ -265,9 +275,9 @@ fn show_results(
     salvage_tracker: Option<ResMut<crate::salvage::SalvageTracker>>,
     mut pending_haul: Option<ResMut<crate::salvage::PendingHaul>>,
     mut pill_inbox: Option<ResMut<crate::waifu::pill::PillInbox>>,
-    save: Option<ResMut<crate::save::SaveData>>,
     save_writer: Option<MessageWriter<crate::save::SaveRequest>>,
-    loadout: Option<Res<crate::warehouse::Loadout>>,
+    mut persistence: ResultsPersistence,
+    astra: crate::astra::AstraProgress,
 ) {
     info!("Level complete — won={}", outcome.won);
     crate::test_log!("level_result won={}", outcome.won);
@@ -282,13 +292,13 @@ fn show_results(
         // Persist progression: a win records the level; cores syncs to
         // the save via SavePlugin's change-detected system.
         let mut first_clear = false;
-        if let (Some(mut save), Some(mut writer)) = (save, save_writer) {
+        if let (Some(mut save), Some(mut writer)) = (persistence.save, save_writer) {
             first_clear = save.complete_level(&level.id);
             if first_clear {
                 writer.write(crate::save::SaveRequest);
             }
         }
-        let cores_mult = loadout.map_or(1.0, |l| l.cores_mult);
+        let cores_mult = persistence.loadout.map_or(1.0, |l| l.cores_mult);
         let award = crate::warehouse::win_cores(CORES_PER_WIN, first_clear, cores_mult);
         cores.0 = cores.0.saturating_add(award);
     }
@@ -303,12 +313,13 @@ fn show_results(
     // Astra §2a: the results screen renders the same verification
     // vector as the live ledger — per-state verdicts plus each
     // failing state's own feedback line.
+    let mechanics = crate::astra::mechanic_states(&level, astra.ident());
     let state_lines = level.verification_states(
         &live.graph,
         live.tx_dbm,
         live.wavelength.0,
         active_outage.outage.as_ref(),
-        &crate::level::MechanicStates::default(),
+        &mechanics,
     );
     let mut states_text = crate::level::states_summary(&state_lines);
     for failure in crate::level::states_failures(&state_lines) {

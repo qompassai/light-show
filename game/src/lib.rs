@@ -6,6 +6,7 @@
 
 mod anim;
 mod asset_root;
+mod astra;
 pub mod audio;
 #[cfg(debug_assertions)]
 mod bench;
@@ -202,6 +203,7 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     app.add_plugins(states::api_console::ApiConsolePlugin);
     app.add_plugins(states::quiz::QuizPlugin);
     app.add_plugins(states::triage_console::TriageConsolePlugin);
+    app.add_plugins(states::identification::IdentificationConsolePlugin);
     app.add_plugins(states::outage::OutagePlugin)
         .add_plugins(states::results::ResultsPlugin)
         .add_plugins(save::SavePlugin)

@@ -166,6 +166,12 @@ impl DialogueBank {
                     "Take your time. The light's patient, even if the outage clock isn't.",
                 ],
             ),
+            (
+                "identification_wrong",
+                &[
+                    "That tone reads on the wrong fiber. Label discipline exists so the next tech doesn't inherit our guesses.",
+                ],
+            ),
         ])
     }
 
@@ -283,6 +289,18 @@ impl DialogueBank {
                 &[
                     "Meter's waiting on you. Ingress loves an idle line, you know.",
                     "Still mapping it out? Start from the tap and work back.",
+                ],
+            ),
+            (
+                "identification_wrong",
+                &[
+                    "That mapper reading doesn't match the work order. Wrong run — test them, don't trust handwriting.",
+                ],
+            ),
+            (
+                "tutorial_identification",
+                &[
+                    "New bench rule: identify before you amplify. Attach the remote at the drop, test every candidate in the closet, and let the mapper — not a handwritten label — tell you which run is ours.",
                 ],
             ),
         ])
@@ -407,6 +425,12 @@ impl DialogueBank {
                     "Quiet air's deceptive. Pick your channel and commit.",
                 ],
             ),
+            (
+                "identification_wrong",
+                &[
+                    "Wrong run selected. In my world that's associating to the neighbor's AP — same lesson: verify the ID before you trust the link.",
+                ],
+            ),
         ])
     }
 
@@ -524,6 +548,12 @@ impl DialogueBank {
                 &[
                     "Still measuring? Start with the longest run — it's the usual suspect.",
                     "Take your time. The link lights aren't going anywhere.",
+                ],
+            ),
+            (
+                "identification_wrong",
+                &[
+                    "Wrong drop. A mislabeled run is exactly how a neighbor's port gets pulled — verify before you disconnect anything.",
                 ],
             ),
         ])
