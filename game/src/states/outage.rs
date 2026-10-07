@@ -597,6 +597,7 @@ mod tests {
             api_sequence: None,
             alarm_triage: None,
             quiz: None,
+            splice_work_orders: None,
         }
     }
 

@@ -18,7 +18,7 @@
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
-use crate::level::{load_level, CurrentLevelIndex};
+use crate::level::{load_current_level, CurrentLevelIndex, CurrentScenarioId};
 use crate::save::{SaveData, Settings};
 use crate::states::{GameState, LevelOutcome};
 use crate::waifu::{Companion, SelectedCompanion};
@@ -311,12 +311,15 @@ fn play_level_track(
     asset_server: Res<AssetServer>,
     asset_root: Res<AssetRootDir>,
     level_index: Res<CurrentLevelIndex>,
+    scenario: Option<Res<CurrentScenarioId>>,
     save: Option<Res<SaveData>>,
 ) {
-    // `load_level` parses the compile-time-embedded level JSON (the same
-    // call `playing::setup_level` makes on this same state enter); the
-    // world number is what tiers the music.
-    let world = load_level(level_index.0).world;
+    // `load_current_level` parses the compile-time-embedded level JSON
+    // (the same call `playing::setup_level` makes on this same state
+    // enter, scenario included); the world number is what tiers the
+    // music.
+    let scenario_id = scenario.as_ref().and_then(|s| s.0.as_deref());
+    let world = load_current_level(level_index.0, scenario_id).world;
     spawn_track(
         &mut commands,
         &asset_server,

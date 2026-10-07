@@ -22,7 +22,10 @@ use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process;
 
-use light_show::level::{load_level, ApiOp, LevelDef, MediumDef, LEVEL_SOURCES};
+use light_show::level::{
+    load_level, load_scenario, ApiOp, LevelDef, MediumDef, LEVEL_SOURCES, SCENARIO_IDS,
+    SCENARIO_SOURCES,
+};
 use light_show::waifu::Companion;
 
 /// Upper bound on level files read from one directory.
@@ -503,10 +506,12 @@ fn assert_invalid(text: &str, reason_fragment: &str) {
 #[test]
 fn every_shipped_level_file_loads_and_validates() {
     let levels = load_level_dir(&shipped_levels_dir()).unwrap_or_else(|e| panic!("{e}"));
+    // The disk set is the 80 frozen track levels plus the out-of-track
+    // Field School scenarios, each embedded in its own registry.
     assert_eq!(
         levels.len(),
-        LEVEL_SOURCES.len(),
-        "level file count != LEVEL_SOURCES"
+        LEVEL_SOURCES.len() + SCENARIO_SOURCES.len(),
+        "level file count != LEVEL_SOURCES + SCENARIO_SOURCES"
     );
 }
 
@@ -517,15 +522,20 @@ fn every_level_file_on_disk_is_embedded_and_vice_versa() {
     for (path, _) in load_level_dir(&dir).unwrap_or_else(|e| panic!("{e}")) {
         on_disk.push(read_bounded(&path).unwrap_or_else(|e| panic!("{e}")));
     }
-    for (index, source) in LEVEL_SOURCES.iter().enumerate() {
+    let embedded: Vec<&str> = LEVEL_SOURCES
+        .iter()
+        .chain(SCENARIO_SOURCES.iter())
+        .copied()
+        .collect();
+    for (index, source) in embedded.iter().enumerate() {
         assert!(
             on_disk.iter().any(|text| text == source),
-            "LEVEL_SOURCES[{index}] not on disk"
+            "embedded level [{index}] not on disk"
         );
     }
     for text in &on_disk {
         assert!(
-            LEVEL_SOURCES.contains(&text.as_str()),
+            embedded.contains(&text.as_str()),
             "a level file is not embedded"
         );
     }
@@ -533,9 +543,16 @@ fn every_level_file_on_disk_is_embedded_and_vice_versa() {
 
 #[test]
 fn every_embedded_level_passes_through_the_game_loader() {
-    let levels: Vec<LevelDef> = (0..LEVEL_SOURCES.len()).map(load_level).collect();
+    let mut levels: Vec<LevelDef> = (0..LEVEL_SOURCES.len()).map(load_level).collect();
     for (index, level) in levels.iter().enumerate() {
         validate_level(level).unwrap_or_else(|e| panic!("LEVEL_SOURCES[{index}]: {e}"));
+    }
+    // Scenario levels go through their own id-addressed loader and the
+    // same validation; their ids must not collide with track ids.
+    for id in SCENARIO_IDS {
+        let level = load_scenario(id).unwrap_or_else(|| panic!("scenario {id} must load"));
+        validate_level(&level).unwrap_or_else(|e| panic!("scenario {id}: {e}"));
+        levels.push(level);
     }
     validate_unique_ids(levels.iter()).unwrap_or_else(|e| panic!("{e}"));
 }

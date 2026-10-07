@@ -7,7 +7,7 @@ use super::outage::{ActiveOutage, AlarmList};
 use super::{GameState, LevelOutcome};
 use crate::anim::TransitionRequest;
 use crate::board;
-use crate::level::{self, CurrentLevelIndex, LevelDef};
+use crate::level::{self, CurrentLevelIndex, CurrentScenarioId, LevelDef};
 use crate::test_log;
 use crate::waifu::trigger_mood_pop;
 use bevy::math::curve::{Curve, EaseFunction};
@@ -22,6 +22,7 @@ impl Plugin for PlayingPlugin {
         app.insert_resource(LiveGraph::default())
             .insert_resource(LevelClock::default())
             .insert_resource(CurrentLevelIndex::default())
+            .insert_resource(CurrentScenarioId::default())
             .insert_resource(board::PlacedChoices::default())
             .insert_resource(board::DragState::default())
             .insert_resource(board::PointerWorld::default())
@@ -236,6 +237,7 @@ fn refit_framing_on_resize(
     windows: Query<Entity, With<PrimaryWindow>>,
     cameras: Query<(Entity, &Transform, &Projection), With<Camera>>,
     index: Res<CurrentLevelIndex>,
+    scenario: Res<CurrentScenarioId>,
 ) {
     let Some(resized) = resized.as_mut() else {
         return;
@@ -249,7 +251,7 @@ fn refit_framing_on_resize(
     let Ok((entity, transform, projection)) = cameras.single() else {
         return;
     };
-    let level_def = level::load_level(index.0);
+    let level_def = level::load_current_level(index.0, scenario.0.as_deref());
     let framing = board::board_framing(&level_def, Vec2::new(event.width, event.height));
     let current_scale = match projection {
         Projection::Orthographic(ortho) => ortho.scale,
@@ -268,6 +270,7 @@ fn refit_framing_on_resize(
 fn setup_level(
     mut commands: Commands,
     index: Res<CurrentLevelIndex>,
+    scenario: Res<CurrentScenarioId>,
     mut live: ResMut<LiveGraph>,
     mut placed: ResMut<board::PlacedChoices>,
     mut clock: ResMut<LevelClock>,
@@ -277,7 +280,10 @@ fn setup_level(
     cameras: Query<(Entity, &Transform, &Projection), With<Camera>>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let level_def = level::load_level(index.0);
+    // An active Field School scenario (see `level::CurrentScenarioId`)
+    // takes precedence over the track index; with none active this is
+    // exactly the shipped `load_level(index)` behavior.
+    let level_def = level::load_current_level(index.0, scenario.0.as_deref());
 
     // Fit framing (playtest round 2): the board is laid out in fixed
     // world coordinates and most levels are wider than the window, so

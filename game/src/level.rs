@@ -8,7 +8,7 @@ use osp_sim::{
     CoaxViolation, Component, EthernetViolation, Medium, Outage, OutageKind, PathGraph,
     ReceiveWindow, Wavelength, WirelessViolation,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub enum MediumDef {
@@ -444,6 +444,97 @@ pub fn verify_provisioning(
         .collect()
 }
 
+/// One fiber in the TIA-598 color chart: a fiber's identity is the
+/// (tube, strand) color pair, and its number is
+/// `(tube_number - 1) * 12 + strand_number`. Deserialized from the
+/// splice work orders (see [`SpliceWorkOrdersDef`]); the chart test
+/// re-derives every entry from that rule instead of trusting the data.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SpliceFiberDef {
+    /// 1-based fiber number, 1..=144.
+    pub fiber: u32,
+    /// 1-based buffer-tube number, 1..=12.
+    pub tube_number: u32,
+    pub tube_color: String,
+    /// 1-based strand number inside the tube, 1..=12.
+    pub strand_number: u32,
+    pub strand_color: String,
+}
+
+/// One line of a splice beat's work order: splice this fiber to the
+/// secondary splitter's pigtail feeding `drop`.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SpliceWorkOrderEntryDef {
+    pub fiber: u32,
+    pub tube_number: u32,
+    pub tube_color: String,
+    pub strand_number: u32,
+    pub strand_color: String,
+    /// The drop (premises) this fiber must light.
+    pub drop: String,
+}
+
+/// A damaged strand inside a beat: the player must exclude it and
+/// splice the designated `spare` instead of forcing the match.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SpliceDamageBeatDef {
+    pub fiber: u32,
+    pub tube_number: u32,
+    pub tube_color: String,
+    pub strand_number: u32,
+    pub strand_color: String,
+    /// What is wrong with the strand, as written on the work order.
+    pub condition: String,
+    /// The instruction the work order gives for it.
+    pub action: String,
+    /// The designated spare fiber spliced in its place.
+    pub spare: SpliceFiberDef,
+}
+
+/// One teaching beat of the splice work orders: a presented tray, the
+/// ordered splices to make, and the rule that scores them.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SpliceBeatDef {
+    /// 1-based beat number, in play order.
+    pub beat: u32,
+    pub name: String,
+    /// The craft lesson this beat teaches.
+    pub teaching: String,
+    /// What the player is shown at the tray.
+    pub presented: String,
+    pub work_order: Vec<SpliceWorkOrderEntryDef>,
+    /// Damaged strands to exclude (empty on beats without damage).
+    #[serde(default)]
+    pub damage_beats: Vec<SpliceDamageBeatDef>,
+    pub win_rule: String,
+}
+
+/// Splice work orders (sp1, the splice "Field School" scenario): the
+/// TIA-598 chart and the beat-by-beat strand→pigtail work orders the
+/// repair is scored against. This is an optional [`LevelDef`] block so
+/// the authored data (staged in `splice_work_orders.json`) lands typed
+/// and tested instead of as dead text. The strand→pigtail interaction
+/// UI that consumes it is future work (CONTENT-NOTES gap 4): today the
+/// block parses, round-trips, and is validated against the color rule,
+/// while sp1's shipped win check remains the light-path budget.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SpliceWorkOrdersDef {
+    /// The fiber-number rule, as written on the work order.
+    pub rule: String,
+    /// The 12 TIA-598 colors in sequence; tubes and strands both wear it.
+    pub color_sequence: Vec<String>,
+    /// The full 144-fiber chart, in fiber-number order.
+    pub chart_144: Vec<SpliceFiberDef>,
+    /// The beats, in play order.
+    pub beats: Vec<SpliceBeatDef>,
+    /// Why a mis-splice fails the way it does (lights the wrong drop).
+    #[serde(default)]
+    pub scoring_honesty: Option<String>,
+    /// The briefing card text that hands the player the chart.
+    #[serde(default)]
+    pub briefing_chart_text: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize, Resource)]
 pub struct LevelDef {
     pub id: String,
@@ -512,6 +603,11 @@ pub struct LevelDef {
     /// and the quiz UI owns the win condition. See `QuizDef`.
     #[serde(default)]
     pub quiz: Option<QuizDef>,
+    /// Splice work orders (sp1 only): the TIA-598 chart + beats for the
+    /// strand→pigtail repair. `None` on every other level. See
+    /// [`SpliceWorkOrdersDef`] for why the data lands before its UI.
+    #[serde(default)]
+    pub splice_work_orders: Option<SpliceWorkOrdersDef>,
     /// Optional dialogue hook keys fired on enter/win/fail — looked up in
     /// the Séraphine dialogue bank.
     pub on_enter_line: Option<String>,
@@ -1135,6 +1231,64 @@ pub fn load_level(index: usize) -> LevelDef {
     serde_json::from_str(LEVEL_SOURCES[idx]).expect("bundled level JSON must always parse")
 }
 
+/// Out-of-track scenario levels ("Field School", hosted by Séraphine):
+/// the two field-job scenarios and the splice scenario. These are
+/// deliberately NOT part of [`LEVEL_SOURCES`] — the 80 shipped track
+/// levels and their indices are frozen (see `Companion::track_indices`),
+/// so scenarios live in their own compile-time registry, addressed by
+/// level id (the `footage.rs` scan is the precedent), and enter play
+/// through [`CurrentScenarioId`] instead of a track position.
+pub const SCENARIO_SOURCES: &[&str] = &[
+    include_str!("../assets/levels/fieldjob1_replace_the_1x4.json"),
+    include_str!("../assets/levels/fieldjob2_prove_the_sb.json"),
+    include_str!("../assets/levels/splice1_secondary_split.json"),
+];
+
+/// Ids of every bundled scenario level, in Field School menu order.
+/// Kept in lockstep with [`SCENARIO_SOURCES`] by the registry tests.
+pub const SCENARIO_IDS: &[&str] = &["fj1", "fj2", "sp1"];
+
+/// Load a scenario level by id (e.g. `"fj1"`). `None` for any id that
+/// is not a bundled scenario — including shipped track ids, which are
+/// addressed by index through [`load_level`], never by this loader.
+/// Never panics: unknown ids are a caller bug to surface, not a crash.
+pub fn load_scenario(id: &str) -> Option<LevelDef> {
+    if !SCENARIO_IDS.contains(&id) {
+        return None;
+    }
+    SCENARIO_SOURCES.iter().find_map(|source| {
+        let def: LevelDef = serde_json::from_str(source).ok()?;
+        (def.id == id).then_some(def)
+    })
+}
+
+/// True when `id` names a bundled scenario level. Results routing keys
+/// off this: scenarios never advance along a track.
+pub fn is_scenario_id(id: &str) -> bool {
+    SCENARIO_IDS.contains(&id)
+}
+
+/// The scenario level the player picked on the companion-select
+/// Field School row, if any. `Some(id)` takes precedence over
+/// [`CurrentLevelIndex`] everywhere gameplay loads its level (see
+/// [`load_current_level`]); starting a track level clears it back to
+/// `None`, and results routing clears it on the way back to the picker.
+#[derive(Resource, Clone, Default)]
+pub struct CurrentScenarioId(pub Option<String>);
+
+/// The one level-loading entry point gameplay uses: the scenario named
+/// by `scenario_id` when one is active, otherwise the track level at
+/// `index`. An unknown scenario id falls back to the track level
+/// instead of panicking — the picker only ever writes ids from
+/// [`SCENARIO_IDS`], so the fallback is unreachable in normal play and
+/// exists so a stale id can never soft-lock the game on a black screen.
+pub fn load_current_level(index: usize, scenario_id: Option<&str>) -> LevelDef {
+    match scenario_id {
+        Some(id) => load_scenario(id).unwrap_or_else(|| load_level(index)),
+        None => load_level(index),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1330,6 +1484,14 @@ mod tests {
     /// choice, mirroring `board::rebuild_live_graph`'s edge-exclusion
     /// rule: a full-cut outage's severed edge is absent while unresolved.
     fn graph_with_single_placement(level: &LevelDef, choice: &ComponentChoice) -> PathGraph {
+        graph_with_placements(level, &[choice])
+    }
+
+    /// Like `graph_with_single_placement`, but places several choices —
+    /// the scenario levels (fj1/fj2) gate completion on two edges at
+    /// once (the splice bleed AND the splitter swap), so their
+    /// playthrough tests must replay whole choice combinations.
+    fn graph_with_placements(level: &LevelDef, choices: &[&ComponentChoice]) -> PathGraph {
         let severed = level.scripted_outage.as_ref().and_then(|s| {
             let kind = OutageKind::from(s.kind);
             kind.is_full_cut().then_some((s.edge_from, s.edge_to))
@@ -1343,8 +1505,10 @@ mod tests {
                 graph.connect(edge.from, edge.to, edge.component.clone());
             }
         }
-        if severed != Some((choice.from, choice.to)) {
-            graph.connect(choice.from, choice.to, choice.component.clone());
+        for choice in choices {
+            if severed != Some((choice.from, choice.to)) {
+                graph.connect(choice.from, choice.to, choice.component.clone());
+            }
         }
         graph
     }
@@ -1998,5 +2162,411 @@ mod tests {
             ApiOp::CertifyInstall,
         ];
         assert!(verify_api_sequence(&certify, &certify));
+    }
+
+    // -- Scenario (Field School) levels -----------------------------------
+    //
+    // fj1/fj2/sp1 live OUTSIDE `LEVEL_SOURCES` (see `SCENARIO_SOURCES`):
+    // the 80 track levels and their indices are frozen. The tests below
+    // pin both halves of that bargain — the freeze, and the scenarios'
+    // own winnability/readings replayed through the shipped loss engine.
+
+    /// Adversarial (the freeze): the track registry must stay exactly
+    /// the 80 shipped levels, and the recon-named index anchors must
+    /// still resolve to the same level ids — an accidental mid-track
+    /// insertion of a scenario would shift every one of these.
+    #[test]
+    fn track_registry_stays_frozen_at_80_levels() {
+        assert_eq!(LEVEL_SOURCES.len(), 80, "the 80-level freeze holds");
+        for (index, id) in [
+            (0, "w1l1"),
+            (11, "c1l2"),
+            (14, "c1l5"),
+            (17, "c1l8"),
+            (20, "m1l1"),
+            (21, "m1l2"),
+            (29, "m1l10"),
+        ] {
+            assert_eq!(
+                load_level(index).id,
+                id,
+                "track index {index} must still be {id}"
+            );
+        }
+    }
+
+    #[test]
+    fn scenario_registry_holds_exactly_fj1_fj2_sp1() {
+        assert_eq!(SCENARIO_SOURCES.len(), 3);
+        assert_eq!(SCENARIO_IDS, ["fj1", "fj2", "sp1"]);
+        // Sources and ids agree, in menu order.
+        for (source, id) in SCENARIO_SOURCES.iter().zip(SCENARIO_IDS.iter()) {
+            let level: LevelDef = serde_json::from_str(source).unwrap();
+            assert_eq!(&level.id, id);
+            assert!(is_scenario_id(id));
+        }
+        // A track id is never a scenario id.
+        assert!(!is_scenario_id("w1l1"));
+        assert!(!is_scenario_id("c1l2"));
+    }
+
+    #[test]
+    fn every_scenario_parses_and_has_a_usable_shape() {
+        for id in SCENARIO_IDS {
+            let level = load_scenario(id).unwrap_or_else(|| panic!("{id} must load"));
+            assert!(!level.nodes.is_empty(), "{id} has no nodes");
+            assert!(
+                level.window_min_dbm < level.window_max_dbm,
+                "{id} has an inverted receive window"
+            );
+            let node_ids: std::collections::HashSet<u32> =
+                level.nodes.iter().map(|n| n.id).collect();
+            assert!(node_ids.contains(&level.source_node), "{id} source node");
+            assert!(node_ids.contains(&level.target_node), "{id} target node");
+            for edge in level
+                .fixed_edges
+                .iter()
+                .map(|e| (e.from, e.to))
+                .chain(level.available_components.iter().map(|c| (c.from, c.to)))
+            {
+                assert!(
+                    node_ids.contains(&edge.0) && node_ids.contains(&edge.1),
+                    "{id} references an edge {edge:?} with an undeclared node"
+                );
+            }
+            // The shipped win-count discipline applies to scenarios too:
+            // every decision must offer at least two choices, or there
+            // is no decision to teach.
+            for group in scenario_choice_groups(&level) {
+                assert!(
+                    group.len() >= 2,
+                    "{id} offers a decision with fewer than two choices"
+                );
+            }
+        }
+    }
+
+    /// Adversarial: the scenario loader fails closed — unknown ids,
+    /// near-miss ids, and shipped track ids all return `None`, and
+    /// `load_current_level` falls back to the track level rather than
+    /// panicking on a stale scenario id.
+    #[test]
+    fn scenario_loader_rejects_unknown_ids_without_panicking() {
+        for bogus in ["", "fj3", "FJ1", "fj1 ", "sp2", "w1l1", "c1l2"] {
+            assert!(
+                load_scenario(bogus).is_none(),
+                "{bogus:?} must not resolve as a scenario"
+            );
+        }
+        let fallback = load_current_level(11, Some("fj3"));
+        assert_eq!(fallback.id, "c1l2", "stale scenario id falls back");
+        let track = load_current_level(11, None);
+        assert_eq!(track.id, "c1l2");
+        let scenario = load_current_level(11, Some("sp1"));
+        assert_eq!(scenario.id, "sp1", "an active scenario wins over index");
+    }
+
+    /// Player choices grouped into decisions by the node they leave
+    /// from, in encounter order — the unit a scenario playthrough picks
+    /// one of per decision. Grouping by source node (not by exact edge)
+    /// is what makes fj1's splitter swap one decision: the new 1x4
+    /// (7→8) and the old 1x4 (7→9) are alternative destinations for the
+    /// same placement, never both halves of one repair.
+    fn scenario_choice_groups(level: &LevelDef) -> Vec<Vec<&ComponentChoice>> {
+        let mut groups: Vec<Vec<&ComponentChoice>> = Vec::new();
+        for choice in &level.available_components {
+            match groups.iter_mut().find(|g| g[0].from == choice.from) {
+                Some(group) => group.push(choice),
+                None => groups.push(vec![choice]),
+            }
+        }
+        groups
+    }
+
+    /// Replay one choice combination through the shipped loss engine:
+    /// `(received dBm, in-window)` for the completed source→target path.
+    fn scenario_received_dbm(level: &LevelDef, choices: &[&ComponentChoice]) -> (f64, bool) {
+        let graph = graph_with_placements(level, choices);
+        let result = graph
+            .compute_link_budget_with_outage(
+                level.source_node,
+                level.target_node,
+                level.tx_dbm,
+                Wavelength::from(level.wavelength),
+                level.receive_window(),
+                None,
+            )
+            .expect("scenario path must resolve");
+        (result.received_dbm, result.in_window)
+    }
+
+    /// Assert one replayed combination lands at the documented reading
+    /// (CONTENT-NOTES, ±0.02 dB) with the documented verdict class.
+    fn assert_scenario_reading(
+        level: &LevelDef,
+        choices: &[&ComponentChoice],
+        expected_dbm: f64,
+        verdict: &str,
+    ) {
+        let (rx_dbm, in_window) = scenario_received_dbm(level, choices);
+        assert!(
+            (rx_dbm - expected_dbm).abs() < 0.02,
+            "{} replay must land at {expected_dbm:.2} dBm, got {rx_dbm:.4}",
+            level.id
+        );
+        let graph = graph_with_placements(level, choices);
+        let ledger = level.signal_ledger(
+            &graph,
+            level.tx_dbm,
+            Wavelength::from(level.wavelength),
+            None,
+        );
+        assert!(
+            ledger.contains(verdict),
+            "{} ledger must read {verdict}, got: {ledger}",
+            level.id
+        );
+        assert_eq!(
+            in_window,
+            verdict == "IN WINDOW",
+            "{} verdict class for Rx {rx_dbm:.2}",
+            level.id
+        );
+        if verdict == "TOO LOW" {
+            assert!(
+                rx_dbm < level.window_min_dbm,
+                "{} TOO LOW reading must sit below the window floor",
+                level.id
+            );
+        }
+    }
+
+    /// The scenario counterpart of
+    /// `every_level_has_exactly_its_intended_winning_pill_count`:
+    /// counted over whole choice combinations (fj1/fj2 gate on two
+    /// edges at once). fj1/fj2 each have exactly one winning
+    /// combination — the full repair; sp1 has two winning pills
+    /// (fusion, and the poorer-but-legit mechanical emergency repair).
+    #[test]
+    fn scenario_levels_have_exactly_their_intended_winning_combination_count() {
+        for (id, expected) in [("fj1", 1usize), ("fj2", 1), ("sp1", 2)] {
+            let level = load_scenario(id).expect("scenario loads");
+            let groups = scenario_choice_groups(&level);
+            let total: usize = groups.iter().map(|g| g.len()).product();
+            let mut wins = 0;
+            for mut n in 0..total {
+                let picks: Vec<&ComponentChoice> = groups
+                    .iter()
+                    .map(|g| {
+                        let choice = g[n % g.len()];
+                        n /= g.len();
+                        choice
+                    })
+                    .collect();
+                if level.is_win_state(
+                    &graph_with_placements(&level, &picks),
+                    level.tx_dbm,
+                    Wavelength::from(level.wavelength),
+                ) {
+                    wins += 1;
+                }
+            }
+            assert_eq!(
+                wins, expected,
+                "{id} has {wins} winning combinations, expected {expected}"
+            );
+        }
+    }
+
+    fn splice_on_edge<'a>(
+        level: &'a LevelDef,
+        from: u32,
+        to: u32,
+        fusion: bool,
+    ) -> &'a ComponentChoice {
+        level
+            .available_components
+            .iter()
+            .find(|c| {
+                c.from == from
+                    && c.to == to
+                    && if fusion {
+                        matches!(
+                            c.component,
+                            Component::Splice {
+                                kind: osp_sim::SpliceType::Fusion,
+                                ..
+                            }
+                        )
+                    } else {
+                        matches!(
+                            c.component,
+                            Component::Splice {
+                                kind: osp_sim::SpliceType::Mechanical,
+                                ..
+                            }
+                        )
+                    }
+            })
+            .expect("scenario must offer the splice choice")
+    }
+
+    fn choice_on_edge(level: &LevelDef, from: u32, to: u32) -> &ComponentChoice {
+        level
+            .available_components
+            .iter()
+            .find(|c| c.from == from && c.to == to)
+            .expect("scenario must offer the edge choice")
+    }
+
+    /// fj1 playthrough: both repairs (re-splice the bleed AND replace
+    /// the 1x4) land the documented -17.65 dBm in window; either repair
+    /// alone, or neither, leaves the customer dark (CONTENT-NOTES).
+    #[test]
+    fn fj1_choice_combinations_replay_the_job_readings() {
+        let level = load_scenario("fj1").expect("fj1 loads");
+        let bleed_fixed = splice_on_edge(&level, 6, 7, true);
+        let bleed_as_found = splice_on_edge(&level, 6, 7, false);
+        let new_splitter = choice_on_edge(&level, 7, 8);
+        let old_splitter = choice_on_edge(&level, 7, 9);
+        assert_scenario_reading(&level, &[bleed_fixed, new_splitter], -17.65, "IN WINDOW");
+        assert_scenario_reading(&level, &[bleed_fixed, old_splitter], -20.47, "TOO LOW");
+        assert_scenario_reading(&level, &[bleed_as_found, new_splitter], -22.17, "TOO LOW");
+        assert_scenario_reading(&level, &[bleed_as_found, old_splitter], -25.00, "TOO LOW");
+    }
+
+    /// fj2 playthrough: the SB leg replays the same discipline — full
+    /// repair -18.03 dBm in window, both partials fail, and the
+    /// as-found plant reads the documented -25.45 dBm.
+    #[test]
+    fn fj2_choice_combinations_replay_the_job_readings() {
+        let level = load_scenario("fj2").expect("fj2 loads");
+        let bleed_fixed = splice_on_edge(&level, 7, 8, true);
+        let bleed_as_found = splice_on_edge(&level, 7, 8, false);
+        let new_splitter = choice_on_edge(&level, 8, 9);
+        let old_splitter = choice_on_edge(&level, 8, 10);
+        assert_scenario_reading(&level, &[bleed_fixed, new_splitter], -18.03, "IN WINDOW");
+        assert_scenario_reading(&level, &[bleed_fixed, old_splitter], -20.86, "TOO LOW");
+        assert_scenario_reading(&level, &[bleed_as_found, new_splitter], -22.63, "TOO LOW");
+        assert_scenario_reading(&level, &[bleed_as_found, old_splitter], -25.45, "TOO LOW");
+    }
+
+    /// sp1 playthrough: a fusion splice lands -18.125 dBm, a mechanical
+    /// splice is a legitimate (poorer) emergency repair at -18.45 dBm,
+    /// and forcing the damaged strand kinks 3.5 dB out of the budget.
+    #[test]
+    fn sp1_choice_combinations_replay_the_job_readings() {
+        let level = load_scenario("sp1").expect("sp1 loads");
+        let fusion = splice_on_edge(&level, 3, 4, true);
+        let mechanical = splice_on_edge(&level, 3, 4, false);
+        let macrobend = level
+            .available_components
+            .iter()
+            .find(|c| matches!(c.component, Component::Macrobend { .. }))
+            .expect("sp1 must offer the forced-macrobend trap");
+        assert_scenario_reading(&level, &[fusion], -18.125, "IN WINDOW");
+        assert_scenario_reading(&level, &[mechanical], -18.45, "IN WINDOW");
+        assert_scenario_reading(&level, &[macrobend], -21.55, "TOO LOW");
+    }
+
+    /// The splice work orders land typed on sp1, survive a
+    /// serialize→parse round-trip byte-for-value, and the whole chart
+    /// re-derives from the TIA-598 rule the work order states.
+    #[test]
+    fn sp1_work_orders_parse_round_trip_and_follow_the_color_rule() {
+        let level = load_scenario("sp1").expect("sp1 loads");
+        let orders = level
+            .splice_work_orders
+            .as_ref()
+            .expect("sp1 must carry its splice work orders");
+        assert!(orders.rule.contains("(tube - 1) * 12 + strand"));
+        assert_eq!(orders.color_sequence.len(), 12);
+        assert_eq!(orders.color_sequence[0], "blue");
+        assert_eq!(orders.color_sequence[11], "aqua");
+        assert_eq!(orders.chart_144.len(), 144);
+        assert_eq!(orders.beats.len(), 3);
+
+        // The rule, checked against every chart entry — not spot checks:
+        // fiber number, tube color, and strand color must all agree with
+        // the sequence positions.
+        for entry in &orders.chart_144 {
+            assert_eq!(
+                entry.fiber,
+                (entry.tube_number - 1) * 12 + entry.strand_number,
+                "chart fiber {} breaks the numbering rule",
+                entry.fiber
+            );
+            assert_eq!(
+                entry.tube_color,
+                orders.color_sequence[(entry.tube_number - 1) as usize],
+                "chart fiber {} tube color",
+                entry.fiber
+            );
+            assert_eq!(
+                entry.strand_color,
+                orders.color_sequence[(entry.strand_number - 1) as usize],
+                "chart fiber {} strand color",
+                entry.fiber
+            );
+        }
+        // The transposition trap the level teaches: fiber 2 is
+        // blue/orange, fiber 13 is orange/blue.
+        let fiber2 = &orders.chart_144[1];
+        assert_eq!(
+            (fiber2.tube_color.as_str(), fiber2.strand_color.as_str()),
+            ("blue", "orange")
+        );
+        let fiber13 = &orders.chart_144[12];
+        assert_eq!(
+            (fiber13.tube_color.as_str(), fiber13.strand_color.as_str()),
+            ("orange", "blue")
+        );
+
+        // Beat 3's damage beats: fibers 55 and 118 are excluded for
+        // their designated spares 60 and 120.
+        let damage = &orders.beats[2].damage_beats;
+        assert_eq!(damage.len(), 2);
+        assert_eq!((damage[0].fiber, damage[0].spare.fiber), (55, 60));
+        assert_eq!((damage[1].fiber, damage[1].spare.fiber), (118, 120));
+
+        // Round-trip: the block serializes and re-parses to itself.
+        let json = serde_json::to_string(orders).expect("work orders serialize");
+        let parsed: SpliceWorkOrdersDef =
+            serde_json::from_str(&json).expect("work orders re-parse");
+        assert_eq!(&parsed, orders);
+    }
+
+    /// Adversarial: the optional block is absent everywhere it does not
+    /// belong — shipped track levels and the two field-job scenarios
+    /// parse fine with `splice_work_orders: None`.
+    #[test]
+    fn work_orders_block_is_absent_where_it_does_not_belong() {
+        for idx in [0usize, 11, 79] {
+            assert!(
+                load_level(idx).splice_work_orders.is_none(),
+                "track level {idx} must not carry splice work orders"
+            );
+        }
+        for id in ["fj1", "fj2"] {
+            assert!(
+                load_scenario(id)
+                    .expect("scenario loads")
+                    .splice_work_orders
+                    .is_none(),
+                "{id} must not carry splice work orders"
+            );
+        }
+        // And a level JSON with no block at all still parses (serde
+        // default): strip the block from sp1's source and re-parse.
+        let mut value: serde_json::Value =
+            serde_json::from_str(SCENARIO_SOURCES[2]).expect("sp1 source parses");
+        value
+            .as_object_mut()
+            .expect("level JSON is an object")
+            .remove("splice_work_orders");
+        let stripped: LevelDef =
+            serde_json::from_value(value).expect("sp1 without the block parses");
+        assert!(stripped.splice_work_orders.is_none());
+        assert_eq!(stripped.id, "sp1");
     }
 }
