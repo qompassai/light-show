@@ -37,6 +37,7 @@ impl Plugin for PlayingPlugin {
                     super::triage_console::setup_triage_console,
                     super::identification::setup_identification_console,
                     super::jumper::setup_jumper_console,
+                    super::survey::setup_survey_console,
                     super::quiz::setup_quiz_ui,
                 )
                     .chain(),
@@ -452,7 +453,8 @@ fn check_win_condition(
     // Astra mechanic gates (§2b–§2f): every present optional block
     // must pass beside the board, via the one conjunction in
     // `crate::astra` (shared with the outage resolution path).
-    let astra_ok = crate::astra::astra_gates_pass(&level, &astra);
+    let astra_ok = crate::astra::astra_gates_pass(&level, &astra)
+        && crate::astra::survey_gate_pass(&level, &live.graph, live.tx_dbm, None);
     if !transition_pending
         && api_ok
         && triage_ok

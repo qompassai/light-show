@@ -72,5 +72,11 @@
   ],
   "service_fail": [
     "Link light's green and the service still fails. Continuity is not acceptance — test the service, not just the wire."
+  ],
+  "survey_point_fail": [
+    "That point's below spec. A jack that links in the office and dies at the desk isn't done — check the point, not the switch."
+  ],
+  "diagnosis_wrong": [
+    "Wrong cause. Diff the history against today — one number moved. Follow the one that moved."
   ]
 }

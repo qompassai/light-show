@@ -72,5 +72,11 @@
   ],
   "service_fail": [
     "Light's in window and the service still fails — read the budget again. The failure is in the plant, not the launch."
+  ],
+  "survey_point_fail": [
+    "A survey point failed its requirement. One dark corner is enough — coverage is a promise per point, not an average."
+  ],
+  "diagnosis_wrong": [
+    "Wrong diagnosis. Compare the old reading to the new one; the quantity that changed is the culprit."
   ]
 }

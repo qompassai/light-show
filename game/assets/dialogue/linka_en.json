@@ -72,5 +72,17 @@
   ],
   "service_fail": [
     "RSSI healthy, SNR failing — loud is not clear. Something is raising your floor, and more power won't fix it."
+  ],
+  "survey_point_fail": [
+    "That point is below its line — the design passed at the desk and failed at the shelf. Survey the room you're serving, not the room you wish you had."
+  ],
+  "diagnosis_wrong": [
+    "Wrong cause. The history is right there — what actually moved between then and now? Chase evidence, not hunches."
+  ],
+  "tutorial_history_diagnosis": [
+    "Read the history like a tech, not a fortune-teller: same RSSI then and now, SNR down — the signal didn't move, the noise did. That's interference, every time."
+  ],
+  "tutorial_survey": [
+    "A design that passes at one point is a hypothesis. Survey every named point against its own line — the shelf in the back doesn't care about your average."
   ]
 }

@@ -90,5 +90,28 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -70.0,
   "window_min_dbm": -75.0,
-  "world": 4
+  "world": 4,
+  "survey":   {
+      "required_for_win": true,
+      "points": [
+          {
+              "id": "front",
+              "label": "Front Desk",
+              "node": 3,
+              "extra_loss_db": 0.0,
+              "required_rssi_dbm": -75.0,
+              "historical_rssi_dbm": -79.0,
+              "historical_snr_db": 14.0
+          },
+          {
+              "id": "stockroom",
+              "label": "Stockroom",
+              "node": 3,
+              "extra_loss_db": 4.0,
+              "required_rssi_dbm": -79.0,
+              "historical_rssi_dbm": -83.0,
+              "historical_snr_db": 14.0
+          }
+      ]
+  }
 }

@@ -90,5 +90,17 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -66.0,
   "window_min_dbm": -80.0,
-  "world": 4
+  "world": 4,
+  "survey":   {
+      "points": [
+          {
+              "id": "site-b",
+              "label": "Site B",
+              "node": 3,
+              "extra_loss_db": 0.0,
+              "required_rssi_dbm": -75.0,
+              "historical_rssi_dbm": -77.5
+          }
+      ]
+  }
 }

@@ -99,6 +99,7 @@ fn playthrough_app() -> App {
     app.init_resource::<crate::states::quiz::QuizProgress>();
     app.init_resource::<crate::states::identification::IdentificationProgress>();
     app.init_resource::<crate::states::jumper::JumperProgress>();
+    app.init_resource::<crate::states::survey::SurveyProgress>();
     app.init_resource::<crate::astra::AttemptTelemetry>();
     app.add_plugins((
         MenuPlugin,
@@ -900,6 +901,7 @@ fn playthrough_app_with_full_ui() -> App {
         crate::states::triage_console::TriageConsolePlugin,
         crate::states::identification::IdentificationConsolePlugin,
         crate::states::jumper::JumperConsolePlugin,
+        crate::states::survey::SurveyConsolePlugin,
         crate::astra::AstraPlugin,
         crate::waifu::dialogue_ui::DialogueUiPlugin,
     ));

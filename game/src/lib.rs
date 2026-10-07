@@ -205,6 +205,7 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     app.add_plugins(states::triage_console::TriageConsolePlugin);
     app.add_plugins(states::identification::IdentificationConsolePlugin);
     app.add_plugins(states::jumper::JumperConsolePlugin);
+    app.add_plugins(states::survey::SurveyConsolePlugin);
     app.add_plugins(astra::AstraPlugin);
     app.add_plugins(states::outage::OutagePlugin)
         .add_plugins(states::results::ResultsPlugin)

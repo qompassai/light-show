@@ -491,7 +491,13 @@ fn check_outage_resolution(
         None => true,
     };
     // Astra mechanic gates — same conjunction as the plain win check.
-    let astra_ok = crate::astra::astra_gates_pass(&level, &astra);
+    let astra_ok = crate::astra::astra_gates_pass(&level, &astra)
+        && crate::astra::survey_gate_pass(
+            &level,
+            &live.graph,
+            live.tx_dbm,
+            Some(&outage),
+        );
     if !transition_pending
         && api_ok
         && triage_ok

@@ -95,5 +95,28 @@
   "wavelength": "Nm1490",
   "window_max_dbm": -65.0,
   "window_min_dbm": -75.0,
-  "world": 3
+  "world": 3,
+  "survey":   {
+      "points": [
+          {
+              "id": "site-b",
+              "label": "Site B",
+              "node": 3,
+              "extra_loss_db": 0.0,
+              "required_rssi_dbm": -75.0,
+              "historical_rssi_dbm": -71.0,
+              "historical_snr_db": 27.0
+          }
+      ],
+      "diagnosis": {
+          "options": [
+              "New obstruction on the path",
+              "Interference \u2014 the noise floor rose",
+              "Access point hardware fault",
+              "Wrong channel"
+          ],
+          "correct": 1,
+          "trap_option": 3
+      }
+  }
 }

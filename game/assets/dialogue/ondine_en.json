@@ -75,5 +75,11 @@
   ],
   "service_fail": [
     "Continuity's fine, the level's fine — and service is still drowning. That's not a gain problem, that's a bad piece of plant. Find it and swap it."
+  ],
+  "survey_point_fail": [
+    "One point's under its line. Out here that's the far tap on the run — passing at the amp isn't passing at the TV."
+  ],
+  "diagnosis_wrong": [
+    "Wrong call. Look at what the tones said then and what they say now — the delta names the fault."
   ]
 }

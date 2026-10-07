@@ -178,6 +178,18 @@ impl DialogueBank {
                     "Light's in window and the service still fails — read the budget again. The failure is in the plant, not the launch.",
                 ],
             ),
+            (
+                "survey_point_fail",
+                &[
+                    "A survey point failed its requirement. One dark corner is enough — coverage is a promise per point, not an average.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong diagnosis. Compare the old reading to the new one; the quantity that changed is the culprit.",
+                ],
+            ),
         ])
     }
 
@@ -307,6 +319,18 @@ impl DialogueBank {
                 "service_fail",
                 &[
                     "Continuity's fine, the level's fine — and service is still drowning. That's not a gain problem, that's a bad piece of plant. Find it and swap it.",
+                ],
+            ),
+            (
+                "survey_point_fail",
+                &[
+                    "One point's under its line. Out here that's the far tap on the run — passing at the amp isn't passing at the TV.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong call. Look at what the tones said then and what they say now — the delta names the fault.",
                 ],
             ),
             (
@@ -449,6 +473,30 @@ impl DialogueBank {
                     "RSSI healthy, SNR failing — loud is not clear. Something is raising your floor, and more power won't fix it.",
                 ],
             ),
+            (
+                "survey_point_fail",
+                &[
+                    "That point is below its line — the design passed at the desk and failed at the shelf. Survey the room you're serving, not the room you wish you had.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong cause. The history is right there — what actually moved between then and now? Chase evidence, not hunches.",
+                ],
+            ),
+            (
+                "tutorial_history_diagnosis",
+                &[
+                    "Read the history like a tech, not a fortune-teller: same RSSI then and now, SNR down — the signal didn't move, the noise did. That's interference, every time.",
+                ],
+            ),
+            (
+                "tutorial_survey",
+                &[
+                    "A design that passes at one point is a hypothesis. Survey every named point against its own line — the shelf in the back doesn't care about your average.",
+                ],
+            ),
         ])
     }
 
@@ -578,6 +626,18 @@ impl DialogueBank {
                 "service_fail",
                 &[
                     "Link light's green and the service still fails. Continuity is not acceptance — test the service, not just the wire.",
+                ],
+            ),
+            (
+                "survey_point_fail",
+                &[
+                    "That point's below spec. A jack that links in the office and dies at the desk isn't done — check the point, not the switch.",
+                ],
+            ),
+            (
+                "diagnosis_wrong",
+                &[
+                    "Wrong cause. Diff the history against today — one number moved. Follow the one that moved.",
                 ],
             ),
         ])

@@ -169,10 +169,16 @@ pub enum ReactionTrigger {
     /// The Service (CNR) state failed while Carrier Level passed —
     /// the C3 moment (Astra §2c). Fired by the astra attempt watcher.
     ServiceStateFail,
+    /// A survey point failed its requirement (Astra §2d). Fired by
+    /// the astra attempt watcher.
+    SurveyPointFail,
+    /// A wrong diagnosis was committed at the survey console
+    /// (Astra §2d). Fires only on Linka's track.
+    DiagnosisWrong,
 }
 
 impl ReactionTrigger {
-    pub const ALL: [ReactionTrigger; 10] = [
+    pub const ALL: [ReactionTrigger; 12] = [
         ReactionTrigger::FirstPlacement,
         ReactionTrigger::SegmentComplete,
         ReactionTrigger::TooHot,
@@ -183,6 +189,8 @@ impl ReactionTrigger {
         ReactionTrigger::OutageStart,
         ReactionTrigger::IdentificationWrong,
         ReactionTrigger::ServiceStateFail,
+        ReactionTrigger::SurveyPointFail,
+        ReactionTrigger::DiagnosisWrong,
     ];
 }
 
@@ -201,6 +209,8 @@ pub fn trigger_spec(trigger: ReactionTrigger) -> (&'static str, Emotion) {
         ReactionTrigger::OutageStart => ("outage_start", Emotion::Surprised),
         ReactionTrigger::IdentificationWrong => ("identification_wrong", Emotion::Annoyed),
         ReactionTrigger::ServiceStateFail => ("service_fail", Emotion::Worried),
+        ReactionTrigger::SurveyPointFail => ("survey_point_fail", Emotion::Worried),
+        ReactionTrigger::DiagnosisWrong => ("diagnosis_wrong", Emotion::Annoyed),
     }
 }
 

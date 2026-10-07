@@ -517,6 +517,10 @@ pub struct SurveyDef {
     pub points: Vec<SurveyPointDef>,
     #[serde(default)]
     pub diagnosis: Option<DiagnosisDef>,
+    /// Anchor levels (m1l9, m1l10) require every point to pass for
+    /// the win; elsewhere the survey is display + badge evidence.
+    #[serde(default)]
+    pub required_for_win: bool,
 }
 
 /// Cable identification block (Astra §2b): the closet holds several
@@ -736,7 +740,9 @@ pub fn config_apply_verdict(
         ));
     }
     if def.worksheet_gateway_interface.as_deref() != gateway_interface {
-        return Err("IPv6 default route uses the wrong outgoing interface.".to_string());
+        return Err(
+            "IPv6 default route uses the wrong outgoing interface.".to_string(),
+        );
     }
     if dns != def.worksheet_dns {
         return Err(format!(
@@ -1448,7 +1454,9 @@ impl LevelDef {
                             },
                             format!(
                                 "Carrier level {:.1} dBmV vs window [{:.0}, {:.0}] dBmV.",
-                                eval.received_dbmv, self.window_min_dbm, self.window_max_dbm
+                                eval.received_dbmv,
+                                self.window_min_dbm,
+                                self.window_max_dbm
                             ),
                         ));
                         let cnr_ok = eval.carrier_to_noise_db >= min_cnr_db;
@@ -1582,8 +1590,8 @@ impl LevelDef {
                                     Some((rssi_dbm, snr_db)) => {
                                         let snr_req =
                                             point.required_snr_db.unwrap_or(required_snr_db);
-                                        let ok = rssi_dbm >= point.required_rssi_dbm
-                                            && snr_db >= snr_req;
+                                        let ok =
+                                            rssi_dbm >= point.required_rssi_dbm && snr_db >= snr_req;
                                         lines.push(StateLine::new(
                                             StateId::Coverage(point.id.clone()),
                                             if ok {
@@ -1756,7 +1764,8 @@ impl LevelDef {
                 // The Ethernet arm already emitted an Application line;
                 // a mechanic Application entry only joins media that
                 // did not.
-                if id == StateId::Application && lines.iter().any(|l| l.id == StateId::Application)
+                if id == StateId::Application
+                    && lines.iter().any(|l| l.id == StateId::Application)
                 {
                     continue;
                 }
@@ -1779,7 +1788,9 @@ impl LevelDef {
     ) -> f64 {
         let floor = self.effective_coax_noise_floor_dbmv(outage);
         match &self.defective_edge {
-            Some(defect) if mechanics.service_defect_present => floor + defect.floor_penalty_dbmv,
+            Some(defect) if mechanics.service_defect_present => {
+                floor + defect.floor_penalty_dbmv
+            }
             _ => floor,
         }
     }
@@ -3117,14 +3128,8 @@ mod tests {
             &MechanicStates::default(),
         );
         assert_eq!(status_of(&lines, &StateId::Continuity), StateStatus::Fail);
-        assert_eq!(
-            status_of(&lines, &StateId::CarrierLevel),
-            StateStatus::Pending
-        );
-        assert_eq!(
-            status_of(&lines, &StateId::ServiceCnr),
-            StateStatus::Pending
-        );
+        assert_eq!(status_of(&lines, &StateId::CarrierLevel), StateStatus::Pending);
+        assert_eq!(status_of(&lines, &StateId::ServiceCnr), StateStatus::Pending);
     }
 
     #[test]
@@ -3149,15 +3154,9 @@ mod tests {
             &mechanics,
         );
         assert_eq!(status_of(&lines, &StateId::Identity), StateStatus::Fail);
-        assert_eq!(
-            status_of(&lines, &StateId::Documentation),
-            StateStatus::Pending
-        );
+        assert_eq!(status_of(&lines, &StateId::Documentation), StateStatus::Pending);
         // Mechanic lines come after the board states.
-        let identity_pos = lines
-            .iter()
-            .position(|l| l.id == StateId::Identity)
-            .unwrap();
+        let identity_pos = lines.iter().position(|l| l.id == StateId::Identity).unwrap();
         let service_pos = lines
             .iter()
             .position(|l| l.id == StateId::ServiceCnr)

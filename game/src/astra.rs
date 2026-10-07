@@ -20,6 +20,7 @@ use crate::states::identification::{identity_state, IdentificationProgress};
 use crate::states::jumper::JumperProgress;
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
+use crate::states::survey::SurveyProgress;
 use crate::states::GameState;
 
 /// All Astra progress resources as one system parameter. The win
@@ -32,6 +33,7 @@ use crate::states::GameState;
 pub struct AstraProgress<'w> {
     pub ident: Option<Res<'w, IdentificationProgress>>,
     pub jumper: Option<Res<'w, JumperProgress>>,
+    pub survey: Option<Res<'w, SurveyProgress>>,
 }
 
 impl AstraProgress<'_> {
@@ -43,6 +45,27 @@ impl AstraProgress<'_> {
     /// The jumper progress, when the resource exists.
     pub fn jumper(&self) -> Option<&JumperProgress> {
         self.jumper.as_deref()
+    }
+
+    /// The survey progress, when the resource exists.
+    pub fn survey(&self) -> Option<&SurveyProgress> {
+        self.survey.as_deref()
+    }
+}
+
+/// The survey half of the win conjunction (§2d): on anchor levels
+/// (`required_for_win`), every survey point must pass against the
+/// live graph. Elsewhere the survey never gates. Kept apart from
+/// `astra_gates_pass` because it needs the live graph.
+pub fn survey_gate_pass(
+    level: &LevelDef,
+    graph: &osp_sim::PathGraph,
+    tx_dbm: f64,
+    outage: Option<&osp_sim::Outage>,
+) -> bool {
+    match &level.survey {
+        Some(survey) if survey.required_for_win => level.survey_points_pass(graph, tx_dbm, outage),
+        _ => true,
     }
 }
 
@@ -113,6 +136,8 @@ pub struct AttemptTelemetry {
     pub observed_service_fail_before_swap: bool,
     /// The service_fail reaction has fired this attempt.
     pub service_fail_fired: bool,
+    /// The survey_point_fail reaction has fired this attempt.
+    pub survey_fail_fired: bool,
     /// Placement changes after the first placement (re-plans).
     pub placement_revisions: u32,
     /// On c1l7, whether the player's first placement was an
@@ -230,6 +255,16 @@ fn watch_attempt(
             if let Some(mut inbox) = reaction_inbox.as_deref_mut() {
                 inbox.push(crate::waifu::reactions::ReactionTrigger::ServiceStateFail);
             }
+        }
+    }
+    // A failing Coverage point fires Linka's survey reaction once.
+    let coverage_failed = lines
+        .iter()
+        .any(|l| matches!(l.id, StateId::Coverage(_)) && l.status == StateStatus::Fail);
+    if coverage_failed && !telemetry.survey_fail_fired {
+        telemetry.survey_fail_fired = true;
+        if let Some(mut inbox) = reaction_inbox.as_deref_mut() {
+            inbox.push(crate::waifu::reactions::ReactionTrigger::SurveyPointFail);
         }
     }
     // Verification: a board pass (with every survey point, where a

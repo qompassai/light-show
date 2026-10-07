@@ -11,6 +11,7 @@ pub mod outage;
 pub mod playing;
 pub mod quiz;
 pub mod results;
+pub mod survey;
 pub mod triage_console;
 pub mod warehouse;
 
