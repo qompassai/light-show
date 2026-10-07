@@ -1,7 +1,7 @@
 # Session Handoff — light-show (updated 2026-10-07, finish-up program, Coordinator A)
 
 ## Canonical tree
-`/home/phaedrus/workspace/repos/light-show` (main, remote == local at ec5a6e5).
+`/home/phaedrus/workspace/repos/light-show` (main, remote == local; art landing pushed 2026-10-07).
 Build/test with
 `CARGO_TARGET_DIR=$PWD/target-agent-landing cargo test --workspace --no-fail-fast`.
 Suite: 789 tests passing, 0 failures.
@@ -25,9 +25,21 @@ Suite: 789 tests passing, 0 failures.
   machine, capstones + badges + closeout. `level_badges` on SaveData,
   also serde default. In-game fiction technology is G.fast for this
   content (Matt ruling 2026-10-07), not CATV.
-- Expression portraits live OUTSIDE the game tree
-  (~/workspace/light-show-expression-portraits, 109/110; Lea angry is a
-  labeled service-refusal gap). They have no in-game consumer.
+- Art landing pass (2026-10-07, after Track A froze the tree):
+  expression-portrait fleet LANDED in assets/art/expressions/ (109
+  portraits + Bianca/Tessa aroused pair, byte-identical to the gated
+  staging keepers; Lea angry still a labeled service-refusal gap -
+  exists nowhere). They have no in-game consumer. Rebuilt Ondine +
+  Linka mature sheets (6/6) + picker strips/frames installed in
+  game/assets/sprites (Linka's installed sheet is no longer the
+  rejected ponytail design). README idle GIFs deployed from the gated
+  strips (Seraphine/Ondine/Linka 12f @200ms; Lattice v11 16f, 2650ms
+  loop). Quarantined out of tree (manifest in the finish-up
+  quarantine dir): ondine_animated_base.gif (design-A violation),
+  seraphine_animated.gif (duplicate). FLAGGED, NOT MOVED:
+  clara/aino/hikari portrait_mature.jpg are the live dialogue
+  portraits (Companion::portrait_path, unit-test asserted) -
+  code-loaded carriers stay until a replacement lands at the path.
 
 ## Open questions for Matt
 - (carried by the finish-up report's starred items: release signing,

@@ -79,4 +79,8 @@ for issues, persistent memory updated, and commit/push as needed."
 - Field school scenarios fj1/fj2/sp1 (SCENARIO_SOURCES, out-of-track).
 - Astra slices 1-8 merged (verification states, consoles, badges;
   level_badges save field; G.fast fiction per Matt ruling).
-- Suite: 789 tests passing, 0 failures. Remote main == ec5a6e5.
+- Art landing: expression fleet (109 + aroused pair) in
+  assets/art/expressions/; Ondine + Linka sheets/pickers (6/6)
+  installed; README idle GIFs deployed (Lattice v11 16f); two
+  non-canonical GIFs quarantined out of tree.
+- Suite: 789 tests passing, 0 failures. Remote main == 5f544ff.
