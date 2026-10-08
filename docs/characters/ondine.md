@@ -48,8 +48,8 @@ over-driving (distortion) as hard as under-driving (snow).
   strip + source.
 - Expression portraits: `assets/art/ondine/expressions/` — alarmed, blush,
   celebrate, pout, wink.
-- Idle/profile: `assets/art/ondine/companions/ondine_animated.gif`,
-  `ondine_animated_mature.gif`, `ondine_animated_mature.png` (an APNG
+- Idle/profile: `assets/art/ondine/companions/ondine_animated_mature.gif`,
+  `ondine_animated_mature.png` (an APNG
   despite the extension), `ondine_profile_64.png`.
 - Dialogue: `game/assets/dialogue/ondine_en.json` (full bank).
 - Music: `game/assets/music/themes/ondine.ogg`,
