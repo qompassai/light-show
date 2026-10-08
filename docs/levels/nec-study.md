@@ -11,7 +11,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea1 — Study Hall Warm-Up</strong></summary>
 
-- **Level ID:** `lea1` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea1` · **World (data):** 8
 - **Objective:** Léa's study hall is open. Ten questions on NEC Articles 90, 100, and 110 — the general requirements every telecom tech needs cold. Score 70% to move on.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: GeneralRequirements. Empty question sets can never pass (fail-closed).
@@ -22,7 +22,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea2 — Grounded: Article 250</strong></summary>
 
-- **Level ID:** `lea2` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea2` · **World (data):** 8
 - **Objective:** Grounding and bonding — NEC Article 250. The difference between a clean install and a callback. Ten questions, 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: GroundingBonding. Empty question sets can never pass (fail-closed).
@@ -33,7 +33,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea3 — Wiring Methods: Articles 300-398</strong></summary>
 
-- **Level ID:** `lea3` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea3` · **World (data):** 8
 - **Objective:** How it all goes in the walls — NEC Articles 300 through 398. Ten questions on wiring methods. 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: WiringMethods. Empty question sets can never pass (fail-closed).
@@ -44,7 +44,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea4 — Hazardous Locations: Articles 500-516</strong></summary>
 
-- **Level ID:** `lea4` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea4` · **World (data):** 8
 - **Objective:** Classified locations — NEC Articles 500 through 516. Where the wrong fitting isn't just a fail, it's a hazard. Ten questions, 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: HazardousLocations. Empty question sets can never pass (fail-closed).
@@ -55,7 +55,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea5 — Special Conditions: Articles 705-780</strong></summary>
 
-- **Level ID:** `lea5` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea5` · **World (data):** 8
 - **Objective:** Special occupancies and conditions — NEC Articles 705 through 780. Ten questions, 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: SpecialConditions. Empty question sets can never pass (fail-closed).
@@ -66,7 +66,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea6 — Comms Systems Boss: Articles 800-830</strong></summary>
 
-- **Level ID:** `lea6` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea6` · **World (data):** 8
 - **Objective:** Léa's home turf — NEC Articles 800 through 830, communications systems. Twelve questions, the boss of the study track. 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **12 questions**, pass at **70%** (≥ 9 correct), untimed. Domains in data: CommsSystems. Empty question sets can never pass (fail-closed).
@@ -77,7 +77,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea7 — Theory Workshop</strong></summary>
 
-- **Level ID:** `lea7` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea7` · **World (data):** 8
 - **Objective:** The math behind the plant — Ohm's law, power, dB calculations. Ten theory questions. 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: Theory. Empty question sets can never pass (fail-closed).
@@ -89,7 +89,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea8 — Washington Law: RCW 19.28</strong></summary>
 
-- **Level ID:** `lea8` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea8` · **World (data):** 8
 - **Objective:** Washington State electrical law — RCW 19.28. Separately scored on the real exam, so it gets its own level here. Ten questions, 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: WashingtonLaw. Empty question sets can never pass (fail-closed).
@@ -100,7 +100,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea9 — Washington Admin Code: WAC 296-46B</strong></summary>
 
-- **Level ID:** `lea9` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea9` · **World (data):** 8
 - **Objective:** The administrative companion to RCW 19.28 — WAC 296-46B. Ten questions on Washington's electrical rules. 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **10 questions**, pass at **70%** (≥ 7 correct), untimed. Domains in data: WashingtonLaw. Empty question sets can never pass (fail-closed).
@@ -111,7 +111,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>lea10 — Mock Exam: Final Boss</strong></summary>
 
-- **Level ID:** `lea10` · **Companion:** Léa (TA — NEC study/quiz) · **World (data):** 8
+- **Level ID:** `lea10` · **World (data):** 8
 - **Objective:** The full dress rehearsal — twenty questions drawn from both pretests, covering every domain. This is the exam before the exam. 70% to pass.
 - **Mechanic / evaluator:** Quiz UI owns the level (`states/quiz.rs`); the board is unused and the board win check returns false by design when a quiz block is present. Questions are answered in presentation order with per-question explanations after each answer.
 - **Pass thresholds / scoring:** `quiz_passed`: correct / total ≥ pass_pct. This level: **20 questions**, pass at **70%** (≥ 14 correct), untimed. Domains in data: GeneralRequirements. Empty question sets can never pass (fail-closed).

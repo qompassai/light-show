@@ -13,7 +13,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari1 — First Day on the Route</strong></summary>
 
-- **Level ID:** `hikari1` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari1` · **World (data):** 7
 - **Objective:** Hikari's first solo dispatch: a fresh FTTH drop in Setagaya. The feeder span is already lit — your job is the last hundred meters. Her mentor's rule: a dirty connector is a callback waiting to happen. Pick a clean one.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-13, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -25,7 +25,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari2 — Address to Diagnostics</strong></summary>
 
-- **Level ID:** `hikari2` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari2` · **World (data):** 7
 - **Objective:** Dispatch hands you a street address in Nakano and nothing else. The BxE portal is slow, but the workflow is fixed: log in, search the address, list the devices, read the diagnostics. Learn the order — you will run it a hundred times.
 - **Mechanic / evaluator:** API-sequence console (`states/api_console.rs`): the player issues calls from the offered choices and the sequence must match the expected order exactly (`verify_api_sequence` — exact ordered match, fail-closed on empty). API tag: `bxe`. Choices offered: Login, SearchAddress, ListDevices, ReadDiagnostics, RunSpeedTest, CertifyInstall (includes distractors).
 - **Pass thresholds / scoring:** Win = exact sequence **Login → SearchAddress → ListDevices → ReadDiagnostics**, with the board win check still applying underneath. Wrong picks increment an alarm counter and give feedback; they never fail the level outright.
@@ -36,7 +36,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari3 — Beat the Callback</strong></summary>
 
-- **Level ID:** `hikari3` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari3` · **World (data):** 7
 - **Objective:** The customer was promised a callback in thirty seconds and the dispatcher is already counting. The aerial drop is up — get the splice closed and the light verified before water gets into the span. Fusion is cleanest, but mechanical is faster to place. Your call.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-27, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -49,7 +49,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari4 — The Dirty Drop</strong></summary>
 
-- **Level ID:** `hikari4` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari4` · **World (data):** 7
 - **Objective:** Callback in Suginami: 'internet slow since the move-in.' BxE shows the light level 3 dB low at the ONT. You know this smell — someone touched the ferrule. Re-terminate it clean and watch the numbers come back.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (2 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-11, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -61,7 +61,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari5 — Certify It</strong></summary>
 
-- **Level ID:** `hikari5` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari5` · **World (data):** 7
 - **Objective:** Install day in Kichijoji. BxE certification does not accept 'close enough' — the checklist wants every reading inside a 1 dB certification window, and the record follows you. A mechanical splice will not survive this. Fuse it.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-13.6, -13] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -73,7 +73,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari6 — Slow Portal</strong></summary>
 
-- **Level ID:** `hikari6` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari6` · **World (data):** 7
 - **Objective:** The portal is crawling — forty-five seconds a page, and the customer is watching. You cached this device ID last visit. Skip the search entirely: log in and hit the diagnostics API direct. The slow path is for people with time.
 - **Mechanic / evaluator:** API-sequence console (`states/api_console.rs`): the player issues calls from the offered choices and the sequence must match the expected order exactly (`verify_api_sequence` — exact ordered match, fail-closed on empty). API tag: `bxe`. Choices offered: Login, SearchAddress, ListDevices, ReadDiagnostics, RunSpeedTest, CertifyInstall (includes distractors).
 - **Pass thresholds / scoring:** Win = exact sequence **Login → ReadDiagnostics**, with the board win check still applying underneath. Wrong picks increment an alarm counter and give feedback; they never fail the level outright.
@@ -84,7 +84,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari7 — Bend in the Wall</strong></summary>
 
-- **Level ID:** `hikari7` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari7` · **World (data):** 7
 - **Objective:** High loss on an in-wall drop in an old Machida house, and the portal cannot tell you where. Two suspects: a kink where someone stapled the cable too tight, or a bad termination at the wall box. Diagnose it like a tech, not a guesser — re-terminate clean.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-13, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -97,7 +97,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari8 — The Splitter Closet</strong></summary>
 
-- **Level ID:** `hikari8` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari8` · **World (data):** 7
 - **Objective:** Eight units in a Shinjuku apartment block, one closet, one shot. Too small a split and you overdrive the ONTs into distortion; too big and the far units starve. Size the splitter for exactly what the building needs.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (1 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-13, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -109,7 +109,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari9 — Night Trouble Call</strong></summary>
 
-- **Level ID:** `hikari9` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari9` · **World (data):** 7
 - **Objective:** 2 AM in Chofu. A business customer is dark, rain is starting, and the splice closure up the pole is taking water. Get the drop re-terminated and verified before the intrusion climbs — the clock is real and the margin is thin.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-8 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-13.5, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -122,7 +122,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>hikari10 — Master Tech</strong></summary>
 
-- **Level ID:** `hikari10` · **Companion:** Hikari (BXE field craft) · **World (data):** 7
+- **Level ID:** `hikari10` · **World (data):** 7
 - **Objective:** The master-tech practical: a full install in Yokohama, start to finish. Run the complete BxE workflow — log in, find the customer, read the diagnostics, prove the speed, certify it. Then build the drop to certification tolerance. Nothing left unproven.
 - **Mechanic / evaluator:** API-sequence console (`states/api_console.rs`): the player issues calls from the offered choices and the sequence must match the expected order exactly (`verify_api_sequence` — exact ordered match, fail-closed on empty). API tag: `bxe`. Choices offered: Login, SearchAddress, ListDevices, ReadDiagnostics, RunSpeedTest, CertifyInstall, Logout (includes distractors).
 - **Pass thresholds / scoring:** Win = exact sequence **Login → SearchAddress → ListDevices → ReadDiagnostics → RunSpeedTest → CertifyInstall**, with the board win check still applying underneath. Wrong picks increment an alarm counter and give feedback; they never fail the level outright.

@@ -13,7 +13,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>w1l1 — First Light</strong></summary>
 
-- **Level ID:** `w1l1` · **Companion:** Séraphine (Fiber) · **World (data):** 1
+- **Level ID:** `w1l1` · **World (data):** 1
 - **Objective:** Welcome to Splice School. Route the training optic's launch power down a single buried span to the ONT. Land inside the GPON receive window — either splice gets you there, so focus on placing it cleanly.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-27, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -25,7 +25,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l3 — Clean Hands</strong></summary>
 
-- **Level ID:** `f1l3` · **Companion:** Séraphine (Fiber) · **World (data):** 1
+- **Level ID:** `f1l3` · **World (data):** 1
 - **Objective:** Séraphine's second rule: a dirty connector is a silent killer. This 10 km buried span is clean, but the patch panel connector is up to you. A contaminated ferrule adds 2 dB you will never get back — pick a clean one.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-14, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -37,7 +37,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l4 — Fusion or Bust</strong></summary>
 
-- **Level ID:** `f1l4` · **Companion:** Séraphine (Fiber) · **World (data):** 1
+- **Level ID:** `f1l4` · **World (data):** 1
 - **Objective:** 25 km of buried fiber at 1490 nm. The budget is razor thin — a mechanical splice's 0.4 dB will sink you, but a fusion splice's 0.075 dB just barely keeps you afloat. Do the math before you pick up the cleaver.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-17.2, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -49,7 +49,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l5 — The Short Cut</strong></summary>
 
-- **Level ID:** `f1l5` · **Companion:** Séraphine (Fiber) · **World (data):** 1
+- **Level ID:** `f1l5` · **World (data):** 1
 - **Objective:** Two routes to the customer at 1550 nm — the long way around the ridge (45 km) or the direct shot through the valley (30 km). At 0.21 dB per km, every kilometer costs you. Pick the route your budget can afford.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1550 nm (0.21 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-17, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -61,7 +61,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l6 — Split Decision</strong></summary>
 
-- **Level ID:** `f1l6` · **Companion:** Séraphine (Fiber) · **World (data):** 1
+- **Level ID:** `f1l6` · **World (data):** 1
 - **Objective:** PON turn-up. The OLT launches at +3 dBm and the feeder eats 1.4 dB before the splitter cabinet. Your split ratio is the whole budget: 1:8 leaves the ONT screaming hot, 1:32 leaves it starved. Find the Goldilocks split.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (3 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-13, -11] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -74,7 +74,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l7 — Bend Don't Break</strong></summary>
 
-- **Level ID:** `f1l7` · **Companion:** Séraphine (Fiber) · **World (data):** 1
+- **Level ID:** `f1l7` · **World (data):** 1
 - **Objective:** Someone kinked the drop below minimum bend radius — a 5 dB macrobend sitting right in your path. You can splice straight through it and eat the loss, or take the 12 km bypass around. A bad bend costs more than extra distance.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-16, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -86,7 +86,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l8 — Contamination Event</strong></summary>
 
-- **Level ID:** `f1l8` · **Companion:** Séraphine (Fiber) · **World (data):** 1
+- **Level ID:** `f1l8` · **World (data):** 1
 - **Objective:** A tech left a connector dirty and the customer's ticket just escalated — you have 60 seconds to re-terminate the patch panel. The budget is tight enough that only the lowest-loss clean connector survives. Move fast and pick right.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-10 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-14, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -99,7 +99,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>w4l1 — Storm Season</strong></summary>
 
-- **Level ID:** `w4l1` · **Companion:** Séraphine (Fiber) · **World (data):** 4
+- **Level ID:** `w4l1` · **World (data):** 4
 - **Objective:** Standard route is up, but a storm's rolling in. If the aerial span goes down mid-shift, get the customer back on the protection path before the timer runs out.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-8 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-27, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -112,7 +112,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l9 — Tight Budget</strong></summary>
 
-- **Level ID:** `f1l9` · **Companion:** Séraphine (Fiber) · **World (data):** 5
+- **Level ID:** `f1l9` · **World (data):** 5
 - **Objective:** Expert work. 22 km at 1550 nm behind a 1:16 split — the feeder, the splitter, and your termination have to line up inside half a decibel. A mechanical splice or a connector will blow it. Only a fusion splice threads this needle.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (5 dBm) minus fiber attenuation at 1550 nm (0.21 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-13.5, -13] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -124,7 +124,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>f1l10 — Build It Right</strong></summary>
 
-- **Level ID:** `f1l10` · **Companion:** Séraphine (Fiber) · **World (data):** 5
+- **Level ID:** `f1l10` · **World (data):** 5
 - **Objective:** Storm front inbound. The 6 km aerial span will not survive it — when it goes, only the 14 km buried protection path keeps the customer lit. Build the protection path NOW, and build it right: the long way around needs the low-loss splice.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (-8 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-12.1, -8] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.

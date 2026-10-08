@@ -13,7 +13,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino1 — First Shift</strong></summary>
 
-- **Level ID:** `aino1` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino1` · **World (data):** 6
 - **Objective:** Welcome to the Nokia NOC, Aino's desk. One alarm on the board: a fiber cut. Click it to acknowledge -- that's the whole job tonight. The alarms never lie. Learn to read them.
 - **Mechanic / evaluator:** Alarm-triage console (`states/triage_console.rs`): alarms must be acknowledged in exactly the expected priority order (`verify_triage_order` — exact ordered match, fail-closed). Alarms: #0 [Critical] Fiber cut: edge 3-7 (backhoe).
 - **Pass thresholds / scoring:** Win = ack order **[0]** exactly, over the (already-lit) board. A wrong pick bumps the wrong-pick counter but never fails the level outright.
@@ -24,7 +24,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino2 — Triage Order</strong></summary>
 
-- **Level ID:** `aino2` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino2` · **World (data):** 6
 - **Objective:** Three alarms, one pair of hands. Critical outranks Major outranks Minor -- ack them in severity order. The board can wait; triage cannot.
 - **Mechanic / evaluator:** Alarm-triage console (`states/triage_console.rs`): alarms must be acknowledged in exactly the expected priority order (`verify_triage_order` — exact ordered match, fail-closed). Alarms: #0 [Critical] Fiber cut: edge 3-7; #1 [Major] Signal degrade: ONT-4412 (-25 dBm); #2 [Minor] Syslog noise: auth failures on NE-7.
 - **Pass thresholds / scoring:** Win = ack order **[0, 1, 2]** exactly, over the (already-lit) board. A wrong pick bumps the wrong-pick counter but never fails the level outright.
@@ -35,7 +35,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino3 — The Cascade</strong></summary>
 
-- **Level ID:** `aino3` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino3` · **World (data):** 6
 - **Objective:** A backhoe found our fiber. One cut, five alarms -- the downstream ONTs are screaming LOS but they're symptoms, not causes. Ack the root cause first, then work down by severity. Never chase symptoms.
 - **Mechanic / evaluator:** Alarm-triage console (`states/triage_console.rs`): alarms must be acknowledged in exactly the expected priority order (`verify_triage_order` — exact ordered match, fail-closed). Alarms: #0 [Critical] Fiber cut: edge 3-7 (ROOT CAUSE); #1 [Major] LOS: ONT-4412 (downstream of cut); #2 [Major] LOS: ONT-4413 (downstream of cut); #3 [Minor] Syslog: flap on NE-7; #4 [Warning] Info: backup path active.
 - **Pass thresholds / scoring:** Win = ack order **[0, 1, 2, 3, 4]** exactly, over the (already-lit) board. A wrong pick bumps the wrong-pick counter but never fails the level outright.
@@ -46,7 +46,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino4 — Bulk Ack</strong></summary>
 
-- **Level ID:** `aino4` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino4` · **World (data):** 6
 - **Objective:** Storm rolled through and the board lit up like a Christmas tree. Six alarms. Bulk-ack them in priority order -- Criticals, then Majors, then everything else. Speed matters; order matters more.
 - **Mechanic / evaluator:** Alarm-triage console (`states/triage_console.rs`): alarms must be acknowledged in exactly the expected priority order (`verify_triage_order` — exact ordered match, fail-closed). Alarms: #0 [Critical] Fiber cut: edge 3-7; #1 [Critical] Power alarm: headend UPS on battery; #2 [Major] LOS: ONT-4412; #3 [Major] LOS: ONT-4413; #4 [Minor] High temp: NE-7; #5 [Warning] Info: config backup complete.
 - **Pass thresholds / scoring:** Win = ack order **[0, 1, 2, 3, 4, 5]** exactly, over the (already-lit) board. A wrong pick bumps the wrong-pick counter but never fails the level outright.
@@ -57,7 +57,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino5 — Query the NBI</strong></summary>
 
-- **Level ID:** `aino5` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino5` · **World (data):** 6
 - **Objective:** The board is quiet but a customer says they're down. Drive the AMS NBI (SOAP on :8443): log in, list the NEs, pull the suspect record, read its status. The right call order finds the fault.
 - **Mechanic / evaluator:** API-sequence console (`states/api_console.rs`): the player issues calls from the offered choices and the sequence must match the expected order exactly (`verify_api_sequence` — exact ordered match, fail-closed on empty). API tag: `ams`. Choices offered: Login, GetAllManagedElements, GetManagedElement, GetNeStatus, StartSupervision, DeleteSubscriber (includes distractors).
 - **Pass thresholds / scoring:** Win = exact sequence **Login → GetAllManagedElements → GetManagedElement → GetNeStatus**, with the board win check still applying underneath. Wrong picks increment an alarm counter and give feedback; they never fail the level outright.
@@ -69,7 +69,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino6 — Supervision</strong></summary>
 
-- **Level ID:** `aino6` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino6` · **World (data):** 6
 - **Objective:** NE-12 needs a card swap. Stop supervision first (never work on a supervised NE), run the test action, then start supervision again. And the backup path needs a span placed -- route it.
 - **Mechanic / evaluator:** API-sequence console (`states/api_console.rs`): the player issues calls from the offered choices and the sequence must match the expected order exactly (`verify_api_sequence` — exact ordered match, fail-closed on empty). API tag: `ams`. Choices offered: StopSupervision, ExecuteNeAction, StartSupervision, Login, GetNeStatus, RebootOnt (includes distractors).
 - **Pass thresholds / scoring:** Win = exact sequence **StopSupervision → ExecuteNeAction → StartSupervision**, with the board win check still applying underneath. Wrong picks increment an alarm counter and give feedback; they never fail the level outright.
@@ -82,7 +82,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino7 — Night Shift</strong></summary>
 
-- **Level ID:** `aino7` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino7` · **World (data):** 6
 - **Objective:** 02:00 and the board won't stop. Eight alarms -- but two are just informational Warnings. Ack the real problems first (Critical, Major, Minor), leave the info noise for last. Triage is telling signal from noise.
 - **Mechanic / evaluator:** Alarm-triage console (`states/triage_console.rs`): alarms must be acknowledged in exactly the expected priority order (`verify_triage_order` — exact ordered match, fail-closed). Alarms: #0 [Critical] Fiber cut: edge 12-3; #1 [Major] Aerial damage: storm branch; #2 [Major] LOS: ONT-8821; #3 [Minor] Water intrusion: closure 7; #4 [Minor] High temp: NE-12; #5 [Warning] Info: nightly backup started; #6 [Warning] Info: firmware check OK; #7 [Minor] Syslog: flap on NE-3.
 - **Pass thresholds / scoring:** Win = ack order **[0, 1, 2, 3, 4, 7, 5, 6]** exactly, over the (already-lit) board. A wrong pick bumps the wrong-pick counter but never fails the level outright.
@@ -93,7 +93,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino8 — Maintenance Window</strong></summary>
 
-- **Level ID:** `aino8` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino8` · **World (data):** 6
 - **Objective:** Planned work on edge 5-2. Put the NE in maintenance mode through the NBI (silences the alarms while you work), check status, then take it back out. Four alarms came in anyway -- triage them too.
 - **Mechanic / evaluator:** Combined console level: alarm triage (`verify_triage_order`) **and** an API sequence (`verify_api_sequence`, ams) must both complete, over the board check. Alarms: #0 [Major] Planned work: edge 5-2; #1 [Minor] Syslog: maint window open; #2 [Warning] Info: supervision paused; #3 [Minor] High temp: NE-5.
 - **Pass thresholds / scoring:** Triage order **[0, 1, 3, 2]** exactly, and API sequence **EnableMaintenanceMode → GetNeStatus → DisableMaintenanceMode** exactly. Both gates, plus the board where the level has open edges.
@@ -105,7 +105,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino9 — SOAP Fault</strong></summary>
 
-- **Level ID:** `aino9` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino9` · **World (data):** 6
 - **Objective:** Your first query faulted: EXCPTENTITYNOTFOUND -- the NE record isn't where you looked. Recover like a pro: log in, pull the right managed element, read its status. The distractors are real fault codes; don't click the fault, fix it.
 - **Mechanic / evaluator:** API-sequence console (`states/api_console.rs`): the player issues calls from the offered choices and the sequence must match the expected order exactly (`verify_api_sequence` — exact ordered match, fail-closed on empty). API tag: `ams`. Choices offered: Login, GetManagedElement, GetNeStatus, GetAllManagedElements, CreateService, RebootOnt (includes distractors).
 - **Pass thresholds / scoring:** Win = exact sequence **Login → GetManagedElement → GetNeStatus**, with the board win check still applying underneath. Wrong picks increment an alarm counter and give feedback; they never fail the level outright.
@@ -116,7 +116,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>aino10 — All Clear</strong></summary>
 
-- **Level ID:** `aino10` · **Companion:** Aino (AMS NOC triage) · **World (data):** 6
+- **Level ID:** `aino10` · **World (data):** 6
 - **Objective:** The big one: a fiber cut cascaded five alarms, the NOC needs the faulty NE identified through the NBI, and the protection path needs routing. Triage, query, repair -- in that order. Clear the board and go home.
 - **Mechanic / evaluator:** Combined console level: alarm triage (`verify_triage_order`) **and** an API sequence (`verify_api_sequence`, ams) must both complete, over the board check. Alarms: #0 [Critical] Fiber cut: edge 9-1 (ROOT CAUSE); #1 [Major] LOS: ONT-9901 (downstream); #2 [Major] LOS: ONT-9902 (downstream); #3 [Minor] Aerial damage: branch on span; #4 [Warning] Info: protection path available; #5 [Minor] Syslog: flap on NE-9.
 - **Pass thresholds / scoring:** Triage order **[0, 1, 2, 3, 5, 4]** exactly, and API sequence **Login → GetAllManagedElements → GetNeStatus** exactly. Both gates, plus the board where the level has open edges.

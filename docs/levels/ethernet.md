@@ -13,7 +13,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l1 — The Hundred-Meter Wall</strong></summary>
 
-- **Level ID:** `e1l1` · **Companion:** Lattice (Ethernet) · **World (data):** 4
+- **Level ID:** `e1l1` · **World (data):** 4
 - **Objective:** Lattice's first law: copper has a distance limit, not just a speed limit. The IDF sits 65 m from the wiring closet and the desk is 65 m past that — 130 m of unbroken copper, and Ethernet taps out at 100 m per segment. A faster cable won't fix a too-long run. Place the switch that breaks the path into two legal segments.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **0 W**, required bandwidth **1000 Mbps**. Any single violation fails the level.
@@ -26,7 +26,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l2 — Power Budget</strong></summary>
 
-- **Level ID:** `e1l2` · **Companion:** Lattice (Ethernet) · **World (data):** 4
+- **Level ID:** `e1l2` · **World (data):** 4
 - **Objective:** The new access point needs 25 W of PoE and a 2 Gbps backhaul. The cable path is already pulled — 30 m of Cat6 to the IDF, 40 m more to the AP's jack. Cable can't conjure watts. Place the switch whose PoE budget actually covers the AP without browning out.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **25 W**, required bandwidth **2000 Mbps**. Any single violation fails the level.
@@ -38,7 +38,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l3 — Category Matters</strong></summary>
 
-- **Level ID:** `e1l3` · **Companion:** Lattice (Ethernet) · **World (data):** 4
+- **Level ID:** `e1l3` · **World (data):** 4
 - **Objective:** The closet run is 60 m of Cat6 — good for 10 Gbps. But the slowest cable sets the speed for the whole path, and the far end needs 5 Gbps. Pick the 40 m run that doesn't bottleneck the link. A faster cable can't fix a slow one already in the wall.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **0 W**, required bandwidth **5000 Mbps**. Any single violation fails the level.
@@ -50,7 +50,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l4 — The Long Corridor</strong></summary>
 
-- **Level ID:** `e1l4` · **Companion:** Lattice (Ethernet) · **World (data):** 4
+- **Level ID:** `e1l4` · **World (data):** 4
 - **Objective:** 70 m of Cat6 to the IDF, 70 m more to the far office — 140 m of copper with a gap in the middle where the old switch died. No single cable run can span it: 140 m breaks the 100 m wall. Place the switch that breaks the path into two legal segments.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **0 W**, required bandwidth **1000 Mbps**. Any single violation fails the level.
@@ -62,7 +62,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l5 — Power Hungry</strong></summary>
 
-- **Level ID:** `e1l5` · **Companion:** Lattice (Ethernet) · **World (data):** 4
+- **Level ID:** `e1l5` · **World (data):** 4
 - **Objective:** The new camera array draws 45 W of PoE — more than the old 30 W switches can feed. Cable can't conjure watts. The 50 m Cat6 run is already pulled; place the switch whose PoE budget actually covers the load without browning out.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **45 W**, required bandwidth **1000 Mbps**. Any single violation fails the level.
@@ -74,7 +74,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l6 — Every Constraint</strong></summary>
 
-- **Level ID:** `e1l6` · **Companion:** Lattice (Ethernet) · **World (data):** 4
+- **Level ID:** `e1l6` · **World (data):** 4
 - **Objective:** 80 m of Cat6 to the IDF, then a 40 m Cat6 drop — but the far end needs 8 Gbps AND 20 W of PoE. Distance, bandwidth, power: the win needs all three. The switch in the middle must break the segments, feed the watts, and not bottleneck the 10-gigabit path.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **20 W**, required bandwidth **8000 Mbps**. Any single violation fails the level.
@@ -86,7 +86,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l7 — The Campus</strong></summary>
 
-- **Level ID:** `e1l7` · **Companion:** Lattice (Ethernet) · **World (data):** 5
+- **Level ID:** `e1l7` · **World (data):** 5
 - **Objective:** Three buildings share one IDF, and the far access point draws 50 W of PoE — more than a standard switch feeds. The 80 m Cat6 runs are already pulled on both sides. Cable can't conjure watts: place the switch whose PoE budget actually covers the load.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **50 W**, required bandwidth **1000 Mbps**. Any single violation fails the level.
@@ -98,7 +98,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l8 — No Slack</strong></summary>
 
-- **Level ID:** `e1l8` · **Companion:** Lattice (Ethernet) · **World (data):** 5
+- **Level ID:** `e1l8` · **World (data):** 5
 - **Objective:** 90 m of Cat6, then 90 m of legacy Cat5e — both near the 100 m wall, and the Cat5e caps the whole path at 1 Gbps. The far end needs exactly that: 1 Gbps and 25 W of PoE. Every parameter is tight. The switch must split the segments, feed the watts, and live with the Cat5e bottleneck.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **25 W**, required bandwidth **1000 Mbps**. Any single violation fails the level.
@@ -110,7 +110,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l9 — Retrofit</strong></summary>
 
-- **Level ID:** `e1l9` · **Companion:** Lattice (Ethernet) · **World (data):** 5
+- **Level ID:** `e1l9` · **World (data):** 5
 - **Objective:** The building's old 60 m Cat5e runs are in the walls and the owner won't pay to replace them — but 120 m of unbroken copper breaks the 100 m wall. You can't fix the cable; work around it. Place the switch that turns two illegal spans into two legal segments.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **0 W**, required bandwidth **1000 Mbps**. Any single violation fails the level.
@@ -122,7 +122,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>e1l10 — The Data Center</strong></summary>
 
-- **Level ID:** `e1l10` · **Companion:** Lattice (Ethernet) · **World (data):** 5
+- **Level ID:** `e1l10` · **World (data):** 5
 - **Objective:** The final exam. 40 m of Cat6 to the IDF, 40 m more to the rack — and the rack needs 10 Gbps AND 55 W of PoE. Cat5e anywhere would bottleneck the ten-gigabit path, so the cable is all Cat6. But watts don't ride on cable: place the switch that feeds 55 W without browning out.
 - **Mechanic / evaluator:** Ethernet constraint evaluation (`evaluate_ethernet` in osp_sim): the placed path is checked for violations, not for a signal level — longest unbroken copper segment against the level's maximum, summed switch PoE budget against the endpoint draw, and the slowest run's category bandwidth (Cat5e 1 Gbps, Cat6 10 Gbps) against the required bandwidth. A switch breaks a segment; a plain run does not. Verification states: Continuity + Application. The level's transmit/window data fields are inert on this medium (see e1l1's note).
 - **Pass thresholds / scoring:** **Zero violations** with: max segment **100 m**, endpoint PoE draw **55 W**, required bandwidth **10000 Mbps**. Any single violation fails the level.

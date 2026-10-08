@@ -13,7 +13,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>fj1 — The Brewhouse Job — Replace the 1x4</strong></summary>
 
-- **Level ID:** `fj1` · **Companion:** Séraphine (Field School) · **World (data):** 1
+- **Level ID:** `fj1` · **World (data):** 1
 - **Objective:** Field school, real job. A brewhouse customer is up on a dying plant: the meter reads about -25 dBm everywhere it matters. The 1x4 at the SB is in poor condition, port 4's yellow tail is smashed and cut, and the VFL shows light bleeding at the splice and in the white feed into the splitter's center block. Two repairs decide this job: re-splice the bleed, and replace the 1x4. Do both and prove it at the ONT — about -17.65 dBm is what a healthy port reads here. Do only one and the customer stays dark.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (3 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-19, -16.5] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -26,7 +26,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>fj2 — The Brewhouse Job — Prove the SB</strong></summary>
 
-- **Level ID:** `fj2` · **Companion:** Séraphine (Field School) · **World (data):** 1
+- **Level ID:** `fj2` · **World (data):** 1
 - **Objective:** Same job, second leg — and the survey lesson that saves the next tech. The SB drop reads -25.45 dBm as found. Do not let the site fool you: the legacy carrier's box on the south side of this building is NOT the demarc — the real demarc is on the roof, up the aerial path, and this MST is aerial, not the buried can in the vault. Brick and mortar everywhere: the follow-up install runs a 75-100 ft aerial drop along the legacy path, masonry bits required, and lands on an unmanaged switch inside because the customer runs their own routers. Your work here: same discipline as the ports. Clear the bleed, replace what is damaged, and prove the SB leg at about -18.03 dBm.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (3 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-19.5, -17] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.
@@ -39,7 +39,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>sp1 — True to the Color</strong></summary>
 
-- **Level ID:** `sp1` · **Companion:** Séraphine (Field School) · **World (data):** 1
+- **Level ID:** `sp1` · **World (data):** 1
 - **Objective:** Repair ticket: the splice at the secondary splitter is open on the tray and the drops downstream are dark. The plant: primary 1x4 upstream, this secondary 1x8 feeding the building. Your repair is only correct when every leg is spliced true to the TIA-598 color code — a neat splice to the wrong strand lights the wrong home and leaves yours dark. Take the chart (it lives in the work order, and it stays open): fiber identity is a PAIR, tube color x strand color, number = (tube - 1) x 12 + strand. Verify the pair, then verify the light. A clean fusion splice at the tray keeps the ONT in window at about -18.1 dBm; a mechanical gets you home poorer; forcing a damaged strand kinks 3.5 dB out of the budget and fails.
 - **Mechanic / evaluator:** Optical link budget (`compute_link_budget_with_outage` in osp_sim): Rx = tx (3 dBm) minus fiber attenuation at 1490 nm (0.28 dB/km), splice losses (fusion 0.075 dB, mechanical 0.4 dB), connector losses (UPC 0.35 dB, APC 0.30 dB, plus any contamination), splitter and macrobend losses along the placed source→target path. Verification states: Continuity + Carrier Level.
 - **Pass thresholds / scoring:** Rx inside **[-19.5, -16.5] dBm**, inclusive. Below the floor reads TOO LOW (starved receiver); above the ceiling reads too hot (overload). An open path fails Continuity and cannot pass.

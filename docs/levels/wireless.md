@@ -13,7 +13,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l1 — Close the Link</strong></summary>
 
-- **Level ID:** `m1l1` · **Companion:** Linka (Wireless) · **World (data):** 3
+- **Level ID:** `m1l1` · **World (data):** 3
 - **Objective:** Linka's rule: distance is the enemy, and amplifiers can't beat geometry. Two 400 m hops at 2.4 GHz stand between the sites — about 92 dB of free-space loss per hop. An amplifier just shouts the wreckage louder. Place the regenerative repeater that hands the far site a fresh signal inside the [-75, -40] dBm window. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-75, -40] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -25,7 +25,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l2 — Ride the Storm</strong></summary>
 
-- **Level ID:** `m1l2` · **Companion:** Linka (Wireless) · **World (data):** 3
+- **Level ID:** `m1l2` · **World (data):** 3
 - **Objective:** The link is up on the 20 dBm repeater, but a storm front is dragging interference across the band — the floor rises about a decibel every ten seconds. Ride it out: when your signal sinks toward the bottom of the [-75, -65] dBm window, hot-swap to the 30 dBm repeater before the clock runs out. Too much too soon cooks the receiver; too little too late loses the link. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-75, -65] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -39,7 +39,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l3 — Thread the Needle</strong></summary>
 
-- **Level ID:** `m1l3` · **Companion:** Linka (Wireless) · **World (data):** 3
+- **Level ID:** `m1l3` · **World (data):** 3
 - **Objective:** Linka's lesson: sometimes the window is all you've got. This link has no fade margin — the receive window is just 4 dB wide. Run the path loss for the 300 m hops at 2.4 GHz and pick the repeater that lands dead center. Close doesn't count. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-72, -68] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -51,7 +51,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l4 — The 5GHz Tax</strong></summary>
 
-- **Level ID:** `m1l4` · **Companion:** Linka (Wireless) · **World (data):** 3
+- **Level ID:** `m1l4` · **World (data):** 3
 - **Objective:** The 5.8 GHz band is clear of interference, but physics charges a tax: free-space loss climbs with frequency. These 250 m hops lose about 96 dB each at 5.8 GHz — nearly 8 dB more than at 2.4. Don't use 2.4 GHz math on a 5.8 GHz link. Pick the repeater that closes it. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-80, -70] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -63,7 +63,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l5 — After the Repeater</strong></summary>
 
-- **Level ID:** `m1l5` · **Companion:** Linka (Wireless) · **World (data):** 3
+- **Level ID:** `m1l5` · **World (data):** 3
 - **Objective:** A short 200 m hop feeds the relay, then a long 400 m hop to the far site. Linka drills this into every tech: a regenerative repeater erases everything before it. That first hop is irrelevant — size the repeater for the 400 m hop AFTER it. That's the only math that matters. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-75, -70] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -76,7 +76,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l6 — Loud Is Not Clear</strong></summary>
 
-- **Level ID:** `m1l6` · **Companion:** Linka (Wireless) · **World (data):** 3
+- **Level ID:** `m1l6` · **World (data):** 3
 - **Objective:** Two 500 m hops, and someone left a 30 dB amplifier on the bench. Tempting — but an amplifier shouts the wreckage louder: it boosts noise with the signal, and the second 500 m hop buries it again. Only a regenerative repeater hands the far site a clean signal. Pick the power that lands in the window without overdriving it. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-75, -65] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -88,7 +88,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l7 — The Long Haul</strong></summary>
 
-- **Level ID:** `m1l7` · **Companion:** Linka (Wireless) · **World (data):** 4
+- **Level ID:** `m1l7` · **World (data):** 4
 - **Objective:** 800 meters per hop. At 2.4 GHz that's 98 dB of free-space loss each — the edge of what this hardware can close. The window is tight because there's nowhere to hide: too little and the far site hears static, too much and you cook the receiver. Calculate, don't guess. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-80, -75] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -101,7 +101,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l8 — Aim High</strong></summary>
 
-- **Level ID:** `m1l8` · **Companion:** Linka (Wireless) · **World (data):** 4
+- **Level ID:** `m1l8` · **World (data):** 4
 - **Objective:** The 2.4 GHz band here is noisy — interference comes and goes, and every decibel of fade eats your margin. Linka's rule: in a noisy band, land HIGH in the window, not in the middle. High enough to survive a fade, low enough to stay legal. Find the repeater that does both. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-80, -66] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -114,7 +114,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l9 — Mixed Bands</strong></summary>
 
-- **Level ID:** `m1l9` · **Companion:** Linka (Wireless) · **World (data):** 4
+- **Level ID:** `m1l9` · **World (data):** 4
 - **Objective:** First hop: 300 m at 2.4 GHz. Second hop: 200 m at 5.8 GHz. Different bands, different loss — you can't use one number for both. Run each hop's path loss separately, then pick the repeater that closes the 5.8 GHz leg into the window. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-75, -70] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
@@ -127,7 +127,7 @@ Navigation: [Levels index](README.md) · [Characters](../characters/README.md)
 <details>
 <summary><strong>m1l10 — Linka's Gauntlet</strong></summary>
 
-- **Level ID:** `m1l10` · **Companion:** Linka (Wireless) · **World (data):** 5
+- **Level ID:** `m1l10` · **World (data):** 5
 - **Objective:** The final exam. Two 600 m hops at 5.8 GHz — over 103 dB of loss per hop, the hardest path in the track. The window is 5 dB wide. An amplifier is on the bench to tempt you, and it will fail exactly the way amplifiers always fail on long hops. Combine everything: frequency math, tight windows, repeater discipline. Close the link. Service acceptance: SNR at or above 10 dB at the far site, measured — not assumed.
 - **Mechanic / evaluator:** Wireless link evaluation (`evaluate_wireless` in osp_sim): each hop loses free-space path loss, FSPL = 20·log₁₀(distance) + 20·log₁₀(frequency) − 147.55 dB. A repeater regenerates — the far-end RSSI is the repeater's transmit power minus the final hop's FSPL — while an amplifier boosts signal and noise together and cannot restore SNR. Verification states: Continuity, Link Level, Link SNR, Noise Channel, plus per-point Coverage states where a survey block is present.
 - **Pass thresholds / scoring:** RSSI inside **[-80, -75] dBm** **and** carried SNR ≥ **10 dB** (the requirement rises 1 dB per 10 s under an unresolved interference hazard).
