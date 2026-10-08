@@ -15,6 +15,13 @@ What it tags (payload forms match game/src/answer_verify.rs):
   alarm_triage  "expected_order": [ids] -> "expected_order_tag" +
                 "expected_step_tags"
                 HMAC("alarm_triage", level_id, "3,1,2")
+  warehouse     game/src/warehouse/mod.rs QuizQuestion literals:
+                "correct_idx": i -> "correct_tag", scoped by the
+                literal's stable "id"
+                HMAC("quiz", question_id, str(i))
+                Literals already tagged are verified against the
+                store instead, so re-runs are idempotent and any
+                store/literal drift aborts.
 
 Step tags exist because the consoles give per-step feedback;
 the last step tag always equals the full-sequence tag.
@@ -36,6 +43,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -50,6 +58,7 @@ AGE_KEY = os.environ.get(
     os.path.join(HOME, ".config/sops/age/keys-light-show-answers.txt"),
 )
 LEVELS_DIR = os.path.join(REPO, "game/assets/levels")
+WAREHOUSE_MOD = os.path.join(REPO, "game/src/warehouse/mod.rs")
 
 
 def load_store():
@@ -70,6 +79,68 @@ def op_names(ops) -> str:
     return ",".join(ops)
 
 
+def warehouse_pass(key, entries, dry_run):
+    """Tag (or verify) the code-authored warehouse quiz literals.
+
+    The warehouse questions live in Rust source, not level JSON, so
+    this pass rewrites game/src/warehouse/mod.rs in place: each
+    QuizQuestion literal's `correct_idx: N,` line becomes
+    `correct_tag: "<hex>",`, scoped by the literal's stable `id`.
+    Store entries are `warehouse/<tool-id>/<question-id>`; any
+    disagreement between store and literal aborts before the file is
+    touched. Already-tagged literals are re-verified against the
+    store, which makes the pass idempotent and turns it into the
+    regeneration path: update the store entry, restore a plaintext
+    literal by hand, re-run.
+    """
+    store_idx = {}
+    for eid, e in entries.items():
+        parts = eid.split("/")
+        if len(parts) == 3 and parts[0] == "warehouse":
+            store_idx[parts[2]] = e["value"]
+    assert store_idx, "no warehouse entries in the store"
+
+    with open(WAREHOUSE_MOD) as fh:
+        text = fh.read()
+
+    seen = {}
+    out = []
+    current = None
+    tagged = verified = 0
+    for line in text.splitlines(keepends=True):
+        m = re.match(r'\s*id: "([^"]+)",\s*$', line)
+        if m and m.group(1) in store_idx:
+            current = m.group(1)
+        m = re.match(r"(\s*)correct_idx: (\d+),\s*$", line)
+        if m:
+            assert current is not None, "warehouse correct_idx with no question id above it"
+            idx = int(m.group(2))
+            sv = store_idx[current]
+            assert sv == idx, f"store drift on warehouse {current}: {sv} != {idx}"
+            hex_tag = tag(key, "quiz", current, str(idx))
+            line = f'{m.group(1)}correct_tag: "{hex_tag}",\n'
+            seen[current] = idx
+            tagged += 1
+            current = None
+        else:
+            m = re.match(r'\s*correct_tag: "([0-9a-f]{64})",\s*$', line)
+            if m and current is not None:
+                want = tag(key, "quiz", current, str(store_idx[current]))
+                assert m.group(1) == want, f"store drift on warehouse {current}: tag mismatch"
+                seen[current] = store_idx[current]
+                verified += 1
+                current = None
+        out.append(line)
+    assert set(seen) == set(store_idx), (
+        f"warehouse literal/store mismatch: literals {sorted(seen)} "
+        f"vs store {sorted(store_idx)}"
+    )
+    if tagged and not dry_run:
+        with open(WAREHOUSE_MOD, "w") as fh:
+            fh.write("".join(out))
+    return tagged, verified
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -79,7 +150,10 @@ def main() -> int:
     entries = store["entries"]
     key_hex = store["answer_key"]["production"]
     assert len(key_hex) == 64, "production key must be 64 hex chars"
-    key = bytes.fromhex(key_hex)
+    # The verifier (game/src/answer_verify.rs) HMACs with the key
+    # string's own bytes — the hex text as UTF-8 — NOT the bytes the
+    # hex decodes to. Match it exactly, or tags verify nowhere.
+    key = key_hex.encode()
 
     def entry_value(eid):
         e = entries.get(eid)
@@ -103,7 +177,7 @@ def main() -> int:
                 if "correct_idx" not in q:
                     continue
                 idx = q["correct_idx"]
-                sv = entry_value(f"quiz.{q['id']}.correct_idx")
+                sv = entry_value(f"quiz/{level_id}/{q['id']}")
                 assert sv == idx, f"store drift on quiz {q['id']}: {sv} != {idx}"
                 q["correct_tag"] = tag(key, "quiz", q["id"], str(idx))
                 del q["correct_idx"]
@@ -113,7 +187,7 @@ def main() -> int:
         seq = data.get("api_sequence")
         if seq and "expected" in seq:
             expected = seq["expected"]
-            sv = entry_value(f"level.{level_id}.api_sequence.expected")
+            sv = entry_value(f"api_sequence/{level_id}")
             assert sv == expected, f"store drift on api {level_id}"
             seq["expected_tag"] = tag(key, "api_sequence", level_id, op_names(expected))
             seq["expected_step_tags"] = [
@@ -128,7 +202,7 @@ def main() -> int:
         tri = data.get("alarm_triage")
         if tri and "expected_order" in tri:
             order = tri["expected_order"]
-            sv = entry_value(f"level.{level_id}.alarm_triage.expected_order")
+            sv = entry_value(f"alarm_triage/{level_id}")
             assert sv == order, f"store drift on triage {level_id}"
             payload = ",".join(str(i) for i in order)
             tri["expected_order_tag"] = tag(key, "alarm_triage", level_id, payload)
@@ -150,7 +224,11 @@ def main() -> int:
                     json.dump(data, fh, indent=2)
                     fh.write("\n")
 
+    w_tagged, w_verified = warehouse_pass(key, entries, args.dry_run)
+    counts["warehouse"] = w_tagged
+
     print(f"quiz tagged: {counts['quiz']}, api: {counts['api']}, alarm: {counts['alarm']}")
+    print(f"warehouse tagged: {w_tagged}, warehouse verified: {w_verified}")
     print(f"files changed: {len(changed)}")
     if not any(counts.values()):
         print("no plaintext answers found — tree is already fully tagged")

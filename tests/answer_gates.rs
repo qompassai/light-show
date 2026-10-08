@@ -19,6 +19,7 @@
 
 use light_show::answer_verify::{answer_key, verify_tag};
 use light_show::level::{load_level, score_quiz};
+use light_show::warehouse::TOOLS;
 
 #[test]
 fn shipped_quiz_tags_gate_on_the_build_key() {
@@ -36,7 +37,12 @@ fn shipped_quiz_tags_gate_on_the_build_key() {
             let mut bytes = first.correct_tag.clone().into_bytes();
             bytes[0] = if bytes[0] == b'0' { b'1' } else { b'0' };
             let tampered = String::from_utf8(bytes).unwrap();
-            assert!(!verify_tag("quiz", &first.id, &correct.to_string(), &tampered));
+            assert!(!verify_tag(
+                "quiz",
+                &first.id,
+                &correct.to_string(),
+                &tampered
+            ));
             // Every question in the level recovers and verifies.
             for q in &quiz.questions {
                 let idx = q.reveal_correct().expect("keyed build must reveal");
@@ -58,6 +64,54 @@ fn shipped_quiz_tags_gate_on_the_build_key() {
             let (score, _) = score_quiz(&quiz.questions, &zeros);
             assert_eq!(score, 0, "keyless build scored a shipped quiz");
             eprintln!("answer_gates: fail-closed branch (nothing verifies)");
+        }
+    }
+}
+
+#[test]
+fn shipped_warehouse_tags_gate_on_the_build_key() {
+    // The warehouse quiz is code-authored (game/src/warehouse), so its
+    // tags ship in source rather than level JSON — same scheme, same
+    // dual-branch gate as the level data above.
+    let first = &TOOLS[0].quiz[0];
+    match first.reveal_correct() {
+        Some(correct) => {
+            // Keyed branch: the matching key is compiled in.
+            assert!(answer_key().is_some());
+            assert!(first.verify_choice(correct));
+            assert!(!first.verify_choice((correct + 1) % 4));
+            // A tampered tag (one hex digit flipped) must not verify.
+            let mut bytes = first.correct_tag.as_bytes().to_vec();
+            bytes[0] = if bytes[0] == b'0' { b'1' } else { b'0' };
+            let tampered = String::from_utf8(bytes).unwrap();
+            assert!(!verify_tag(
+                "quiz",
+                first.id,
+                &correct.to_string(),
+                &tampered
+            ));
+            // Every warehouse question recovers and verifies.
+            for tool in TOOLS {
+                for q in tool.quiz {
+                    let idx = q.reveal_correct().expect("keyed build must reveal");
+                    assert!(q.verify_choice(idx));
+                }
+            }
+            eprintln!("answer_gates warehouse: keyed branch (tags verify, tamper rejected)");
+        }
+        None => {
+            // Fail-closed branch: no candidate verifies against any
+            // shipped tag and no correct index can be recovered.
+            for tool in TOOLS {
+                for q in tool.quiz {
+                    assert!(q.reveal_correct().is_none());
+                    assert!(
+                        (0..4).all(|c| !q.verify_choice(c)),
+                        "keyless build verified a warehouse candidate — fail-closed is broken"
+                    );
+                }
+            }
+            eprintln!("answer_gates warehouse: fail-closed branch (nothing verifies)");
         }
     }
 }

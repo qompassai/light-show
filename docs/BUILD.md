@@ -181,6 +181,18 @@ levels cannot be completed — that fail-closed behavior is the point.
 F-Droid is the exception: it builds a pinned plaintext commit and
 never sees the key (see `docs/FDROID.md`).
 
+The warehouse quiz is code-authored (`game/src/warehouse/mod.rs`), so
+its questions carry the same tags inline rather than in level JSON:
+each `QuizQuestion` literal holds a `correct_tag` (domain `quiz`,
+scope = the question's stable `id`). `tools/tag_answers.py` covers
+the warehouse in the same run as the level files — it tags plaintext
+literals drift-checked against the store and re-verifies tagged
+literals against the store on every later run. To change a warehouse
+answer: update the store entry
+(`warehouse/scout_pro_3/<question-id>`), restore the literal's
+plaintext `correct_idx` line, and re-run the tool on primo. A build
+without the key cannot pass the warehouse quiz either.
+
 ## Gates (run locally — CI workflows were removed)
 
 There is no CI on this repo (workflows removed 2026-09-30); the release

@@ -183,18 +183,40 @@ fn shuffle_backdrops(indices: &mut [u8], seed: u64) {
 }
 
 /// One multiple-choice question with both host reactions. `source` is
-/// the manual section that validates the answer.
+/// the manual section that validates the answer. The correct index
+/// itself never appears here: the question carries only its keyed tag
+/// (answer-tag migration — see `crate::answer_verify`), the same
+/// scheme as Léa's level-JSON questions.
 #[derive(Debug)]
 pub struct QuizQuestion {
+    /// Stable id; the answer-tag scope, e.g. "scout_pro_3-001".
+    pub id: &'static str,
     pub question: &'static str,
     pub choices: [&'static str; 4],
-    /// Index into `choices`; always < 4 (checked by test).
-    pub correct_idx: usize,
+    /// Keyed tag of the correct answer: hex HMAC-SHA256 over
+    /// `quiz:{id}:{correct_idx}` under the build-time answer key
+    /// (see `crate::answer_verify`). Verified, never stored in
+    /// plaintext.
+    pub correct_tag: &'static str,
     pub source: &'static str,
     /// Bianca, on a right answer: the manual fact.
     pub explain_correct: &'static str,
     /// Tessa, on a wrong answer: the field consequence, then the answer.
     pub explain_wrong: &'static str,
+}
+
+impl QuizQuestion {
+    /// True when `choice` is this question's correct answer.
+    pub fn verify_choice(&self, choice: usize) -> bool {
+        crate::answer_verify::verify_tag("quiz", self.id, &choice.to_string(), self.correct_tag)
+    }
+
+    /// Recover the correct index for the post-answer teaching reveal
+    /// by testing every candidate against the keyed tag. `None` only
+    /// when the build carries no answer key (fail-closed builds).
+    pub fn reveal_correct(&self) -> Option<usize> {
+        (0..self.choices.len()).find(|&i| self.verify_choice(i))
+    }
 }
 
 /// A tool on the shelf: what it is, what it does, when you reach for it,
@@ -263,6 +285,7 @@ const SCOUT_PRO_3: ToolDef = ToolDef {
 
 const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
     QuizQuestion {
+        id: "scout_pro_3-001",
         question: "The Scout Pro 3 measures cable length using which property?",
         choices: [
             "Resistance",
@@ -270,7 +293,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
             "Time-domain reflectometry",
             "Optical loss",
         ],
-        correct_idx: 1,
+        correct_tag: "129f4f785255b475ea3c7b3f2ea305552ae2fb65757f43aa87e862244deb567e",
         source: "General Specifications: Length Measurement Method",
         explain_correct: "Correct. General Specifications: \"Length Measurement Method: \
                           Capacitance.\" That's why the length constant is in pF per foot.",
@@ -279,10 +302,11 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
                         The answer's capacitance.",
     },
     QuizQuestion {
+        id: "scout_pro_3-002",
         question: "A cable tests with pairs landed in the right order per-pin, but the \
                    pairs themselves aren't kept twisted together. The tester shows...",
         choices: ["Open", "Short", "Split pairs", "Reversal"],
-        correct_idx: 2,
+        correct_tag: "4ee0532b4746cfc5d67dba74d609b08a027815b4c0abe4d8a82dde86185da6d2",
         source: "Display: Cable Faults (\"Split\")",
         explain_correct: "Correct. Display, Cable Faults: \"Split\" means the wire pairs \
                           are not maintained as pairs. Pin order alone proves nothing.",
@@ -290,9 +314,10 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
                         why this tester exists. The answer's split pairs.",
     },
     QuizQuestion {
+        id: "scout_pro_3-003",
         question: "What is the default length constant for data cable?",
         choices: ["17.0 pF/ft", "10.0 pF/ft", "40.0 pF/ft", "15.0 pF/ft"],
-        correct_idx: 3,
+        correct_tag: "d46850bcf3cd01856e052a95783b72e6d0d77b51d03afabde6b6ae6e9b0e0a78",
         source: "Length Constant: defaults",
         explain_correct: "Correct. Length Constant defaults: voice 17.0, data 15.0, \
                           video 15.0 pF/ft. Editable from 10 to 40.",
@@ -301,6 +326,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
                         pF/ft.",
     },
     QuizQuestion {
+        id: "scout_pro_3-004",
         question: "Before every test the Scout checks for voltage. If voltage is found...",
         choices: [
             "No test runs; disconnect immediately",
@@ -308,7 +334,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
             "It switches to PoE mode",
             "It beeps once and continues",
         ],
-        correct_idx: 0,
+        correct_tag: "ce627c5e7b5cbfcde03486ed1fe8daa0325d4a2996013f1d04e8d34844532c28",
         source: "Display: Voltage Check",
         explain_correct: "Correct. Display, Voltage Check: with voltage present no test \
                           runs and the lightning bolt shows. Disconnect. Do not argue \
@@ -317,6 +343,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
                         found means no test runs. Unplug it right now.",
     },
     QuizQuestion {
+        id: "scout_pro_3-005",
         question: "Hub Blink is forbidden in which situation?",
         choices: [
             "On shielded cable",
@@ -324,7 +351,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
             "When connected to an active PoE port",
             "During tone mode",
         ],
-        correct_idx: 2,
+        correct_tag: "eb44ff5d06f3325510a78b0d51e0c45ce3d26ab72db7e6b869dda12a955460f0",
         source: "Keypad: Tone/Hub Blink",
         explain_correct: "Correct. Keypad, Tone/Hub Blink: \"DO NOT attempt to use Hub \
                           Blink when connected to a PoE active port.\" Capital letters \
@@ -333,9 +360,10 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
                         The rule is never on an active PoE port.",
     },
     QuizQuestion {
+        id: "scout_pro_3-006",
         question: "Tone frequencies on the Scout Pro 3 include which solid tone?",
         choices: ["440 Hz", "1000 Hz", "60 Hz", "2000 Hz"],
-        correct_idx: 1,
+        correct_tag: "2cc6dc9f62f5cdfb9852157466f41543e59dbee0b9469e46aa3736ebb976741e",
         source: "Tone Generation: solid tones",
         explain_correct: "Correct. Tone Generation: solid tones at 800, 1000, 1200, 1400 \
                           and 1500 Hz, plus alternating pairs.",
@@ -344,6 +372,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
                         solids.",
     },
     QuizQuestion {
+        id: "scout_pro_3-007",
         question: "The self-storing Test + Map remote always shows as which ID?",
         choices: [
             "Remote ID #0",
@@ -351,7 +380,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
             "Remote ID #19",
             "It has no ID",
         ],
-        correct_idx: 1,
+        correct_tag: "a71e550b9fc72a67e175ba98c4c400386870d00b7ac71ad8daa8728b98064229",
         source: "Self-Storing Test + Map ID Remote",
         explain_correct: "Correct. The self-storing Test + Map remote is always ID #1. \
                           The protagonist is always number one.",
@@ -359,6 +388,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
                         to the wrong rooms. The self-storing one is always #1.",
     },
     QuizQuestion {
+        id: "scout_pro_3-008",
         question: "Is it safe to connect the Scout Pro 3 to a live AC-powered cable run?",
         choices: [
             "Yes, under 55V",
@@ -366,7 +396,7 @@ const SCOUT_PRO_3_QUIZ: &[QuizQuestion] = &[
             "Yes, in ID mode",
             "Never: it's designed for unenergized cabling only",
         ],
-        correct_idx: 3,
+        correct_tag: "b24290269056ff9234adcf2184e5dd97c26acf45fc5e9226b13a2982ac114e2e",
         source: "Warnings",
         explain_correct: "Correct. Warnings: designed for unenergized cabling only. Live \
                           AC may damage the tester and endanger the user.",
@@ -779,7 +809,6 @@ impl Loadout {
     }
 }
 
-
 /// Warehouse-enter reaction lines for a visit (spec: hosts react to
 /// the haul the player brings in). Pure: `haul` is the pending salvage
 /// haul claimed on entry, `None` on an ordinary visit. Bianca inspects
@@ -824,37 +853,75 @@ mod tests {
     fn scout_quiz_has_the_eight_spec_questions_with_valid_answers() {
         let scout = tool("scout_pro_3").expect("Scout Pro 3 is on the shelf");
         assert_eq!(scout.quiz.len(), 8);
-        let answers: Vec<&str> = scout
-            .quiz
-            .iter()
-            .map(|q| q.choices[q.correct_idx])
-            .collect();
-        assert_eq!(
-            answers,
-            [
-                "Capacitance",
-                "Split pairs",
-                "15.0 pF/ft",
-                "No test runs; disconnect immediately",
-                "When connected to an active PoE port",
-                "1000 Hz",
-                "Remote ID #1",
-                "Never: it's designed for unenergized cabling only",
-            ]
-        );
+        // Structural checks hold in every build: stable unique tag
+        // scopes, well-formed tags, and the teaching prose present.
+        // (The explanations render only after an answer, so their
+        // naming the fact is the teaching design, not a leak.)
+        let mut ids: Vec<&str> = scout.quiz.iter().map(|q| q.id).collect();
         for q in scout.quiz {
-            assert!(q.correct_idx < 4);
+            assert!(q.id.starts_with("scout_pro_3-"), "id is the tag scope");
+            assert_eq!(q.correct_tag.len(), 64, "tag is hex SHA-256");
+            assert!(q.correct_tag.bytes().all(|b| b.is_ascii_hexdigit()));
             assert!(!q.source.is_empty() && !q.explain_correct.is_empty());
             assert!(!q.explain_wrong.is_empty());
+        }
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), 8, "question ids are unique");
+
+        // The answer checks proper are dual-branch, like
+        // tests/answer_gates.rs: whichever property this build must
+        // have is the one proved.
+        let revealed: Vec<Option<usize>> = scout.quiz.iter().map(|q| q.reveal_correct()).collect();
+        if revealed.iter().all(Option::is_some) {
+            // Keyed branch: this build's key matches the shipped tags.
+            let answers: Vec<&str> = scout
+                .quiz
+                .iter()
+                .zip(&revealed)
+                .map(|(q, idx)| q.choices[idx.expect("checked is_some above")])
+                .collect();
+            assert_eq!(
+                answers,
+                [
+                    "Capacitance",
+                    "Split pairs",
+                    "15.0 pF/ft",
+                    "No test runs; disconnect immediately",
+                    "When connected to an active PoE port",
+                    "1000 Hz",
+                    "Remote ID #1",
+                    "Never: it's designed for unenergized cabling only",
+                ]
+            );
+            eprintln!("warehouse quiz gate: keyed branch (answers verify)");
+        } else {
+            // Fail-closed branch: no candidate verifies against any
+            // shipped tag, so nothing can be recovered or scored.
+            assert!(revealed.iter().all(Option::is_none));
+            for q in scout.quiz {
+                assert!((0..4).all(|c| !q.verify_choice(c)));
+            }
+            eprintln!("warehouse quiz gate: fail-closed branch (nothing verifies)");
         }
     }
 
     #[test]
     fn correct_answers_are_not_all_in_the_same_slot() {
-        // A quiz where "always pick B" wins teaches nothing.
+        // A quiz where "always pick B" wins teaches nothing. Reading
+        // the slots needs the key; in a keyless build every reveal is
+        // None and the fail-closed branch of the spec test above
+        // carries the proof instead.
         let scout = tool("scout_pro_3").unwrap();
-        let first = scout.quiz[0].correct_idx;
-        assert!(scout.quiz.iter().any(|q| q.correct_idx != first));
+        let revealed: Vec<usize> = scout
+            .quiz
+            .iter()
+            .filter_map(|q| q.reveal_correct())
+            .collect();
+        if revealed.len() == scout.quiz.len() {
+            let first = revealed[0];
+            assert!(revealed.iter().any(|&idx| idx != first));
+        }
     }
 
     #[test]

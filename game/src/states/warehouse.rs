@@ -102,7 +102,7 @@ impl WarehouseQuiz {
             return None;
         }
         let question = questions.get(self.current)?;
-        let reaction = if choice == question.correct_idx {
+        let reaction = if question.verify_choice(choice) {
             self.correct += 1;
             Reaction::Correct
         } else if remote_available && !self.remote_used {
@@ -1037,8 +1037,18 @@ mod tests {
         wh::tool("scout_pro_3").expect("Scout Pro 3 is on the shelf")
     }
 
+    /// True when this build's key resolves the shipped warehouse
+    /// tags. Answer-flow tests skip (with a note) when it does not —
+    /// the same recover-or-skip rule as `tests/game_quiz.rs`; the
+    /// fail-closed property itself is gated in `tests/answer_gates.rs`.
+    fn answers_known() -> bool {
+        scout().quiz.iter().all(|q| q.reveal_correct().is_some())
+    }
+
     fn correct(i: usize) -> usize {
-        scout().quiz[i].correct_idx
+        scout().quiz[i]
+            .reveal_correct()
+            .expect("answer-flow tests run only when answers_known()")
     }
 
     fn wrong(i: usize) -> usize {
@@ -1069,6 +1079,10 @@ mod tests {
 
     #[test]
     fn perfect_run_scores_every_question_and_finishes_once() {
+        if !answers_known() {
+            eprintln!("skipping perfect_run_scores_every_question_and_finishes_once: no matching answer key in this build");
+            return;
+        }
         let (quiz, finishes) = run_quiz(&[]);
         assert_eq!(quiz.correct, 8);
         assert!(quiz.is_finished(8));
@@ -1077,6 +1091,10 @@ mod tests {
 
     #[test]
     fn one_miss_still_passes_two_misses_fail() {
+        if !answers_known() {
+            eprintln!("skipping one_miss_still_passes_two_misses_fail: no matching answer key in this build");
+            return;
+        }
         let (one, _) = run_quiz(&[3]);
         assert_eq!(one.correct, 7);
         assert!(wh::quiz_passed(one.correct, 8));
@@ -1086,6 +1104,10 @@ mod tests {
 
     #[test]
     fn a_spare_remote_forgives_one_miss_without_counting_it() {
+        if !answers_known() {
+            eprintln!("skipping a_spare_remote_forgives_one_miss_without_counting_it: no matching answer key in this build");
+            return;
+        }
         let questions = scout().quiz;
         let mut quiz = WarehouseQuiz::default();
         assert_eq!(
@@ -1158,6 +1180,10 @@ mod tests {
 
     #[test]
     fn answers_are_refused_while_a_reaction_shows_and_after_the_end() {
+        if !answers_known() {
+            eprintln!("skipping answers_are_refused_while_a_reaction_shows_and_after_the_end: no matching answer key in this build");
+            return;
+        }
         let questions = scout().quiz;
         let mut quiz = WarehouseQuiz::default();
         quiz.answer(questions, wrong(0), false);
@@ -1183,6 +1209,12 @@ mod tests {
 
     #[test]
     fn remotes_forgive_only_once_per_run() {
+        if !answers_known() {
+            eprintln!(
+                "skipping remotes_forgive_only_once_per_run: no matching answer key in this build"
+            );
+            return;
+        }
         let questions = scout().quiz;
         let mut quiz = WarehouseQuiz::default();
         assert_eq!(
@@ -1200,6 +1232,10 @@ mod tests {
 
     #[test]
     fn no_remote_means_no_forgiveness_and_next_without_answer_is_inert() {
+        if !answers_known() {
+            eprintln!("skipping no_remote_means_no_forgiveness_and_next_without_answer_is_inert: no matching answer key in this build");
+            return;
+        }
         let questions = scout().quiz;
         let mut quiz = WarehouseQuiz::default();
         assert!(!quiz.next(8));
