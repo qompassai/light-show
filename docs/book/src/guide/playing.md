@@ -2,7 +2,7 @@
 
 ## In plain terms: the loop
 
-**Menu → pick your companion → Start → route the light → land in the
+**Menu → pick your companion → pick a level → route the light → land in the
 window (or survive the outage) → results screen → next level.**
 Win by getting the received power inside the target window. Lose by
 running out the outage clock. That's the whole game; this chapter is

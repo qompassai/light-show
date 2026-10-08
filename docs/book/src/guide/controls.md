@@ -88,10 +88,12 @@ Tap (or click) is the whole contract.
 | Credits | Back | Returns to `MainMenu` |
 
 One code smell worth knowing: the menu's doc comment says "title,
-companion picker, world/level select" — but no world/level select UI
-exists in the code. The only navigation is Start/Credits/companion.
-(Start always loads `CurrentLevelIndex`, which defaults to 0 and is
-reset to 0 whenever you return to the menu from results.)
+companion picker, world/level select" — a level select UI now exists
+(picking a companion card opens her level list, and choosing a level
+there sets `CurrentLevelIndex` and enters `Playing`), though the
+table above still describes the older menu layout in places.
+(`CurrentLevelIndex` defaults to 0 and is reset to 0 whenever you
+return to the menu from results.)
 
 ## What is NOT a control (unverifiable)
 

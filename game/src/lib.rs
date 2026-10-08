@@ -186,6 +186,7 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
         .init_state::<GameState>()
         .add_plugins(states::menu::MenuPlugin)
         .add_plugins(states::companion_select::CompanionSelectPlugin)
+        .add_plugins(states::level_select::LevelSelectPlugin)
         .add_plugins(states::credits::CreditsPlugin)
         // Also owns the `warehouse::Loadout` resource that outage.rs and
         // results.rs read.

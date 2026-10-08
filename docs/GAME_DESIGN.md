@@ -8,7 +8,7 @@ the received level inside spec. Four AI-hologram companions live in your OTDR
 tablet, one per transmission discipline: **Séraphine** (fiber-optic splicing),
 **Ondine** (coax / broadband RF), **Linka** (mobile / cellular RF), and
 **Lattice** (Ethernet / copper LAN). Picking a companion picks *what you learn*:
-each one teaches her own medium through a two-level track of real
+each one teaches her own medium through a ten-level track of real
 engineering problems wearing a puzzle-game costume.
 
 ## Game Flow
@@ -18,15 +18,20 @@ engineering problems wearing a puzzle-game costume.
 2. **Companion picker.** Four cards, one per companion/medium. Each card shows
    the companion's dark silhouette, her name, discipline, and a one-line hook;
    hovering or pressing a card plays her discipline animation and lights an
-   accent-glow outline. Choosing a card sets her as your companion and jumps
-   you to the first level of her track. A Back button returns to the title.
-3. **Board play.** The puzzle itself — see Core Loop.
-4. **Results.** Win banner ("SERVICE RESTORED") with an animated neon ring.
+   accent-glow outline. Choosing a card sets her as your companion and opens
+   her level select. A Back button returns to the title.
+3. **Level select.** All ten levels of the chosen companion's track, in order,
+   under her portrait and name. Cleared levels are marked, with any Astra
+   badges earned on them; nothing is locked, so any level can be replayed or
+   jumped into directly. Choosing a level starts it. Back (or Esc) returns
+   to the picker.
+4. **Board play.** The puzzle itself — see Core Loop.
+5. **Results.** Win banner ("SERVICE RESTORED") with an animated neon ring.
    From here: **Continue** plays the next level in the current track, or
    **Companion Select** returns to the picker (mid-track or at the end).
 
-The menu-to-picker-to-track flow replaced the earlier single-companion design;
-the picker is the game's central hub.
+The menu-to-picker-to-level-select flow replaced the earlier
+single-companion design; the picker is the game's central hub.
 
 ## Core Loop (per level)
 

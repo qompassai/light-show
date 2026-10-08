@@ -8,6 +8,7 @@ pub mod credits;
 pub mod identification;
 pub mod intermittent;
 pub mod jumper;
+pub mod level_select;
 pub mod menu;
 pub mod outage;
 pub mod playing;
@@ -24,9 +25,13 @@ use bevy::prelude::*;
 pub enum GameState {
     #[default]
     MainMenu,
-    /// Companion/track select: title → here → one companion's themed
-    /// two-level track in `Playing`.
+    /// Companion/track select: title → here → the picked companion's
+    /// level select.
     CompanionSelect,
+    /// Per-companion level select: picker → here → `Playing`. Lists
+    /// every level of the chosen companion's track with its save
+    /// progress; choosing one launches it.
+    LevelSelect,
     /// Normal puzzle solving: player is routing the chosen medium, no
     /// active outage.
     Playing,

@@ -1,6 +1,6 @@
 //! Development-only rendered-frame check harness.
 //!
-//! Activated by `--render-check <menu|picker>` (debug builds only — the
+//! Activated by `--render-check <menu|picker|levels>` (debug builds only — the
 //! whole module is `#[cfg(debug_assertions)]`). Builds the real app via
 //! the normal `build_app()` path, optionally at a forced window size
 //! (`--render-size <W>x<H>`, applied to the `WindowPlugin` in `lib.rs`),
@@ -36,6 +36,13 @@ const CAPTURE_DRAIN_FRAMES: u32 = 240;
 /// select screen. Early (assets are shared with the menu backdrop),
 /// but after the menu's own `OnEnter` has run.
 const ENTER_TARGET_FRAME: u32 = 30;
+/// Frame on which a `levels` check leaves the picker for the level
+/// select. The state write is direct, like the picker entry above:
+/// a simulated card press races the UI focus system, which owns
+/// `Interaction` in the real app (the press path itself is covered
+/// end-to-end by the playthrough harness). Early enough that the
+/// screen settles long before the default capture frame.
+const ENTER_LEVELS_FRAME: u32 = 90;
 /// Smallest window edge the size override accepts: below this the UI
 /// has nothing meaningful to lay out and the capture is junk data.
 const WINDOW_EDGE_MIN_PX: u32 = 64;
@@ -50,6 +57,10 @@ pub enum RenderCheckTarget {
     Menu,
     /// The companion select ("picker") over the title artwork.
     Picker,
+    /// The level select for the default companion (Séraphine): the
+    /// driver walks menu → picker → level select and captures the
+    /// level list her pick opens.
+    Levels,
 }
 
 /// Parsed `--render-*` flags. `target: None` means "normal game run".
@@ -74,9 +85,10 @@ impl RenderCheckArgs {
                 "--render-check" => match raw.next().as_deref() {
                     Some("menu") => args.target = Some(RenderCheckTarget::Menu),
                     Some("picker") => args.target = Some(RenderCheckTarget::Picker),
+                    Some("levels") => args.target = Some(RenderCheckTarget::Levels),
                     other => eprintln!(
                         "[light-show] ignoring unknown --render-check {other:?} \
-                         (expected menu|picker)"
+                         (expected menu|picker|levels)"
                     ),
                 },
                 "--render-size" => match raw.next().map(|s| parse_window_size(&s)) {
@@ -161,8 +173,15 @@ fn rendercheck_driver(
     mut exit: MessageWriter<AppExit>,
 ) {
     run.frame += 1;
-    if run.target == RenderCheckTarget::Picker && run.frame == ENTER_TARGET_FRAME {
+    if matches!(
+        run.target,
+        RenderCheckTarget::Picker | RenderCheckTarget::Levels
+    ) && run.frame == ENTER_TARGET_FRAME
+    {
         next_state.set(GameState::CompanionSelect);
+    }
+    if run.target == RenderCheckTarget::Levels && run.frame == ENTER_LEVELS_FRAME {
+        next_state.set(GameState::LevelSelect);
     }
     if !run.captured && run.frame >= run.capture_frame {
         run.captured = true;

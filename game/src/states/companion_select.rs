@@ -1,8 +1,8 @@
-//! Companion-select screen: title → here → themed level track. Four
-//! cards, one per companion/transmission medium; picking one sets
-//! `SelectedCompanion`, jumps `CurrentLevelIndex` to that companion's
-//! track start (see `Companion::track_start_index`), and enters
-//! `Playing`. This is the screen Matt asked for: the companion pick
+//! Companion-select screen: title → here → the companion's level
+//! select. Four cards, one per companion/transmission medium; picking
+//! one sets `SelectedCompanion` and opens her level select (see
+//! `super::level_select`), where the level itself is chosen and
+//! launched. This is the screen Matt asked for: the companion pick
 //! chooses *what* you learn, not just who comments on it.
 
 use super::GameState;
@@ -11,7 +11,7 @@ use crate::cheat_codes::{
     CodeWordBuffer, KonamiState, UnlockedSpecialists, code_word_to_companion,
 };
 use crate::fonts::FONT_SIZE_ADJUST;
-use crate::level::{self, CurrentLevelIndex, CurrentScenarioId};
+use crate::level::{self, CurrentScenarioId};
 use crate::responsive::ArtBackdrop;
 use crate::ui::neon::{NEON_CYAN, NEON_DIM, NEON_GOLD, NeonText, spawn_neon_text};
 use crate::ui::{BUTTON_BORDER, ButtonPalette, styled_button};
@@ -682,35 +682,32 @@ fn highlight_select_cards(
     }
 }
 
-/// A card press selects the companion *and* starts its level track: the
+/// A card press selects the companion and opens her level select: the
 /// sprite/dialogue swap still happens in
 /// `waifu::respawn_on_companion_change`, which reacts to the resource.
-/// A companion without a built track stays on this screen. This is the
-/// only gate into `Playing`, so `Results` can rely on a tracked companion.
+/// The level launch itself (index write, scenario clear, `Playing`)
+/// happens in `level_select::handle_level_buttons`. A companion
+/// without a built track stays on this screen. The pick still sets
+/// `SelectedCompanion` before any launch, so `Results` can rely on a
+/// tracked companion.
 fn handle_select_buttons(
     mut commands: Commands,
     interactions: Query<(&Interaction, &SelectButton), Changed<Interaction>>,
     mut selected: ResMut<SelectedCompanion>,
-    mut index: ResMut<CurrentLevelIndex>,
-    mut scenario: ResMut<CurrentScenarioId>,
     mut request: ResMut<TransitionRequest>,
     sfx: Res<crate::audio::Sfx>,
 ) {
     for (interaction, button) in &interactions {
         if *interaction == Interaction::Pressed {
-            let Some(start) = button.0.track_start_index() else {
-                // No track to start: acknowledge the press audibly so it
-                // isn't silent, but stay on the select screen.
+            if button.0.track_start_index().is_none() {
+                // No track to browse: acknowledge the press audibly so
+                // it isn't silent, but stay on the select screen.
                 sfx.play(&mut commands, crate::audio::SfxKind::Click);
                 continue;
-            };
+            }
             sfx.play(&mut commands, crate::audio::SfxKind::Pick);
             selected.0 = button.0;
-            index.0 = start;
-            // Starting a track level ends any Field School detour: the
-            // track index, not a stale scenario id, decides the level.
-            scenario.0 = None;
-            request.0 = Some(GameState::Playing);
+            request.0 = Some(GameState::LevelSelect);
         }
     }
 }
@@ -765,6 +762,7 @@ fn teardown_select(mut commands: Commands, query: Query<Entity, With<SelectRoot>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::level::CurrentLevelIndex;
     use bevy_ecs::system::RunSystemOnce;
 
     fn world_with_select_state() -> World {
@@ -816,7 +814,11 @@ mod tests {
     }
 
     #[test]
-    fn pressing_a_card_clears_a_stale_scenario() {
+    fn pressing_a_card_leaves_the_launch_state_to_the_level_select() {
+        // The pick no longer writes the level index or clears a stale
+        // scenario: both are the level launch's job now
+        // (`level_select::handle_level_buttons`). A Field School
+        // detour therefore survives the pick and ends at the launch.
         let mut world = world_with_select_state();
         world.resource_mut::<CurrentScenarioId>().0 = Some("sp1".to_string());
         world.spawn((SelectButton(Companion::Coax), Interaction::Pressed));
@@ -826,29 +828,40 @@ mod tests {
             .expect("select system runs");
 
         assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Coax);
-        assert_eq!(world.resource::<CurrentLevelIndex>().0, 10);
-        assert_eq!(world.resource::<CurrentScenarioId>().0, None);
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 0);
+        assert_eq!(
+            world.resource::<CurrentScenarioId>().0.as_deref(),
+            Some("sp1")
+        );
+        assert!(matches!(
+            world.resource::<TransitionRequest>().0,
+            Some(GameState::LevelSelect)
+        ));
     }
 
     #[test]
-    fn pressing_a_card_selects_the_companion_and_starts_its_track() {
+    fn pressing_a_card_selects_the_companion_and_opens_her_level_select() {
         let mut world = world_with_select_state();
         world.spawn((SelectButton(Companion::Ethernet), Interaction::Pressed));
 
         world.run_system_once(handle_select_buttons);
 
         assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Ethernet);
-        assert_eq!(world.resource::<CurrentLevelIndex>().0, 30); // Ethernet track starts at 30 in 50-level layout
+        assert_eq!(
+            world.resource::<CurrentLevelIndex>().0,
+            0,
+            "the pick must not write the level index — the level select does"
+        );
         assert!(matches!(
             world.resource::<TransitionRequest>().0,
-            Some(GameState::Playing)
+            Some(GameState::LevelSelect)
         ));
     }
 
     #[test]
-    fn pressing_leas_card_starts_her_quiz_track() {
+    fn pressing_leas_card_opens_her_level_select() {
         // Léa's study track is live (indices 70-79): pressing her card
-        // selects her and jumps to the first quiz level.
+        // selects her and opens the level select over her quiz levels.
         let mut world = world_with_select_state();
         world.spawn((SelectButton(Companion::Lea), Interaction::Pressed));
 
@@ -857,10 +870,10 @@ mod tests {
             .expect("select system runs");
 
         assert_eq!(world.resource::<SelectedCompanion>().0, Companion::Lea);
-        assert_eq!(world.resource::<CurrentLevelIndex>().0, 70);
+        assert_eq!(world.resource::<CurrentLevelIndex>().0, 0);
         assert!(matches!(
             world.resource::<TransitionRequest>().0,
-            Some(GameState::Playing)
+            Some(GameState::LevelSelect)
         ));
     }
 

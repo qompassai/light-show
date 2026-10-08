@@ -30,6 +30,7 @@ use bevy_ecs::system::RunSystemOnce;
 use crate::board::{self, PlacedChoices, PointerWorld};
 use crate::level::{CurrentLevelIndex, LevelDef};
 use crate::states::companion_select::{BackButton, CompanionSelectPlugin, SelectButton};
+use crate::states::level_select::{LevelBackButton, LevelButton, LevelSelectPlugin};
 use crate::states::menu::{MenuPlugin, StartButton};
 use crate::states::outage::{ActiveOutage, OutagePlugin};
 use crate::states::playing::{LevelClock, PlayingPlugin};
@@ -108,6 +109,7 @@ fn playthrough_app() -> App {
     app.add_plugins((
         MenuPlugin,
         CompanionSelectPlugin,
+        LevelSelectPlugin,
         PlayingPlugin,
         // UI plugins (ApiConsole, TriageConsole, Quiz) are NOT added here.
         // They have conflicting &mut Text queries that cause Bevy B0001
@@ -178,6 +180,21 @@ fn press_companion_card(app: &mut App, companion: Companion) {
             .find(|(_, button)| button.0 == companion)
             .map(|(entity, _)| entity)
             .expect("companion card is spawned for every companion")
+    };
+    press_entity(app, target);
+}
+
+/// Press the level-select row for the level at global `index`
+/// through its real `Interaction` handler.
+fn press_level_button(app: &mut App, index: usize) {
+    let target = {
+        let world = app.world_mut();
+        let mut buttons = world.query::<(Entity, &LevelButton)>();
+        buttons
+            .iter(world)
+            .find(|(_, button)| button.0 == index)
+            .map(|(entity, _)| entity)
+            .expect("level select spawns a row for every track level")
     };
     press_entity(app, target);
 }
@@ -305,17 +322,26 @@ fn start_track(app: &mut App, companion: Companion) {
     press_companion_card(app, companion);
     assert_eq!(
         game_state(app),
-        GameState::Playing,
-        "picking a companion starts their track"
+        GameState::LevelSelect,
+        "picking a companion opens her level select"
     );
     assert_eq!(
         app.world().resource::<SelectedCompanion>().0,
         companion,
         "the picked companion is the selected one"
     );
+    let start = companion
+        .track_start_index()
+        .expect("playthrough companions have tracks");
+    press_level_button(app, start);
     assert_eq!(
-        Some(app.world().resource::<CurrentLevelIndex>().0),
-        companion.track_start_index(),
+        game_state(app),
+        GameState::Playing,
+        "choosing a level starts it"
+    );
+    assert_eq!(
+        app.world().resource::<CurrentLevelIndex>().0,
+        start,
         "the track starts at the companion's first level"
     );
 }
@@ -699,8 +725,8 @@ fn back_button_returns_to_menu_without_starting_a_track() {
 }
 
 /// Start Clara's track at `index` without going through the picker
-/// (Clara has no picker card yet — see `Companion::ALL`). Mirrors
-/// `handle_select_buttons`: select companion, set level, request Playing.
+/// (Clara has no picker card yet — see `Companion::ALL`). Mirrors the
+/// level-select launch: select companion, set level, request Playing.
 /// True when this build's answer key resolves the shipped tags.
 /// The API-driven playthroughs below drive real tagged levels and
 /// can only win with the matching key; without it they skip (the
@@ -947,8 +973,8 @@ fn level_index_for_id(id: &str) -> usize {
         .unwrap_or_else(|| panic!("no embedded level with id {id}"))
 }
 
-/// Jump an app straight to `index` for `companion`, mirroring
-/// `handle_select_buttons`: select companion, set level, request Playing.
+/// Jump an app straight to `index` for `companion`, mirroring the
+/// level-select launch: select companion, set level, request Playing.
 /// Asserts the level actually loaded and stayed in `Playing`.
 fn jump_to_level(app: &mut App, companion: Companion, index: usize) {
     settle(app);
@@ -1101,4 +1127,95 @@ fn footage_skipped_levels_load_with_full_ui_plugins() {
         // the dialogue ticker must keep running, not just initialize.
         settle(&mut app);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Level select: the screen between the picker and the board.
+// ---------------------------------------------------------------------------
+
+/// The level select lists exactly the picked companion's track: one
+/// row per level, addressed by global level index.
+#[test]
+fn level_select_lists_exactly_the_picked_companions_track() {
+    let mut app = playthrough_app();
+    settle(&mut app);
+    press_button::<StartButton>(&mut app);
+    press_companion_card(&mut app, Companion::Coax);
+    assert_eq!(game_state(&app), GameState::LevelSelect);
+
+    let mut rows: Vec<usize> = {
+        let world = app.world_mut();
+        let mut buttons = world.query::<&LevelButton>();
+        buttons.iter(world).map(|button| button.0).collect()
+    };
+    rows.sort_unstable();
+    assert_eq!(rows, Companion::Coax.track_indices());
+}
+
+/// Choosing a mid-track row launches that level — not the track
+/// start the picker used to force.
+#[test]
+fn level_select_launches_a_mid_track_level() {
+    let mut app = playthrough_app();
+    settle(&mut app);
+    press_button::<StartButton>(&mut app);
+    press_companion_card(&mut app, Companion::Coax);
+    assert_eq!(game_state(&app), GameState::LevelSelect);
+
+    press_level_button(&mut app, 13);
+    assert_eq!(game_state(&app), GameState::Playing);
+    assert_eq!(app.world().resource::<CurrentLevelIndex>().0, 13);
+    assert_eq!(
+        app.world().resource::<LevelDef>().id,
+        crate::level::load_level(13).id,
+        "the chosen level is the loaded one"
+    );
+}
+
+/// Backing out of the level select returns to the picker without
+/// loading a level.
+#[test]
+fn level_select_back_button_returns_to_the_picker() {
+    let mut app = playthrough_app();
+    settle(&mut app);
+    press_button::<StartButton>(&mut app);
+    press_companion_card(&mut app, Companion::Fiber);
+    assert_eq!(game_state(&app), GameState::LevelSelect);
+
+    press_button::<LevelBackButton>(&mut app);
+    assert_eq!(game_state(&app), GameState::CompanionSelect);
+    assert!(
+        app.world().get_resource::<LevelDef>().is_none(),
+        "backing out must not load a level"
+    );
+}
+
+/// The rows and header read the save: a pre-cleared level's row says
+/// CLEARED and the header counts it.
+#[test]
+fn level_select_shows_save_progress_on_the_rows() {
+    let mut app = playthrough_app();
+    let mut save = crate::save::SaveData::default();
+    let first = crate::level::load_level(10); // c1l1
+    assert!(save.complete_level(&first.id));
+    app.world_mut().insert_resource(save);
+
+    settle(&mut app);
+    press_button::<StartButton>(&mut app);
+    press_companion_card(&mut app, Companion::Coax);
+    assert_eq!(game_state(&app), GameState::LevelSelect);
+
+    let texts: Vec<String> = {
+        let world = app.world_mut();
+        let mut all_text = world.query::<&Text>();
+        all_text.iter(world).map(|text| text.0.clone()).collect()
+    };
+    assert!(
+        texts.iter().any(|text| text == "CLEARED"),
+        "the cleared level's row must say CLEARED: {texts:?}"
+    );
+    assert!(
+        texts.iter().any(|text| text == "1 of 10 levels cleared"),
+        "the header must count the save's progress: {texts:?}"
+    );
 }
