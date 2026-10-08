@@ -1165,6 +1165,11 @@ pub struct LevelNode {
     pub grid_y: f32,
 }
 
+/// Size pin (2026-10-08 struct-size audit): one entry per node
+/// in every level's `nodes` Vec, cloned into the live graph at
+/// level start and scanned by position lookups during play.
+const _: () = assert!(std::mem::size_of::<LevelNode>() <= 40);
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LevelEdge {
     pub from: u32,
@@ -1172,12 +1177,22 @@ pub struct LevelEdge {
     pub component: Component,
 }
 
+/// Size pin (2026-10-08 struct-size audit): one entry per fixed
+/// edge in every level's `fixed_edges` Vec, folded into the live
+/// graph at level start.
+const _: () = assert!(std::mem::size_of::<LevelEdge>() <= 32);
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ComponentChoice {
     pub from: u32,
     pub to: u32,
     pub component: Component,
 }
+
+/// Size pin (2026-10-08 struct-size audit): one entry per offered
+/// placement in every level's `available_components` Vec, scanned
+/// on every pill render and placement lookup.
+const _: () = assert!(std::mem::size_of::<ComponentChoice>() <= 32);
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ScriptedOutage {
@@ -2155,6 +2170,14 @@ pub struct StateLine {
     pub status: StateStatus,
     pub feedback: String,
 }
+
+/// Size pin (2026-10-08 struct-size audit): a Vec of these is
+/// built on every state evaluation — each placement change and
+/// each telemetry watch — so the line record stays lean. (The
+/// floor is set by `StateId::Coverage`'s `String` payload plus
+/// the feedback `String`; shrinking further means redesigning
+/// `StateId`, not reordering fields.)
+const _: () = assert!(std::mem::size_of::<StateLine>() <= 56);
 
 impl StateLine {
     pub fn new(id: StateId, status: StateStatus, feedback: String) -> Self {

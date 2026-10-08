@@ -300,6 +300,11 @@ pub struct FaceFrame {
     pub eyes_closed: bool,
 }
 
+/// Size pin (2026-10-08 struct-size audit): `FaceAnim::tick`
+/// produces one frame value per tick while the companion face
+/// is on screen.
+const _: () = assert!(std::mem::size_of::<FaceFrame>() <= 2);
+
 /// The blink + talk state machine. Blink runs on its own cycle
 /// whether or not text is typing — the face must feel alive, not
 /// mouth-only (Matt's refinement). Deterministic: no RNG, so tests

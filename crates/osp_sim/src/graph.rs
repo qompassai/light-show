@@ -20,12 +20,22 @@ pub struct PathNode {
     pub label: String,
 }
 
+/// Size pin (2026-10-08 struct-size audit): graph nodes fill
+/// `PathGraph::nodes` and are walked by every evaluation, so a
+/// fatter node must be a deliberate trade, never an accident.
+const _: () = assert!(std::mem::size_of::<PathNode>() <= 32);
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Edge {
     pub from: NodeId,
     pub to: NodeId,
     pub component: Component,
 }
+
+/// Size pin (2026-10-08 struct-size audit): edges fill
+/// `PathGraph::edges`, the traversal working set of every
+/// link-budget evaluation.
+const _: () = assert!(std::mem::size_of::<Edge>() <= 32);
 
 /// A full OSP layout: nodes (OLT, splices, splitters, ONTs) plus the edges
 /// (fiber/hardware) the player has routed between them.
@@ -34,6 +44,10 @@ pub struct PathGraph {
     pub nodes: Vec<PathNode>,
     pub edges: Vec<Edge>,
 }
+
+/// Size pin (2026-10-08 struct-size audit): the live graph is
+/// rebuilt and re-evaluated on every placement change.
+const _: () = assert!(std::mem::size_of::<PathGraph>() <= 48);
 
 /// Maximum path length the path search will explore, in hops. A hostile
 /// level file could otherwise hand the search a chain long enough to
@@ -62,6 +76,10 @@ pub struct LinkBudgetResult {
     pub hop_count: usize,
 }
 
+/// Size pin (2026-10-08 struct-size audit): one result is built
+/// per link-budget evaluation, i.e. per placement change.
+const _: () = assert!(std::mem::size_of::<LinkBudgetResult>() <= 40);
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct EthernetEval {
     pub violations: Vec<EthernetViolation>,
@@ -72,6 +90,10 @@ pub struct EthernetEval {
     /// Bottleneck run category on the path, 0 when the path has no runs.
     pub min_bandwidth_mbps: u64,
 }
+
+/// Size pin (2026-10-08 struct-size audit): one result is built
+/// per Ethernet evaluation, i.e. per placement change.
+const _: () = assert!(std::mem::size_of::<EthernetEval>() <= 56);
 
 impl EthernetEval {
     pub fn passes(&self) -> bool {
@@ -138,6 +160,10 @@ pub struct CoaxEval {
     pub hop_count: usize,
 }
 
+/// Size pin (2026-10-08 struct-size audit): one result is built
+/// per coax evaluation, i.e. per placement change.
+const _: () = assert!(std::mem::size_of::<CoaxEval>() <= 48);
+
 impl CoaxEval {
     pub fn passes(&self) -> bool {
         self.violations.is_empty()
@@ -192,6 +218,10 @@ pub struct WirelessEval {
     pub fade_margin_db: f64,
     pub hop_count: usize,
 }
+
+/// Size pin (2026-10-08 struct-size audit): one result is built
+/// per wireless evaluation, i.e. per placement change.
+const _: () = assert!(std::mem::size_of::<WirelessEval>() <= 56);
 
 impl WirelessEval {
     pub fn passes(&self) -> bool {

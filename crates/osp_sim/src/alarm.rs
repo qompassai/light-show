@@ -125,6 +125,11 @@ pub struct Alarm {
     pub acked_at_secs: Option<f64>,
 }
 
+/// Size pin (2026-10-08 struct-size audit): the NOC alarm list
+/// holds one `Alarm` per raised outage and re-derives severities
+/// from the whole list as outages age.
+const _: () = assert!(std::mem::size_of::<Alarm>() <= 64);
+
 impl Alarm {
     /// Raise a new alarm for a fired outage. Starts at [`AlarmAck::New`]
     /// with severity derived from the outage kind at zero elapsed time.

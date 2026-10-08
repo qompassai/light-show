@@ -120,6 +120,11 @@ pub(crate) struct PillRing {
     pub(crate) slot: usize,
 }
 
+/// Size pin (2026-10-08 struct-size audit): one `PillRing` entity
+/// exists per offered choice slot, and `update_pill_rings` walks
+/// them all on every pick change.
+const _: () = assert!(std::mem::size_of::<PillRing>() <= 16);
+
 /// Maps a level's abstract `grid_x`/`grid_y` node coordinates onto world
 /// space. `grid_x = 1` sits at world `x = 0` and each grid column is 200
 /// world units wide; `grid_y = 0` sits at world `y = 300` (clear of the
@@ -1155,6 +1160,10 @@ pub struct PillPop {
     pub(crate) elapsed_secs: f32,
 }
 
+/// Size pin (2026-10-08 struct-size audit): `animate_pill_pops`
+/// ticks every live pop each frame.
+const _: () = assert!(std::mem::size_of::<PillPop>() <= 4);
+
 /// Swaps pill-ring sprite textures when the player's picks change: the
 /// chosen slot glows hot pink, the rest stay cyan. Runs only on the
 /// frames `PlacedChoices` actually changed, and only touches the texture
@@ -1334,6 +1343,11 @@ pub(crate) struct SignalPulse {
     to: Vec2,
     progress: f32,
 }
+
+/// Size pin (2026-10-08 struct-size audit): up to
+/// `MAX_SIGNAL_PULSES` pulses are alive at once and
+/// `move_signal_pulses` moves every one each frame.
+const _: () = assert!(std::mem::size_of::<SignalPulse>() <= 28);
 
 /// Repeating timer that staggers signal-pulse spawns.
 #[derive(Resource)]

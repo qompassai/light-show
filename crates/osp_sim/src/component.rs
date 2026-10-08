@@ -180,6 +180,11 @@ pub enum Component {
     },
 }
 
+/// Size pin (2026-10-08 struct-size audit): a `Component` rides
+/// inside every graph `Edge`, `LevelEdge`, and `ComponentChoice`,
+/// so growing the largest variant grows all three at once.
+const _: () = assert!(std::mem::size_of::<Component>() <= 24);
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PlantType {
     Aerial,

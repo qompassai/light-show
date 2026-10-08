@@ -44,6 +44,11 @@ struct ConnectSpark {
     timer: Timer,
 }
 
+/// Size pin (2026-10-08 struct-size audit): live sparks are
+/// ticked every frame; the frame-handle array dominates and any
+/// growth multiplies across concurrent one-shots.
+const _: () = assert!(std::mem::size_of::<ConnectSpark>() <= 152);
+
 /// Request to play the success-burst one-shot as a UI element.
 /// Written by the results screen on victory; consumed by
 /// `spawn_success_bursts`.
@@ -60,6 +65,11 @@ pub(crate) struct SuccessBurst {
     index: usize,
     timer: Timer,
 }
+
+/// Size pin (2026-10-08 struct-size audit): live bursts are
+/// ticked every frame; the frame-handle array dominates and any
+/// growth multiplies across concurrent one-shots.
+const _: () = assert!(std::mem::size_of::<SuccessBurst>() <= 200);
 
 impl SuccessBurst {
     /// Starts a new burst from pre-loaded frames. The frames must hold
@@ -226,3 +236,4 @@ mod tests {
         assert!(lifetime < 1.0, "burst must be sub-second: {lifetime}s");
     }
 }
+
