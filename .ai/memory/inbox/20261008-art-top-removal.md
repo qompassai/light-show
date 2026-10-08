@@ -1,0 +1,3 @@
+# Top-level art/ removed (2026-10-08)
+
+Audit first: the shipping game loads nothing from top-level art/ (zero consumers repo-wide; game-code art/ paths are relative to game/assets/). art/aseprite icons+sheets were byte-identical twins of game/assets/sprites/ copies; art/unreal/ was a Sep 8 content-only preview project whose audio exists nowhere in the game tree. Unique content quarantined BEFORE deletion to ~/workspace/light-show-finish/quarantine/2026-10-08-art-top/ (MANIFEST.md with sha256s): ondine_sheet.png (Sep 8 original, no twin), import_sheet.lua + aseprite README, the whole unreal/ project, art/TODO.md. Keyless full suite after removal: 795 passed / 0 failed.

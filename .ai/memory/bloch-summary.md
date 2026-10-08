@@ -1,14 +1,14 @@
 # bloch summary
 
-Generated: 1791434716
-Git HEAD: cdf1d2febd121377dbd334883790a74e860dc284
+Generated: 1791468621
+Git HEAD: 6a3574ffaa451505dcf4e917300304acb72d415b
 
-## Files: 6421 total
+## Files: 6416 total
 
 ## Languages
 
 - d: 5943 files
-- markdown: 163 files
+- markdown: 160 files
 - json: 112 files
 - rust: 71 files
 - lock: 24 files
@@ -16,7 +16,7 @@ Git HEAD: cdf1d2febd121377dbd334883790a74e860dc284
 - bash: 12 files
 - txt: 10 files
 - tag: 10 files
-- lua: 9 files
+- lua: 8 files
 - toml: 8 files
 - python: 7 files
 - text: 6 files
@@ -24,13 +24,12 @@ Git HEAD: cdf1d2febd121377dbd334883790a74e860dc284
 - kotlin: 4 files
 - wgsl: 4 files
 - properties: 2 files
+- bat: 1 files
+- cff: 1 files
+- nix: 1 files
+- yaml: 1 files
 - html: 1 files
 - css: 1 files
-- bat: 1 files
-- nix: 1 files
-- cff: 1 files
-- yaml: 1 files
-- uproject: 1 files
 
 ## Top definitions by probability
 
@@ -47,10 +46,10 @@ Git HEAD: cdf1d2febd121377dbd334883790a74e860dc284
 11. mod `game/src/lib.rs::board` (p=0.014)
 12. struct `game/src/save.rs::SaveData` (p=0.012)
 13. struct `game/src/anim.rs::TransitionRequest` (p=0.010)
-14. fn `game/src/states/outage.rs::get` (p=0.009)
-15. mod `game/src/lib.rs::fonts` (p=0.009)
-16. const `game/src/cheat_codes.rs::_` (p=0.009)
-17. struct `crates/osp_sim/src/graph.rs::PathGraph` (p=0.008)
+14. mod `game/src/lib.rs::fonts` (p=0.009)
+15. fn `game/src/states/outage.rs::get` (p=0.009)
+16. struct `crates/osp_sim/src/graph.rs::PathGraph` (p=0.008)
+17. const `game/src/cheat_codes.rs::_` (p=0.008)
 18. const `crates/osp_sim/src/lib.rs::GPON_ONT` (p=0.008)
 19. enum `game/src/states/mod.rs::GameState` (p=0.008)
 20. enum `crates/osp_sim/src/component.rs::Component` (p=0.008)
