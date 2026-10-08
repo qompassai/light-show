@@ -1,7 +1,7 @@
 # bloch summary
 
-Generated: 1791468621
-Git HEAD: 6a3574ffaa451505dcf4e917300304acb72d415b
+Generated: 1791469553
+Git HEAD: 7be6c7aa3516c5d37d4d5f76b374f0197fe002a4
 
 ## Files: 6416 total
 
@@ -24,12 +24,12 @@ Git HEAD: 6a3574ffaa451505dcf4e917300304acb72d415b
 - kotlin: 4 files
 - wgsl: 4 files
 - properties: 2 files
+- nix: 1 files
 - bat: 1 files
 - cff: 1 files
-- nix: 1 files
-- yaml: 1 files
-- html: 1 files
 - css: 1 files
+- html: 1 files
+- yaml: 1 files
 
 ## Top definitions by probability
 
@@ -46,8 +46,8 @@ Git HEAD: 6a3574ffaa451505dcf4e917300304acb72d415b
 11. mod `game/src/lib.rs::board` (p=0.014)
 12. struct `game/src/save.rs::SaveData` (p=0.012)
 13. struct `game/src/anim.rs::TransitionRequest` (p=0.010)
-14. mod `game/src/lib.rs::fonts` (p=0.009)
-15. fn `game/src/states/outage.rs::get` (p=0.009)
+14. fn `game/src/states/outage.rs::get` (p=0.009)
+15. mod `game/src/lib.rs::fonts` (p=0.009)
 16. struct `crates/osp_sim/src/graph.rs::PathGraph` (p=0.008)
 17. const `game/src/cheat_codes.rs::_` (p=0.008)
 18. const `crates/osp_sim/src/lib.rs::GPON_ONT` (p=0.008)
