@@ -1,27 +1,21 @@
 #!/bin/bash
-# Auto-refresh bloch persistent memory after every commit.
+# Post-commit housekeeping for light-show.
 # Installed to .git/hooks/post-commit (see scripts/hooks/install.sh).
 #
-# RECURSION GUARD: the amend below re-triggers post-commit. Skip when
-# BLOCH_HOOK_ACTIVE is set (set by ourselves before amending).
-[ -n "$BLOCH_HOOK_ACTIVE" ] && exit 0
+# NOTE (2026-10-08): the bloch codebase map (.ai/memory/bloch-last.json
+# and .ai/memory/bloch-summary.md) is a LOCAL artifact only. This hook
+# used to refresh it after every commit and amend it into the commit;
+# that made two generated files ride along in unrelated commits,
+# collide on rebases, and churn ~19k lines through diffs. They are now
+# untracked and gitignored. Regenerate on demand with:
+#     bloch . --update-memory
+# (or run `bloch .` to print a fresh map without writing files).
 
 set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-# 1. Refresh the machine-readable codebase map (always).
-if [ -x "$HOME/.cargo/bin/bloch" ]; then
-    export PATH="$HOME/.cargo/bin:$PATH"
-    bloch . --update-memory 2>/dev/null || true
-    # Stage the refreshed map if it changed (amend into the commit quietly).
-    if ! git diff --quiet -- .ai/memory/bloch-last.json .ai/memory/bloch-summary.md 2>/dev/null; then
-        git add .ai/memory/bloch-last.json .ai/memory/bloch-summary.md
-        BLOCH_HOOK_ACTIVE=1 git commit --amend --no-edit --no-verify -q 2>/dev/null || true
-    fi
-fi
-
-# 2. Remind about curated memory files.
+# Remind about curated memory files.
 if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -q "^\.ai/memory/\(todo-tracking\|handoff\)\.md$"; then
     echo ""
     echo "  MEMORY CHECK: this commit did not touch .ai/memory/todo-tracking.md"
