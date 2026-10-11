@@ -26,6 +26,7 @@ mod responsive;
 mod salvage;
 pub mod save;
 pub mod shaders;
+pub mod splice;
 mod states;
 pub mod tutorial;
 mod ui;
@@ -212,6 +213,7 @@ fn build_app(asset_root: std::path::PathBuf) -> App {
     app.add_plugins(states::workbench::WorkbenchConsolePlugin);
     app.add_plugins(states::config_console::ConfigConsolePlugin);
     app.add_plugins(states::intermittent::IntermittentConsolePlugin);
+    app.add_plugins(states::splice_console::SpliceConsolePlugin);
     app.add_plugins(astra::AstraPlugin);
     app.add_plugins(states::outage::OutagePlugin)
         .add_plugins(states::results::ResultsPlugin)

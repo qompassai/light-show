@@ -105,6 +105,7 @@ fn playthrough_app() -> App {
     app.init_resource::<crate::states::workbench::HandoffProgress>();
     app.init_resource::<crate::states::config_console::ConfigProgress>();
     app.init_resource::<crate::states::intermittent::IntermittentProgress>();
+    app.init_resource::<crate::states::splice_console::SpliceProgress>();
     app.init_resource::<crate::astra::AttemptTelemetry>();
     app.add_plugins((
         MenuPlugin,

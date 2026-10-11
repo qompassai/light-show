@@ -22,6 +22,7 @@ use crate::states::intermittent::IntermittentProgress;
 use crate::states::jumper::JumperProgress;
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
+use crate::states::splice_console::SpliceProgress;
 use crate::states::survey::SurveyProgress;
 use crate::states::workbench::{HandoffProgress, WorkbenchProgress};
 use crate::states::GameState;
@@ -41,6 +42,7 @@ pub struct AstraProgress<'w> {
     pub handoff: Option<Res<'w, HandoffProgress>>,
     pub config: Option<Res<'w, ConfigProgress>>,
     pub intermittent: Option<Res<'w, IntermittentProgress>>,
+    pub splice: Option<Res<'w, SpliceProgress>>,
 }
 
 impl AstraProgress<'_> {
@@ -77,6 +79,11 @@ impl AstraProgress<'_> {
     /// The intermittent progress, when the resource exists.
     pub fn intermittent(&self) -> Option<&IntermittentProgress> {
         self.intermittent.as_deref()
+    }
+
+    /// The splice-tray progress, when the resource exists.
+    pub fn splice(&self) -> Option<&SpliceProgress> {
+        self.splice.as_deref()
     }
 }
 
@@ -123,6 +130,15 @@ pub fn astra_gates_pass(level: &LevelDef, progress: &AstraProgress) -> bool {
     if level.workbench.is_some() {
         match progress.workbench() {
             Some(workbench) if workbench.complete() => {}
+            _ => return false,
+        }
+    }
+    // sp1: every splice work-order beat must be verified true at
+    // the tray — the light-path budget alone does not prove the
+    // strands were spliced true to the chart.
+    if let Some(orders) = &level.splice_work_orders {
+        match progress.splice() {
+            Some(splice) if splice.is_complete(&level.id, orders) => {}
             _ => return false,
         }
     }

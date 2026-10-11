@@ -640,11 +640,13 @@ pub struct SpliceBeatDef {
 /// Splice work orders (sp1, the splice "Field School" scenario): the
 /// TIA-598 chart and the beat-by-beat strand→pigtail work orders the
 /// repair is scored against. This is an optional [`LevelDef`] block so
-/// the authored data (staged in `splice_work_orders.json`) lands typed
-/// and tested instead of as dead text. The strand→pigtail interaction
-/// UI that consumes it is future work (CONTENT-NOTES gap 4): today the
-/// block parses, round-trips, and is validated against the color rule,
-/// while sp1's shipped win check remains the light-path budget.
+/// the authored data lands typed and tested instead of as dead text.
+/// The splice tray consumes it: `crate::splice` scores each beat
+/// (wrong splice = the wrong drop lights; the ledger names the
+/// swapped legs) and `crate::states::splice_console` is the tray UI
+/// with the chart as an always-available reference panel. sp1's win
+/// check is the conjunction of the light-path budget and every beat
+/// verified true.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct SpliceWorkOrdersDef {
     /// The fiber-number rule, as written on the work order.
