@@ -24,6 +24,12 @@ readonly JNILIBS_DIR="$ANDROID_DIR/app/src/main/jniLibs"
 readonly AAB_PATH="$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"
 readonly ABIS="arm64-v8a armeabi-v7a x86_64"
 readonly NDK_VERSION="28.0.12674087"
+# cargo-ndk defaults to platform 21 when CARGO_NDK_PLATFORM is unset, and
+# API 21's sysroot lacks libaaudio (added in API 26) -- the cdylib link
+# then fails with "library not found: aaudio". Pin the platform to the
+# project's minSdk (26, android/app/build.gradle.kts); an explicit caller
+# value still wins.
+export CARGO_NDK_PLATFORM="${CARGO_NDK_PLATFORM:-26}"
 readonly BUILD_TIMEOUT_S=1800  # 30 min bound on the native build
 
 # --- helpers -----------------------------------------------------------------
