@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glow breathing — deterministic port of glow.wgsl</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #03050d; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="scene" width="640" height="360"></canvas>
+<script>
+'use strict';
+/*
+ * DETERMINISTIC PORT — breathing win glow.
+ * Source of the motion: game/assets/shaders/glow.wgsl, spawned by
+ * states/playing.rs:486 at the board center on a win:
+ *   quad 400x400 px, color LinearRgba (1.0, 0.9, 0.6, 1.0),
+ *   GlowSettings::default(): intensity 1.0, pulse_speed 3.0,
+ *   pulse_amount 0.25 (game/src/shaders.rs).
+ * Shader math, verbatim:
+ *   pulse = 1.0 + pulse_amount * sin(time * pulse_speed)
+ *   glow  = pow(max(0, 1 - dist), 2) * intensity * pulse
+ *   out   = vec4(color.rgb * glow, clamp(glow) * color.a), Blend mode
+ * In the game `time` accumulates wall-clock dt (tick_shader_time);
+ * here it is the seek parameter t. The 400 px quad is centered on the
+ * 640x360 canvas and clipped top/bottom exactly as a fullscreen board
+ * would clip it.
+ */
+window.DURATION = 4.2;   // ~2 full breath periods (period = 2pi/3 s)
+window.FPS = 240;
+
+const W = 640, H = 360;
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+const COLOR = [1.0, 0.9, 0.6];
+const PULSE_SPEED = 3.0, PULSE_AMOUNT = 0.25, INTENSITY = 1.0;
+const CX = W / 2, CY = H / 2, HALF = 200;   // 400 px quad (playing.rs)
+
+/* Static per-pixel data, built once (a pure function of position). */
+const fall = new Float32Array(W * H);
+const bg = new Float32Array(W * H * 3);
+(function buildStatics() {
+  const nodes = [[140, 90], [500, 90], [140, 270], [500, 270], [320, 90], [320, 270]];
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      const d = Math.hypot((x - CX) / HALF, (y - CY) / HALF);
+      fall[i] = Math.pow(Math.max(0, 1 - d), 2);
+      const f = y / (H - 1);
+      let r = 8 + (3 - 8) * f, gg = 13 + (5 - 13) * f, b = 26 + (13 - 26) * f;
+      for (const [nx, ny] of nodes) {
+        const nd = Math.hypot(x - nx, y - ny);
+        if (nd < 7) { r += 30; gg += 70; b += 75; }   // faint board nodes
+      }
+      bg[i * 3] = r; bg[i * 3 + 1] = gg; bg[i * 3 + 2] = b;
+    }
+  }
+})();
+
+const frame = ctx.createImageData(W, H);
+window.renderFrame = function (t) {
+  const pulse = INTENSITY * (1.0 + PULSE_AMOUNT * Math.sin(PULSE_SPEED * t));
+  const data = frame.data;
+  for (let i = 0, n = W * H; i < n; i++) {
+    const g = fall[i] * pulse;
+    const a = Math.min(1, Math.max(0, g));
+    const j = i * 4, k = i * 3;
+    data[j]     = Math.min(255, COLOR[0] * g * a * 255 + bg[k] * (1 - a));
+    data[j + 1] = Math.min(255, COLOR[1] * g * a * 255 + bg[k + 1] * (1 - a));
+    data[j + 2] = Math.min(255, COLOR[2] * g * a * 255 + bg[k + 2] * (1 - a));
+    data[j + 3] = 255;
+  }
+  ctx.putImageData(frame, 0, 0);
+  ctx.fillStyle = 'rgba(255,225,160,0.95)';
+  ctx.font = '600 15px "DejaVu Sans", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WIN GLOW — glow.wgsl breathing, 1 + 0.25 sin(3t)', W / 2, 34);
+  ctx.fillStyle = 'rgba(56,189,248,0.55)';
+  ctx.fillRect(0, H - 4, W * (t / window.DURATION), 4);
+};
+
+/* Human preview only — the renderer replaces requestAnimationFrame before load. */
+requestAnimationFrame(function loop(ts) {
+  window.renderFrame((ts / 1000) % window.DURATION);
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Signal pulse — deterministic port of board.rs move_signal_pulses</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #03050d; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="scene" width="640" height="360"></canvas>
+<script>
+'use strict';
+/*
+ * DETERMINISTIC PORT — discrete signal pulse travel.
+ * Source of the motion: game/src/board.rs `move_signal_pulses`:
+ *   PULSE_SPEED = 260.0 world units/s (board.rs:1334)
+ *   progress += PULSE_SPEED * dt / edge_len          (accumulated in game)
+ *   eased = EaseFunction::SineInOut(progress)        (Finding 8)
+ *   position = from.lerp(to, eased)
+ *   spawn cadence PULSE_SPAWN_INTERVAL_SECS = 0.45 (board.rs:1332)
+ * Here progress is the closed form p = 260 * (t - t0) / edge_len — the
+ * same value the integrator converges to, with no accumulation error
+ * and no frame-rate dependence. SineInOut uses Bevy 0.19.1's formula
+ * f(t) = -(cos(pi t) - 1) / 2.
+ * Edge length 400 px is representative (level edges vary; the curve
+ * shape and the 260 u/s rate are the game's own).
+ * Two pulses are shown, staggered by the real 0.45 s spawn interval.
+ */
+window.DURATION = 2.0;
+window.FPS = 240;
+
+const W = 640, H = 360;
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+const FROM = { x: 120, y: 180 }, TO = { x: 520, y: 180 };
+const EDGE_LEN = 400;               // |TO - FROM|
+const PULSE_SPEED = 260.0;          // board.rs:1334
+const SPAWN_INTERVAL = 0.45;        // board.rs:1332
+const TRAVEL = EDGE_LEN / PULSE_SPEED;  // 1.5385 s per traversal
+
+const sineInOut = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+function drawPulseDot(x, y) {
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, 16);
+  glow.addColorStop(0, 'rgba(255,255,255,0.95)');
+  glow.addColorStop(0.25, 'rgba(255,209,102,0.85)');
+  glow.addColorStop(1, 'rgba(255,170,60,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill();
+}
+
+window.renderFrame = function (t) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgb(8,13,26)'); g.addColorStop(1, 'rgb(3,5,13)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  /* The fiber edge (FiberFlow underlay at base brightness, simplified). */
+  ctx.strokeStyle = 'rgba(255,217,140,0.20)'; ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.moveTo(FROM.x, FROM.y); ctx.lineTo(TO.x, TO.y); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,217,140,0.35)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(FROM.x, FROM.y); ctx.lineTo(TO.x, TO.y); ctx.stroke();
+
+  /* Nodes. */
+  for (const n of [FROM, TO]) {
+    ctx.strokeStyle = 'rgba(111,242,255,0.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(n.x, n.y, 16, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(111,242,255,0.3)';
+    ctx.beginPath(); ctx.arc(n.x, n.y, 6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  /* Pulses: pure functions of t with the game's spawn stagger. */
+  for (let k = 0; k < 2; k++) {
+    const local = t - k * SPAWN_INTERVAL;
+    if (local < 0 || local >= TRAVEL) continue;
+    const eased = sineInOut(local / TRAVEL);
+    drawPulseDot(FROM.x + (TO.x - FROM.x) * eased, FROM.y);
+  }
+
+  ctx.fillStyle = 'rgba(111,242,255,0.9)';
+  ctx.font = '600 15px "DejaVu Sans", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SIGNAL PULSE — SineInOut @ 260 u/s, spawn stagger 0.45 s', W / 2, 60);
+  ctx.fillStyle = 'rgba(56,189,248,0.55)';
+  ctx.fillRect(0, H - 4, W * (t / window.DURATION), 4);
+};
+
+/* Human preview only — the renderer replaces requestAnimationFrame before load. */
+requestAnimationFrame(function loop(ts) {
+  window.renderFrame((ts / 1000) % window.DURATION);
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>

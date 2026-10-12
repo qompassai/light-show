@@ -1,0 +1,1 @@
+{"dependencies":{"puppeteer-core":"^23.0.0"},"description":"Deterministic-motion test harness for light-show: renderFrame(t) scenes seek-rendered at 240 fps, adapted from the claude-anim-spike reference implementation.","name":"light-show-deterministic-motion-harness","private":true,"scripts":{"render":"node render.mjs"},"type":"module","version":"0.1.0"}

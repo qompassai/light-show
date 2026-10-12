@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wipe transition — deterministic port of anim.rs + wipe.wgsl</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="scene" width="640" height="360"></canvas>
+<script>
+'use strict';
+/*
+ * DETERMINISTIC PORT — state-transition wipe.
+ * Two sources combined exactly as the game combines them:
+ *  1. The envelope: game/src/anim.rs `drive_transition_fade` —
+ *     fade out 0.3 s with EaseFunction::CubicInOut, swap state at full
+ *     cover, fade in 0.3 s. In the game the phase clock accumulates
+ *     wall-clock dt; here the whole envelope is a function of t with
+ *     the transition placed at t = 0.15 s (0.15 s hold before, 0.25 s
+ *     hold after, purely so the contact sheet shows both states).
+ *  2. The spatial wipe: game/assets/shaders/wipe.wgsl with
+ *     WipeSettings::default() — color black, softness 0.12,
+ *     direction (0.7, 0.7):
+ *       proj = dot(uv - 0.5, dir) / extent + 0.5
+ *       edge = progress * (1 + softness)
+ *       alpha = 1 - smoothstep(edge - softness, edge, proj)
+ *     where progress follows the same 0->1->0 envelope as the fade.
+ * CubicInOut is Bevy 0.19.1's formula: 4t^3 / 1 - (-2t+2)^3 / 2.
+ * The two "screens" are stand-ins drawn once: a menu card and a board.
+ */
+window.DURATION = 1.0;
+window.FPS = 240;
+
+const W = 640, H = 360;
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+const FADE_SECS = 0.3;              // anim.rs FADE_OUT_SECS / FADE_IN_SECS
+const T0 = 0.15;                    // demo placement of the transition
+const SOFTNESS = 0.12;              // WipeSettings::default()
+
+const cubicInOut = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const clamp01 = (x) => x < 0 ? 0 : x > 1 ? 1 : x;
+const smoothstep = (a, b, x) => {
+  const u = clamp01((x - a) / (b - a));
+  return u * u * (3 - 2 * u);
+};
+
+/* --- stand-in screens, rendered once -------------------------------- */
+function makeScreen(draw) {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  draw(c.getContext('2d'));
+  return c;
+}
+const screenA = makeScreen((c) => {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgb(10,18,34)'); g.addColorStop(1, 'rgb(4,7,15)');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.textAlign = 'center';
+  c.fillStyle = 'rgb(255,209,102)';
+  c.font = '700 54px "DejaVu Sans", sans-serif';
+  c.fillText('LIGHT SHOW', W / 2, 130);
+  c.fillStyle = 'rgb(111,242,255)';
+  c.font = '400 19px "DejaVu Sans", sans-serif';
+  c.fillText('— main menu —', W / 2, 168);
+  for (let i = 0; i < 3; i++) {
+    c.strokeStyle = 'rgba(111,242,255,0.65)'; c.lineWidth = 2;
+    c.strokeRect(W / 2 - 110, 205 + i * 44, 220, 32);
+  }
+});
+const screenB = makeScreen((c) => {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgb(6,10,20)'); g.addColorStop(1, 'rgb(2,4,9)');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const xs = [90, 200, 320, 430, 550], ys = [80, 180, 280];
+  c.strokeStyle = 'rgba(140,170,220,0.4)'; c.lineWidth = 2;
+  for (const y of ys) {
+    c.beginPath();
+    xs.forEach((x, i) => i === 0 ? c.moveTo(x, y) : c.lineTo(x, y));
+    c.stroke();
+  }
+  c.strokeStyle = 'rgba(255,190,90,0.85)'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(xs[0], ys[1]); c.lineTo(xs[4], ys[1]); c.stroke();
+  for (const y of ys) for (const x of xs) {
+    c.strokeStyle = 'rgba(111,242,255,0.9)';
+    c.beginPath(); c.arc(x, y, 13, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = 'rgba(111,242,255,0.3)';
+    c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.fill();
+  }
+  c.fillStyle = 'rgba(230,240,255,0.9)';
+  c.font = '600 15px "DejaVu Sans", sans-serif';
+  c.textAlign = 'center';
+  c.fillText('— board —', W / 2, 34);
+});
+
+/* --- wipe projection map (wipe.wgsl, verbatim math) ------------------ */
+const proj = new Float32Array(W * H);
+(function buildProj() {
+  const dl = Math.hypot(0.7, 0.7);
+  const dir = [0.7 / dl, 0.7 / dl];
+  const extent = Math.abs(dir[0]) + Math.abs(dir[1]);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const u = x / (W - 1) - 0.5, v = y / (H - 1) - 0.5;
+      proj[y * W + x] = (u * dir[0] + v * dir[1]) / extent + 0.5;
+    }
+  }
+})();
+
+const overlay = document.createElement('canvas');
+overlay.width = W; overlay.height = H;
+const octx = overlay.getContext('2d');
+const overlayImg = octx.createImageData(W, H);
+
+function envelope(t) {
+  /* returns {screen: 'A'|'B', progress: 0..1} — 0 = uncovered, 1 = full cover */
+  if (t < T0) return { screen: 'A', progress: 0 };
+  if (t < T0 + FADE_SECS) return { screen: 'A', progress: cubicInOut((t - T0) / FADE_SECS) };
+  if (t < T0 + 2 * FADE_SECS) return { screen: 'B', progress: 1 - cubicInOut((t - T0 - FADE_SECS) / FADE_SECS) };
+  return { screen: 'B', progress: 0 };
+}
+
+window.renderFrame = function (t) {
+  const { screen, progress } = envelope(t);
+  ctx.drawImage(screen === 'A' ? screenA : screenB, 0, 0);
+  if (progress > 0) {
+    const edge = progress * (1 + SOFTNESS);
+    const data = overlayImg.data;
+    for (let i = 0, n = W * H; i < n; i++) {
+      const a = 1 - smoothstep(edge - SOFTNESS, edge, proj[i]);
+      const j = i * 4;
+      data[j] = 0; data[j + 1] = 0; data[j + 2] = 0;
+      data[j + 3] = Math.round(a * 255);
+    }
+    octx.putImageData(overlayImg, 0, 0);
+    ctx.drawImage(overlay, 0, 0);
+  }
+  ctx.fillStyle = 'rgba(56,189,248,0.55)';
+  ctx.fillRect(0, H - 4, W * (t / window.DURATION), 4);
+};
+
+/* Human preview only — the renderer replaces requestAnimationFrame before load. */
+requestAnimationFrame(function loop(ts) {
+  window.renderFrame((ts / 1000) % window.DURATION);
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
