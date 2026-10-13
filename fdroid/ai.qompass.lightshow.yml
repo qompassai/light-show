@@ -30,7 +30,7 @@ Builds:
     build:
       - keytool -genkeypair -keystore /tmp/fdroid-ephemeral.jks -alias fdroid -keyalg RSA -keysize 2048 -validity 10950 -storepass fdroid -keypass fdroid -dname CN=F-Droid-Ephemeral
       - export CARGO_APK_RELEASE_KEYSTORE=/tmp/fdroid-ephemeral.jks
-      - export CARGO_APK_RELEASE_KEYSTORE_PASSWORD=<redacted>
+      - export CARGO_APK_RELEASE_KEYSTORE_PASSWORD=fdroid
       - cargo apk build --release --lib
     output: target/release/apk/light_show.apk
 
