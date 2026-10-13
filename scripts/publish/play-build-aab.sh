@@ -23,7 +23,7 @@ readonly ANDROID_DIR="$REPO_DIR/android"
 readonly JNILIBS_DIR="$ANDROID_DIR/app/src/main/jniLibs"
 readonly AAB_PATH="$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"
 readonly ABIS="arm64-v8a armeabi-v7a x86_64"
-readonly NDK_VERSION="28.0.12674087"
+readonly NDK_VERSION="30.0.16248370"
 # cargo-ndk defaults to platform 21 when CARGO_NDK_PLATFORM is unset, and
 # API 21's sysroot lacks libaaudio (added in API 26) -- the cdylib link
 # then fails with "library not found: aaudio". Pin the platform to the
@@ -100,6 +100,12 @@ load_answer_key() {
 
 build_native() {
     load_answer_key
+    # cargo-ndk picks the newest installed NDK unless ANDROID_NDK_HOME is
+    # set; pin the project's declared NDK so the build is deterministic
+    # (a caller's explicit ANDROID_NDK_HOME still wins).
+    export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-${ANDROID_HOME:-$ANDROID_SDK_ROOT}/ndk/$NDK_VERSION}"
+    [[ -d "$ANDROID_NDK_HOME" ]] \
+        || die "declared NDK $NDK_VERSION not installed at $ANDROID_NDK_HOME"
     printf 'Building native cdylib per ABI: %s\n' "$ABIS" >&2
     local ndk_args=()
     local abi

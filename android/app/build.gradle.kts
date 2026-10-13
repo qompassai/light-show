@@ -6,6 +6,8 @@ plugins {
 android {
     namespace = "ai.qompass.lightshow"
     compileSdk = 36
+    buildToolsVersion = "37.0.0"
+    ndkVersion = "30.0.16248370"
 
     defaultConfig {
         applicationId = "ai.qompass.lightshow"
