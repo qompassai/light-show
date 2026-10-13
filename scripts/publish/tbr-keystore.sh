@@ -21,7 +21,7 @@ set -euo pipefail
 
 KEYTOOL=/usr/lib/jvm/java-17-openjdk/bin/keytool
 ALIAS="${LIGHTSHOW_KEY_ALIAS:-lightshow-upload}"
-KEYSTORE_OUT="${LIGHTSHOW_KEYSTORE_OUT:-$HOME/.config/qompassai/light-show/upload.jks}"
+KEYSTORE_OUT="${LIGHTSHOW_KEYSTORE_OUT:-${XDG_DATA_HOME:-$HOME/.local/share}/keystores/light-show/google-play-upload.jks}"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
