@@ -125,6 +125,19 @@ target_sdk_version = 36
 [package.metadata.android.application]
 label = "Light Show"
 
+# The activity declaration cargo-apk writes into the generated
+# manifest. It must stay in lockstep with the two hand-written
+# manifests (android/app/src/main/AndroidManifest.xml and
+# game/android/AndroidManifest.xml): no orientation lock (Android 16
+# ignores it on large screens regardless, and every screen re-fits
+# to the real window — see src/responsive.rs), explicitly
+# resizeable, and every configuration change that rotation,
+# resizing, folding, or a display move can produce is declared
+# handled, so the activity is never recreated mid-game.
+[package.metadata.android.application.activity]
+config_changes = "colorMode|density|fontScale|fontWeightAdjustment|keyboard|keyboardHidden|layoutDirection|locale|mcc|mnc|navigation|orientation|screenLayout|screenSize|smallestScreenSize|touchscreen|uiMode"
+resizeable_activity = true
+
 [[package.metadata.android.uses_feature]]
 name = "android.hardware.touchscreen"
 required = false

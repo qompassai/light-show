@@ -27,12 +27,24 @@
         android:hardwareAccelerated="true"
         android:supportsRtl="true">
 
+        <!-- No screenOrientation lock and no aspect-ratio restriction:
+             Android 16 (API 36) ignores both on large screens
+             (smallest width >= 600dp) anyway, and the game re-fits
+             every screen to the window it actually gets (see
+             game/src/responsive.rs), in portrait and landscape alike.
+             resizeableActivity is explicit so multi-window / desktop
+             windowing never falls back to compatibility letterboxing.
+             configChanges lists every configuration that can change
+             under rotation, resizing, folding, or a display move, so
+             the system delivers them to the running activity instead
+             of destroying and recreating it (which would restart the
+             game mid-level). -->
         <activity
             android:name="android.app.NativeActivity"
             android:label="Light Show"
             android:exported="true"
-            android:screenOrientation="portrait"
-            android:configChanges="orientation|keyboardHidden|screenSize">
+            android:resizeableActivity="true"
+            android:configChanges="colorMode|density|fontScale|fontWeightAdjustment|keyboard|keyboardHidden|layoutDirection|locale|mcc|mnc|navigation|orientation|screenLayout|screenSize|smallestScreenSize|touchscreen|uiMode">
             <meta-data android:name="android.app.lib_name" android:value="light_show" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

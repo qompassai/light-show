@@ -184,13 +184,28 @@ impl ArtBackdrop {
     }
 }
 
-/// The landscape title-art probe: one speculative load whose load
-/// state is the availability oracle. Probing through the
-/// `AssetServer` (rather than a filesystem check) keeps the answer
-/// correct on Android, where assets live inside the APK.
+/// The title-art probe: one speculative load of the landscape art
+/// whose load state is the availability oracle, plus a held handle
+/// to the portrait art. Probing through the `AssetServer` (rather
+/// than a filesystem check) keeps the answer correct on Android,
+/// where assets live inside the APK.
+///
+/// Holding BOTH handles for the app's whole life is load-bearing.
+/// An `Image` whose last handle drops is unloaded, and the fit
+/// system swaps the node's handle to whichever art is chosen — so
+/// without the probe's portrait handle, rotating to landscape (the
+/// landscape art takes over the node) unloaded the portrait
+/// texture, and rotating back left the backdrop frozen in the
+/// landscape cover geometry until the portrait file had been
+/// re-read from the APK: an uncovered flat band where the portrait
+/// window extended past the old geometry (observed on an API 36
+/// tablet emulator, 2026-10-13 — still uncovered a minute after
+/// the rotation). With both textures resident, a rotation refits
+/// on the frame it happens.
 #[derive(Resource)]
-struct LandscapeArtProbe {
-    handle: Handle<Image>,
+struct TitleArtProbe {
+    landscape: Handle<Image>,
+    portrait: Handle<Image>,
     availability: ArtAvailability,
 }
 
@@ -202,15 +217,15 @@ pub struct ResponsivePlugin;
 
 impl Plugin for ResponsivePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, probe_landscape_art)
+        app.add_systems(Startup, probe_title_art)
             .add_systems(Update, fit_art_backdrops);
     }
 }
 
-fn probe_landscape_art(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load(TITLE_ART_LANDSCAPE_PATH);
-    commands.insert_resource(LandscapeArtProbe {
-        handle,
+fn probe_title_art(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(TitleArtProbe {
+        landscape: asset_server.load(TITLE_ART_LANDSCAPE_PATH),
+        portrait: asset_server.load(TITLE_ART_PORTRAIT_PATH),
         availability: ArtAvailability::Unknown,
     });
 }
@@ -218,11 +233,11 @@ fn probe_landscape_art(mut commands: Commands, asset_server: Res<AssetServer>) {
 /// Advances the probe's availability from the load state. Resolved
 /// states are sticky: once the file is known present or absent the
 /// answer cannot change under a running game.
-fn refresh_probe(probe: &mut LandscapeArtProbe, asset_server: &AssetServer) {
+fn refresh_probe(probe: &mut TitleArtProbe, asset_server: &AssetServer) {
     if probe.availability != ArtAvailability::Unknown {
         return;
     }
-    probe.availability = match asset_server.get_load_state(probe.handle.id()) {
+    probe.availability = match asset_server.get_load_state(probe.landscape.id()) {
         Some(LoadState::Loaded) => ArtAvailability::Available,
         Some(LoadState::Failed(_)) => ArtAvailability::Missing,
         _ => ArtAvailability::Unknown,
@@ -231,17 +246,25 @@ fn refresh_probe(probe: &mut LandscapeArtProbe, asset_server: &AssetServer) {
 
 /// The fit system. For each backdrop: pick the image it should
 /// show (title art by shape + availability; static art is whatever
-/// the screen spawned), wait until that texture has actually
-/// loaded (its size is the fit input), then — only if the window,
-/// the image, or the chosen art changed since the last application
-/// — write the cover geometry into the node. Runs every frame;
-/// the cache check keeps steady-state cost at one query walk over
-/// the (at most three) live backdrops.
+/// the screen spawned), then — only if the window, the image, or
+/// the chosen art changed since the last application — write the
+/// cover geometry into the node. The fit needs a decoded texture's
+/// size as its input; when the chosen texture has not decoded yet
+/// the fit falls back to the texture the node already shows, so a
+/// window change still refits the geometry (with the outgoing
+/// art) on the frame it happens instead of leaving the node
+/// frozen at the old window's geometry — the frozen node is what
+/// left a flat uncovered band after a rotation (see
+/// [`TitleArtProbe`]). The applied-art cache records the art
+/// actually on the node, so the pending swap still lands when the
+/// chosen texture arrives. Runs every frame; the cache check
+/// keeps steady-state cost at one query walk over the (at most
+/// three) live backdrops.
 fn fit_art_backdrops(
     windows: Query<&Window, With<PrimaryWindow>>,
     asset_server: Res<AssetServer>,
     images: Res<Assets<Image>>,
-    probe: Option<ResMut<LandscapeArtProbe>>,
+    probe: Option<ResMut<TitleArtProbe>>,
     mut backdrops: Query<(&mut Node, &mut ImageNode, &mut ArtBackdrop)>,
 ) {
     let Ok(window) = windows.single() else {
@@ -258,39 +281,54 @@ fn fit_art_backdrops(
     let availability = probe
         .as_ref()
         .map_or(ArtAvailability::Unknown, |probe| probe.availability);
+    // The probe's held handles double as the fit system's desired
+    // handles, so the texture it fits to is the resident copy.
+    let title_handles = probe
+        .as_ref()
+        .map(|probe| (probe.portrait.clone(), probe.landscape.clone()));
 
     for (mut node, mut image_node, mut backdrop) in &mut backdrops {
         let chosen_art = match backdrop.kind {
             BackdropKind::Title => Some(choose_title_art(window_size, availability)),
             BackdropKind::Static => None,
         };
-        let desired: Handle<Image> = match chosen_art {
-            Some(art) => asset_server.load(art.asset_path()),
-            None => image_node.image.clone(),
+        let desired: Handle<Image> = match (chosen_art, &title_handles) {
+            (Some(TitleArt::Portrait), Some((portrait, _))) => portrait.clone(),
+            (Some(TitleArt::Landscape), Some((_, landscape))) => landscape.clone(),
+            (Some(art), None) => asset_server.load(art.asset_path()),
+            (None, _) => image_node.image.clone(),
         };
-        let Some(image) = images.get(&desired) else {
-            // Texture not decoded yet (first frames, or a variant
-            // swap mid-load): keep the current geometry; a later
-            // frame applies the fit once the size is known.
+        // Which texture the fit can use this frame, and the art it
+        // represents: the desired one once decoded, else the one
+        // already on the node (see the doc comment above).
+        let (fit_handle, fit_art) = if images.get(&desired).is_some() {
+            (desired, chosen_art)
+        } else {
+            (image_node.image.clone(), backdrop.applied_art)
+        };
+        let Some(image) = images.get(&fit_handle) else {
+            // Neither texture has decoded yet (the first frames of
+            // a screen): there is no size to fit to, so the node
+            // keeps its spawn geometry until a later frame.
             continue;
         };
         let Some(fit) = cover_fit(window_size, image.size().as_vec2()) else {
             continue;
         };
         if backdrop.applied_window == window_size
-            && backdrop.applied_image == Some(desired.id())
-            && backdrop.applied_art == chosen_art
+            && backdrop.applied_image == Some(fit_handle.id())
+            && backdrop.applied_art == fit_art
         {
             continue;
         }
-        image_node.image = desired.clone();
+        image_node.image = fit_handle.clone();
         node.width = Val::Px(fit.size.x);
         node.height = Val::Px(fit.size.y);
         node.left = Val::Px(fit.offset.x);
         node.top = Val::Px(fit.offset.y);
         backdrop.applied_window = window_size;
-        backdrop.applied_image = Some(desired.id());
-        backdrop.applied_art = chosen_art;
+        backdrop.applied_image = Some(fit_handle.id());
+        backdrop.applied_art = fit_art;
     }
 }
 
@@ -606,5 +644,43 @@ mod tests {
         );
         let image_node = app.world().get::<ImageNode>(backdrop).expect("image node");
         assert_eq!(image_node.image.id(), portrait.id());
+    }
+
+    #[test]
+    fn fit_system_refits_geometry_with_shown_art_while_chosen_art_loads() {
+        // The rotation regression (API 36 tablet, 2026-10-13): the
+        // backdrop is showing the landscape art, fitted for a
+        // 1920x1080 window; the window rotates to 800x1280 and the
+        // newly chosen (portrait) texture is not in `Assets` yet.
+        // The geometry must still refit to the new window on this
+        // frame — with the shown art — instead of staying frozen
+        // at the old window's cover geometry and leaving the
+        // bottom of the portrait window uncovered.
+        let (mut app, _window) = fit_test_app(Vec2::new(800.0, 1280.0));
+        let landscape = app
+            .world_mut()
+            .resource_mut::<Assets<Image>>()
+            .add(solid_image(1920, 1080));
+        // Spawn with the cache claiming the landscape art was
+        // applied at the pre-rotation window, as the real system
+        // leaves it. (The portrait path is deliberately never
+        // inserted into `Assets`, so the desired texture reads as
+        // still loading.)
+        let mut backdrop_component = ArtBackdrop::title();
+        backdrop_component.applied_window = Vec2::new(1920.0, 1080.0);
+        backdrop_component.applied_image = Some(landscape.id());
+        backdrop_component.applied_art = Some(TitleArt::Landscape);
+        let backdrop = spawn_backdrop(&mut app, landscape.clone(), backdrop_component);
+        app.update();
+        app.update();
+        // cover_fit(800x1280, 1920x1080): height ratio 1.185 wins.
+        assert_node_fit(
+            &node_of(&app, backdrop),
+            Vec2::new(2275.56, 1280.0),
+            Vec2::new(-737.78, 0.0),
+        );
+        // The shown art is untouched while the chosen one loads.
+        let image_node = app.world().get::<ImageNode>(backdrop).expect("image node");
+        assert_eq!(image_node.image.id(), landscape.id());
     }
 }

@@ -17,6 +17,7 @@ use crate::ui::neon::{NEON_CYAN, NEON_DIM, NEON_GOLD, NeonText, spawn_neon_text}
 use crate::ui::{BUTTON_BORDER, ButtonPalette, styled_button};
 use crate::waifu::{Companion, SelectedCompanion};
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
 pub struct CompanionSelectPlugin;
 
@@ -291,14 +292,49 @@ fn spawn_field_school_row(
         });
 }
 
+/// Logical height (px) below which the single-column card stack
+/// no longer fits the window: header + four cards + the
+/// field-school row + Back measure a little over 950, and a column
+/// centered in a shorter window clips the header off the top and
+/// pushes Back below the bottom edge — captured on an API 36
+/// large screen at 1280x800 (2026-10-13), where Back was
+/// unreachable. Below this height a wide-enough window switches
+/// the cards to a two-per-row grid (see [`picker_grid_layout`]).
+const PICKER_COLUMN_MIN_HEIGHT: f32 = 1_000.0;
+
+/// Logical width (px) two companion cards need side by side: the
+/// card width (620, see `spawn_companion_card`) twice plus the
+/// 16px gap between them. A window narrower than this keeps the
+/// column even when short (a phone turned sideways, where the
+/// grid could not fit two cards either).
+const PICKER_GRID_MIN_WIDTH: f32 = 1_256.0;
+
+/// Whether the companion cards lay out as a two-per-row grid
+/// instead of the single portrait column: landscape-shaped, too
+/// short for the column, and wide enough for two cards. Pure, so
+/// the arrangement decision is testable without a UI tree.
+fn picker_grid_layout(window: Vec2) -> bool {
+    window.x > window.y && window.y < PICKER_COLUMN_MIN_HEIGHT && window.x >= PICKER_GRID_MIN_WIDTH
+}
+
 fn setup_select(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     selected: Res<SelectedCompanion>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     let display: Handle<Font> = asset_server.load(crate::fonts::DISPLAY);
     let body: Handle<Font> = asset_server.load(crate::fonts::BODY);
     let body_medium: Handle<Font> = asset_server.load(crate::fonts::BODY_MEDIUM);
+    // The arrangement is chosen for the window the screen actually
+    // opens in; without a window (headless tests) it falls back to
+    // the design canvas, which takes the column like any portrait
+    // phone.
+    let window_size = windows
+        .single()
+        .map(|window| Vec2::new(window.width(), window.height()))
+        .unwrap_or(Vec2::new(720.0, 1280.0));
+    let grid = picker_grid_layout(window_size);
     commands
         .spawn((
             SelectRoot,
@@ -359,9 +395,36 @@ fn setup_select(
                     justify: Justify::Center,
                 },
             );
-            for companion in Companion::ALL {
-                spawn_companion_card(parent, &asset_server, &display, &body, companion);
-            }
+            // The cards, in their own container so a short
+            // landscape window can arrange them two per row (the
+            // grid) while portrait keeps the single column. The
+            // container's internal gaps match the root's 16px
+            // rhythm, so the column layout is pixel-identical to
+            // the pre-grid screen.
+            let cards_node = if grid {
+                Node {
+                    width: Val::Percent(100.0),
+                    flex_direction: FlexDirection::Row,
+                    flex_wrap: FlexWrap::Wrap,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    column_gap: Val::Px(16.0),
+                    row_gap: Val::Px(16.0),
+                    ..default()
+                }
+            } else {
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    row_gap: Val::Px(16.0),
+                    ..default()
+                }
+            };
+            parent.spawn(cards_node).with_children(|cards| {
+                for companion in Companion::ALL {
+                    spawn_companion_card(cards, &asset_server, &display, &body, companion);
+                }
+            });
             if field_school_visible(selected.0) {
                 spawn_field_school_row(parent, &display, &body, &body_medium);
             }
@@ -1068,6 +1131,43 @@ mod tests {
         // not a small image.
         assert_eq!(content_rect_rgba(&vec![255u8; 8], 4, 4), None);
         assert_eq!(content_rect_rgba(&[], 0, 0), None);
+    }
+
+    // --- picker arrangement (validation) ---
+
+    #[test]
+    fn grid_layout_for_short_wide_landscape() {
+        // The API 36 large-screen case: 1280x800 landscape.
+        assert!(picker_grid_layout(Vec2::new(1280.0, 800.0)));
+        assert!(picker_grid_layout(Vec2::new(1920.0, 900.0)));
+        // A short desktop window at the grid's exact minimum width.
+        assert!(picker_grid_layout(Vec2::new(1256.0, 720.0)));
+    }
+
+    #[test]
+    fn column_layout_for_portrait_and_tall_windows() {
+        // The design canvas and a tall phone: the column's home.
+        assert!(!picker_grid_layout(Vec2::new(720.0, 1280.0)));
+        assert!(!picker_grid_layout(Vec2::new(1080.0, 2400.0)));
+        // Landscape, but tall enough for the whole column.
+        assert!(!picker_grid_layout(Vec2::new(1920.0, 1080.0)));
+        assert!(!picker_grid_layout(Vec2::new(2560.0, 1600.0)));
+        // Square is not landscape-shaped.
+        assert!(!picker_grid_layout(Vec2::new(1024.0, 1024.0)));
+    }
+
+    // --- picker arrangement (adversarial) ---
+
+    #[test]
+    fn column_layout_when_too_narrow_for_two_cards() {
+        // Short landscape, but two 620px cards cannot fit side by
+        // side: keep the column rather than wrapping every card
+        // onto its own row at a narrower width than designed.
+        assert!(!picker_grid_layout(Vec2::new(1024.0, 768.0)));
+        assert!(!picker_grid_layout(Vec2::new(1255.0, 800.0)));
+        // Degenerate windows never take the grid.
+        assert!(!picker_grid_layout(Vec2::ZERO));
+        assert!(!picker_grid_layout(Vec2::new(f32::NAN, 800.0)));
     }
 
     #[test]
