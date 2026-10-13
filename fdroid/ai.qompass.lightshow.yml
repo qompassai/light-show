@@ -28,7 +28,7 @@ Builds:
       - rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
       - cargo install cargo-apk --version 0.10.0
     build:
-      - keytool -genkeypair -keystore /tmp/fdroid-ephemeral.jks -alias fdroid -keyalg RSA -keysize 2048 -validity 10950 -storepass fdroid -keypass fdroid -dname "CN=F-Droid Ephemeral"
+      - keytool -genkeypair -keystore /tmp/fdroid-ephemeral.jks -alias fdroid -keyalg RSA -keysize 2048 -validity 10950 -storepass fdroid -keypass fdroid -dname CN=F-Droid-Ephemeral
       - export CARGO_APK_RELEASE_KEYSTORE=/tmp/fdroid-ephemeral.jks
       - export CARGO_APK_RELEASE_KEYSTORE_PASSWORD=<redacted>
       - cargo apk build --release --lib
