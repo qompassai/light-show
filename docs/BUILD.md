@@ -92,23 +92,27 @@ wrap the compiled `cdylib` in a minimal Gradle project:
    This is the **unsigned technical AAB** — no `signingConfig` is
    declared on purpose, so CI never produces a signed release build.
 4. Sign it with the upload key (Matt's step — the keystore is created
-   with `scripts/publish/tbr-keystore.sh`, never by agents). Passwords
-   must never appear on argv (`ps` exposes them); `apksigner` reads
-   them from named environment variables instead:
+   with `scripts/publish/tbr-keystore.sh`, never by agents). An AAB is
+   signed as a JAR, with `jarsigner`: `apksigner` parses its input as
+   an APK and cannot sign or verify a bundle (a bundle's manifest
+   lives at `base/manifest/AndroidManifest.xml`, not at the archive
+   root). Passwords must never appear on argv (`ps` exposes them);
+   jarsigner reads them from stdin instead:
    ```sh
-   # Pull the passwords from pass into this shell only (same terminal,
-   # never into a file or a command line):
-   export LIGHTSHOW_KS_PASS="$(pass qompassai/light-show/upload-keystore-password)"
-   export LIGHTSHOW_KEY_PASS="$(pass qompassai/light-show/upload-key-password)"
-   /opt/android-sdk/build-tools/36.0.0/apksigner sign \
-       --ks "$HOME/.config/qompassai/light-show/upload.jks" \
-       --ks-pass:env LIGHTSHOW_KS_PASS \
-       --key-pass:env LIGHTSHOW_KEY_PASS \
-       --out app-release-signed.aab \
-       app/build/outputs/bundle/release/app-release.aab
-   /opt/android-sdk/build-tools/36.0.0/apksigner verify --print-certs \
-       app-release-signed.aab
-   unset LIGHTSHOW_KS_PASS LIGHTSHOW_KEY_PASS
+   # The keystore lives at the canonical XDG location (the same
+   # resolution tbr-keystore.sh uses):
+   KS="${LIGHTSHOW_KEYSTORE_OUT:-${XDG_DATA_HOME:-$HOME/.local/share}/keystores/light-show/google-play-upload.jks}"
+   # jarsigner prompts for the store password, then the key password;
+   # feeding both from pass over stdin keeps them off argv and out of
+   # any file:
+   { pass qompassai/light-show/upload-keystore-password
+     pass qompassai/light-show/upload-key-password; } \
+       | jarsigner -keystore "$KS" \
+           -signedjar app/build/outputs/bundle/release/app-release-signed.aab \
+           app/build/outputs/bundle/release/app-release.aab \
+           lightshow-upload
+   jarsigner -verify app/build/outputs/bundle/release/app-release-signed.aab
+   bundletool validate --bundle app/build/outputs/bundle/release/app-release-signed.aab
    ```
    Upload `app-release-signed.aab` to a testing track first.
 

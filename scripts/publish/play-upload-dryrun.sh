@@ -19,15 +19,22 @@
 set -euo pipefail
 
 # --- constants ---------------------------------------------------------------
-readonly REPO_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+readonly REPO_DIR
 readonly AAB_PATH="$REPO_DIR/android/app/build/outputs/bundle/release/app-release.aab"
 readonly SIGNED_AAB="$REPO_DIR/android/app/build/outputs/bundle/release/app-release-signed.aab"
 readonly APPID="ai.qompass.lightshow"
-readonly TRACK="internal"  # first upload should always go to the internal track
+readonly TRACK="internal" # first upload should always go to the internal track
 
 # --- helpers -----------------------------------------------------------------
-die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
-usage() { printf 'Usage: %s --dry-run\n  (--live is refused: upload is Matt-only)\n' "$0" >&2; exit 2; }
+die() {
+    printf 'ERROR: %s\n' "$*" >&2
+    exit 1
+}
+usage() {
+    printf 'Usage: %s --dry-run\n  (--live is refused: upload is Matt-only)\n' "$0" >&2
+    exit 2
+}
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # --- main --------------------------------------------------------------------
@@ -59,22 +66,31 @@ main() {
     printf 'SIZE_BYTES: %s\n' "$size"
     listing=$(unzip -l "$aab")
     for entry in "base/manifest/AndroidManifest.xml" "BUNDLE-METADATA"; do
-        grep -q "$entry" <<< "$listing" \
-            || die "AAB missing expected entry: $entry"
+        grep -q "$entry" <<<"$listing" ||
+            die "AAB missing expected entry: $entry"
     done
     printf 'PASS: AAB contains AndroidManifest.xml + BUNDLE-METADATA\n'
 
     # 4. signature state (informational — upload REQUIRES a signed AAB)
-    if have apksigner; then
-        if apksigner verify --print-certs "$aab" >/dev/null 2>&1; then
+    # An AAB is a JAR for signing purposes: jarsigner signs and verifies
+    # it. apksigner parses the file as an APK and cannot process bundles
+    # at all, so it must never be the signature oracle here. jarsigner
+    # -verify also exits 0 for an unsigned jar, so the verdict is read
+    # from its output text, not its exit code (the || true is
+    # deliberate: a nonzero exit lands in the same NOT-signed branch).
+    if have jarsigner; then
+        local verify_out=""
+        verify_out=$(jarsigner -verify "$aab" 2>&1) || true
+        if grep -q 'jar verified' <<<"$verify_out" &&
+            ! grep -q 'jar is unsigned' <<<"$verify_out"; then
             printf 'PASS: AAB signature verifies\n'
-            apksigner verify --print-certs "$aab" 2>/dev/null \
-                | grep -m1 "Signer #1" || true
+            keytool -printcert -jarfile "$aab" 2>/dev/null |
+                grep -m1 '^Owner:' || true
         else
             printf 'WARN: AAB is NOT signed (expected pre-Matt-signing)\n'
         fi
     else
-        printf 'WARN: apksigner not on PATH; skipping signature check\n'
+        printf 'WARN: jarsigner not on PATH; skipping signature check\n'
     fi
 
     # 5. version coherence with build.gradle.kts
