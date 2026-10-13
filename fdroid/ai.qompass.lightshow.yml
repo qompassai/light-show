@@ -32,7 +32,7 @@ Builds:
       - export CARGO_APK_RELEASE_KEYSTORE=/tmp/fdroid-ephemeral.jks
       - export CARGO_APK_RELEASE_KEYSTORE_PASSWORD=fdroid
       - cargo apk build --release --lib
-    output: target/release/apk/light_show.apk
+    output: ../target/release/apk/light_show.apk
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
