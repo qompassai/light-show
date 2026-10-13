@@ -74,6 +74,10 @@ path = "security.rs"
 name = "save_files"
 path = "save_files.rs"
 
+[[test]]
+name = "splice_work_orders"
+path = "splice_work_orders.rs"
+
 [dependencies]
 osp_sim = { path = "../crates/osp_sim" }
 light-show = { path = "../game" }
