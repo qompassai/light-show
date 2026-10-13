@@ -1,7 +1,7 @@
 {
   "title": "light-show",
   "description": "Light Show — an OSP fiber-optic puzzle game built in Rust/Bevy, with anime waifu companions. Route light from A to B, hit target dB budget, survive outages.",
-  "license": "Q-CDA-1.0",
+  "license": "Apache-2.0",
   "language": "eng",
   "upload_type": "software",
   "access_right": "open",

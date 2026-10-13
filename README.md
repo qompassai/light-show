@@ -1,3 +1,4 @@
+<a href="./LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
 ![Light Show — cover art: four companions splicing light over a night city](assets/art/hero_header.jpg)
 
 <h1 align="center">Light Show</h1>
@@ -325,3 +326,7 @@ the same build ships unmodified to both Google Play and F-Droid. See
 [`docs/FDROID.md`](docs/FDROID.md) for the anti-features checklist.
 
 </details>
+
+## License
+
+This project is licensed under the [Apache License, Version 2.0](./LICENSE).
