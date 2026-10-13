@@ -5,8 +5,12 @@ once, in order. Values below are the exact ones to paste.
 
 ## 1. Service account (one key for both apps)
 
-- The service-account JSON already exists in your pass store:
-  `google/ontrack-fastlane` (created 2026-09-29, shared light-show + ontrack).
+- The service account is `ontrack-fastlane@quiet-maxim-493722-a0.iam.gserviceaccount.com`
+  (the "My Maps Project", quiet-maxim-493722-a0, Android Publisher API enabled
+  there; one account shared by light-show + ontrack). Its key JSON is the file
+  `~/.config/fastlane/google-play-ontrack.json` on primo — that is what
+  fastlane reads — and is mirrored in the pass store at
+  `google/ontrack-fastlane`.
 - Play Console → Users and permissions → Invite new users →
   paste the service-account email → grant **release-manager**, scoped to
   the **light-show** app. (Repeat on the ontrack app when its turn comes.)
