@@ -1,0 +1,1 @@
+Tablet and large-screen support, done right: Light Show now resizes freely to fit any window, split-screen, or foldable. Rotating your device no longer restarts the game or breaks the backdrop, which now refits to the new shape instantly. The companion picker fits landscape screens without spilling off the edge.
