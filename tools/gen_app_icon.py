@@ -41,7 +41,7 @@ DENSITIES = [
 ]
 
 ADAPTIVE_FOREGROUND_PX = 432  # standard adaptive icon foreground canvas
-BACKGROUND_COLOR = "#141420"  # deep navy, matches game's dark-blue UI theme
+BACKGROUND_COLOR = "#0E1D3C"  # deep navy, matches game's dark-blue UI theme
 
 ADAPTIVE_ICON_XML = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
