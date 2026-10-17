@@ -57,8 +57,12 @@ bevy = { version = "0.19", default-features = false, features = [
     "symphonia-vorbis",
     "mp3",
     "wav",
+    # The pill mugshot faces are .webp (art/<char>/faces/); without a
+    # WebP decoder the in-level dialogue portrait slot renders empty.
+    # Guarded by pill::tests::every_shipped_face_webp_decodes.
     "png",
     "jpeg",
+    "webp",
     "x11",
     "multi_threaded",
 ] }
@@ -85,6 +89,7 @@ bevy = { version = "0.19", default-features = false, features = [
     "wav",
     "png",
     "jpeg",
+    "webp",
     "android-native-activity",
     "multi_threaded",
 ] }

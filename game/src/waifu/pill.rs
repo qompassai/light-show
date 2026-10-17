@@ -389,6 +389,58 @@ mod tests {
         }
     }
 
+    /// Regression (2026-10-17): the pill resolves mugshots to the
+    /// faces tree (`art/<char>/faces/*.webp`) whenever that tree is
+    /// present on disk, but the Bevy build shipped without the
+    /// `webp` image feature, so every face load failed with
+    /// "invalid image extension: webp" and the desktop dialogue
+    /// portrait slot rendered empty (Android never probed the tree,
+    /// so it fell back to the .jpg portrait and looked fine). Every
+    /// shipped face must decode through the same
+    /// `Image::from_buffer` path the asset loader uses.
+    #[test]
+    fn every_shipped_face_webp_decodes() {
+        use bevy::asset::RenderAssetUsages;
+        use bevy::image::{CompressedImageFormats, ImageSampler, ImageType};
+        let assets = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets");
+        let available = probe_faces(&assets);
+        assert!(
+            !available.is_empty(),
+            "probe_faces found no faces under {}",
+            assets.display()
+        );
+        let mut paths: Vec<&String> = available.iter().collect();
+        paths.sort();
+        for rel in paths {
+            let bytes =
+                std::fs::read(assets.join(rel)).unwrap_or_else(|e| panic!("{rel} unreadable: {e}"));
+            let image = Image::from_buffer(
+                &bytes,
+                ImageType::Extension("webp"),
+                CompressedImageFormats::NONE,
+                true,
+                ImageSampler::Default,
+                RenderAssetUsages::MAIN_WORLD,
+            );
+            assert!(
+                image.is_ok(),
+                "{rel} does not decode with the compiled-in image formats: {:?}",
+                image.err()
+            );
+        }
+        // Adversarial: the decode path must reject, not panic on,
+        // bytes that are not a WebP image at all.
+        assert!(Image::from_buffer(
+            b"this is not a webp file",
+            ImageType::Extension("webp"),
+            CompressedImageFormats::NONE,
+            true,
+            ImageSampler::Default,
+            RenderAssetUsages::MAIN_WORLD,
+        )
+        .is_err());
+    }
+
     #[test]
     fn blink_fires_on_the_idle_cycle_even_in_silence() {
         let mut anim = FaceAnim::default();
