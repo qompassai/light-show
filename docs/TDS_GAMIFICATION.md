@@ -1,6 +1,6 @@
 # TDS Resources Gamification — Design
 
-Maps Matt's TDS field resources (`PhaedrusFlow/tds`) into light-show
+Maps Owner's TDS field resources (`PhaedrusFlow/tds`) into light-show
 characters and mechanics. Source docs are vendored as reference at
 `docs/reference/tds/{ams,cms,bxe,ta}/` until fully built out.
 

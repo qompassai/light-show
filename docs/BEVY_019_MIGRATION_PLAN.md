@@ -1,8 +1,8 @@
 # Light Show — Bevy 0.14 → 0.19.1 Migration Plan
 
-**Status:** DRAFT — research and scoping only. No code changed. For Matt's review.
+**Status:** DRAFT — research and scoping only. No code changed. For Owner's review.
 **Date:** 2026-10-03
-**Decision context:** Matt approved migrating light-show from Bevy 0.14 to 0.19.1, starting only after the current animation/SFX work settles. The value he wants is the 0.19.1 bug fixes (2D flicker, MP4 audio, text measurement, iOS pink-screen, Steam OSK) plus the features the jump unlocks.
+**Decision context:** Owner approved migrating light-show from Bevy 0.14 to 0.19.1, starting only after the current animation/SFX work settles. The value he wants is the 0.19.1 bug fixes (2D flicker, MP4 audio, text measurement, iOS pink-screen, Steam OSK) plus the features the jump unlocks.
 
 **How this was built:** each of the five official migration guides (bevy.org/learn/migration-guides) was read in full and every breaking change was grepped against `game/src/` (~8,265 lines). "Verified" below means checked against the guide text, docs.rs, or the actual repo — not inferred.
 
@@ -235,7 +235,7 @@ Ecosystem health for 0.19 is good (bevy_egui, bevy_embedded_assets, bevy_vello a
 4. **Steps 4+5 (0.17→0.18→0.19) combined.** Both are all-S mechanical work; one compile-debug cycle with the test suite as gate. Fall back to separate steps if anything is unclear.
 5. **Step 6 cleanup** once 0.19.1 is green.
 
-Each step: bump versions in game/Cargo.toml → `cargo build` → fix → `cargo test` → step-specific verification → commit. One commit per step (unpushed until Matt reviews, per standing rules — no standing push authorization exists for this program).
+Each step: bump versions in game/Cargo.toml → `cargo build` → fix → `cargo test` → step-specific verification → commit. One commit per step (unpushed until Owner reviews, per standing rules — no standing push authorization exists for this program).
 
 **Total: ≈ 3–4 days.** The 0.14→0.15 text rework is half the work. Everything after 0.16 is renames, one-liners, and verification.
 

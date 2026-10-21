@@ -24,7 +24,7 @@ end-of-stream during menu transitions, killing audio.
 ## Companion art direction (2026-10-03/04)
 
 **Decision**: Base models = younger/safe (store-compliant); mature models =
-adult (default in-game). Matt's references are locked design authority.
+adult (default in-game). Owner's references are locked design authority.
 
 **Context**: Google Play/F-Droid require non-mature content. Mature set is
 the default game target.

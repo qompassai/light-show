@@ -99,7 +99,7 @@ CurrentVersionCode: 16777472
 
 `commit:` must be the full 40-char SHA of the validated release commit.
 A commit cannot contain its own SHA, so publication is a two-commit
-sequence (the placeholder stays in this reference copy until Matt runs
+sequence (the placeholder stays in this reference copy until Owner runs
 it):
 
 1. Commit and push the release tree, then verify the remote SHA:

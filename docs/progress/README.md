@@ -10,7 +10,7 @@ what we were doing — alongside honest commentary about what changed and why.
 |---|---|---|---|
 | ![Séraphine base](../../assets/art/seraphine/companions/seraphine_animated_base.gif) | Séraphine — Fiber | [Current](../../assets/art/seraphine/companions/seraphine_animated_mature.gif) | Proportions refined, outfit detailed, actually looks like she works in fiber now |
 | *(base GIF quarantined 2026-10-07 — light-skinned chibi contradicting design A)* | Ondine — Coax | [Current](../../assets/art/ondine/companions/ondine_animated_mature.gif) | From "generic anime girl" to "person who has opinions about signal loss" |
-| ![Linka base](../../assets/art/linka/companions/linka_animated_base.gif) | Linka — Wireless | [Current](../../assets/art/linka/companions/linka_animated_base.gif) | Redesigned after Matt said the animated version "looks old vs her art." He was right. |
+| ![Linka base](../../assets/art/linka/companions/linka_animated_base.gif) | Linka — Wireless | [Current](../../assets/art/linka/companions/linka_animated_base.gif) | Redesigned after Owner said the animated version "looks old vs her art." He was right. |
 | *(base was a placeholder — no surviving GIF)* | Lattice — Wired | [Current](../../assets/art/lattice/companions/lattice_animated_mature.gif) | Newest addition. Base was a placeholder; mature got the full treatment. |
 
 ## Honest Retrospective

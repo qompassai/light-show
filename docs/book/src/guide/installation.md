@@ -93,9 +93,9 @@ targeting API 35+, so `.cargo/config.toml` forces it via
 
 Release signing is deliberately *not* automated. Generating the
 keystore (`scripts/publish/tbr-keystore.sh`), the F-Droid submission,
-and the Play Console checklist are Matt-only steps — a deterministic
+and the Play Console checklist are Owner-only steps — a deterministic
 sandbox must never mint signing identities or submit anything to a
 store. The `.aab` produced above is intentionally unsigned (no
 `signingConfig`), so CI can never produce a signed release build by
 accident. F-Droid re-signs from source anyway; the Play upload key
-comes from Matt's keystore step.
+comes from Owner's keystore step.

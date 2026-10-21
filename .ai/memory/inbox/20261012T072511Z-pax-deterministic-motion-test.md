@@ -1,6 +1,6 @@
 # Deterministic-motion test pass (Pax, 2026-10-12)
 
-Matt asked for the deterministic-motion technique from the Claude Code
+Owner asked for the deterministic-motion technique from the Claude Code
 animation research (scene state as a pure function of `t`, seek-rendered
 frame by frame) to be tested against everything animated in light-show.
 The full work product is the new top-level `deterministic-motion/`

@@ -2639,7 +2639,7 @@ mod tests {
             },
         ];
         let pills = vec![Vec2::new(100.0, 265.0), Vec2::new(100.0, 335.0)];
-        let half_w = 450.0; // Matt's phone screenshot width / 2
+        let half_w = 450.0; // Owner's phone screenshot width / 2
         let placed = layout_node_labels(&requests, &pills, half_w, 0.0);
         assert_eq!(placed.len(), 3);
         for (i, placement) in placed.iter().enumerate() {

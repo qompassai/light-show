@@ -6,11 +6,11 @@
 
 **What it is.** A set of CLI-first patterns that cut the wall-clock time of BxE work: deep links, direct API calls, parallel requests, response caching, and knowing what *not* to wait for.
 
-**Why a field tech cares.** Matt's words: "the web app is SLOW." You can't fix the portal, but you can route around it. Each pattern below is independent — adopt one at a time, keep what pays.
+**Why a field tech cares.** Owner's words: "the web app is SLOW." You can't fix the portal, but you can route around it. Each pattern below is independent — adopt one at a time, keep what pays.
 
 **When to reach for it.** Anytime you're waiting on the portal: morning triage queues, repeat customer lookups, bulk pre-checks before a route.
 
-**Verified vs inferred.** VERIFIED: the portal is slow (Matt, field experience). INFERRED: exact speedups depend on your network and the portal's behavior — measure yours.
+**Verified vs inferred.** VERIFIED: the portal is slow (Owner, field experience). INFERRED: exact speedups depend on your network and the portal's behavior — measure yours.
 
 ## Diagram
 
@@ -170,5 +170,5 @@ sudo pacman -S --needed curl jq
 
 ## Sources
 
-- VERIFIED: portal slowness (Matt); all patterns are standard HTTP techniques.
+- VERIFIED: portal slowness (Owner); all patterns are standard HTTP techniques.
 - INFERRED: endpoint paths/fields — discover per `address-to-diagnostics.md`.

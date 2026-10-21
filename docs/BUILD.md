@@ -38,7 +38,7 @@ cd game
 # builds only, point cargo-apk at the pre-existing debug keystore via
 # its documented env override (never generate keys, never ship the
 # resulting APK — F-Droid re-signs from source, and the Play upload
-# key comes from scripts/publish/tbr-keystore.sh, which is Matt's step).
+# key comes from scripts/publish/tbr-keystore.sh, which is Owner's step).
 CARGO_APK_RELEASE_KEYSTORE=$HOME/.android/debug.keystore \
 CARGO_APK_RELEASE_KEYSTORE_PASSWORD=android \
   cargo apk build --release --lib
@@ -91,7 +91,7 @@ wrap the compiled `cdylib` in a minimal Gradle project:
    Output: `android/app/build/outputs/bundle/release/app-release.aab`.
    This is the **unsigned technical AAB** — no `signingConfig` is
    declared on purpose, so CI never produces a signed release build.
-4. Sign it with the upload key (Matt's step — the keystore is created
+4. Sign it with the upload key (Owner's step — the keystore is created
    with `scripts/publish/tbr-keystore.sh`, never by agents). An AAB is
    signed as a JAR, with `jarsigner`: `apksigner` parses its input as
    an APK and cannot sign or verify a bundle (a bundle's manifest
@@ -217,13 +217,13 @@ scripts/publish/bin/fdroid-publish-check --repo . --appid ai.qompass.lightshow -
 
 ## Editor toolchain: bacon, cargo-deny, BSP
 
-Three repo-root files wire this project into Matt's Neovim setup on the
+Three repo-root files wire this project into Owner's Neovim setup on the
 build machine (primo). They are developer tooling, not build inputs: the
 game builds identically without them.
 
 ### `bacon.toml` — background checks for bacon-ls
 
-bacon-ls (Matt's `lsp/bacon_ls.lua`) runs `bacon --headless -j bacon-ls`
+bacon-ls (Owner's `lsp/bacon_ls.lua`) runs `bacon --headless -j bacon-ls`
 in the background and reads the `.bacon-locations` export file bacon
 writes, publishing the diagnostics as LSP diagnostics. The `bacon-ls`
 job in `bacon.toml` is the exact job definition bacon-ls's bacon backend
@@ -274,7 +274,7 @@ target-specific dependencies are checked too. All four checks pass:
 
 ### `.bsp/cargo.json` — Build Server Protocol connection card
 
-Matt's native BSP client (`diver` `lua/bsp/servers/cargo.lua`) reads
+Owner's native BSP client (`diver` `lua/bsp/servers/cargo.lua`) reads
 `.bsp/*.json` connection cards with the fields `name`, `version`,
 `bspVersion`, `languages`, and `argv`. The upstream server,
 [cargo-bsp](https://github.com/cargo-bsp/cargo-bsp), is unmaintained

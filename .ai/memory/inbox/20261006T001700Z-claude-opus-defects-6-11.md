@@ -1,7 +1,7 @@
 # Defects 6–11 fix: non-obvious findings (candidate memory)
 
 ## Headless nvim LSP diagnostics are vacuous for Rust on primo
-- In Matt's diver config, `rustana_ls` (rust-analyzer) runs with
+- In Owner's diver config, `rustana_ls` (rust-analyzer) runs with
   `diagnostics.enable = false` and `checkOnSave = false`; diagnostics are
   delegated to `bacon_ls`.
 - `bacon_ls` never attaches in agent shells: `bacon-ls` is not on PATH

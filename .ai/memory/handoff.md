@@ -24,7 +24,7 @@ Suite: 789 tests passing, 0 failures.
   diagnosis, workbench, IPv4/IPv6 config console, c1l6 intermittent
   machine, capstones + badges + closeout. `level_badges` on SaveData,
   also serde default. In-game fiction technology is G.fast for this
-  content (Matt ruling 2026-10-07), not CATV.
+  content (Owner ruling 2026-10-07), not CATV.
 - Art landing pass (2026-10-07, after Track A froze the tree):
   expression-portrait fleet LANDED in assets/art/expressions/ (109
   portraits + Bianca/Tessa aroused pair, byte-identical to the gated
@@ -49,8 +49,8 @@ Suite: 789 tests passing, 0 failures.
   music track is uncommissioned) + light-show-trailer-preview.gif
   landed WITH the README Trailer section in f976ab5; assets_images
   18/0, full suite 789/0. Full 75s trailer remains descoped pending
-  Matt's verdict on the pilot.
+  Owner's verdict on the pilot.
 
-## Open questions for Matt
+## Open questions for Owner
 - (carried by the finish-up report's starred items: release signing,
   Play upload, real-device checks, F-Droid MR)

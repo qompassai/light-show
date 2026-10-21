@@ -17,4 +17,4 @@
   $XDG_DATA_HOME/keystores/light-show/ (mode 700) and prints the exact
   keytool commands for the release and Play upload keystores without
   executing them; --live and extra args are refused (exit 2).
-  tbr-keystore.sh was not run (Matt-only, as designed).
+  tbr-keystore.sh was not run (Owner-only, as designed).

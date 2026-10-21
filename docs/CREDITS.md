@@ -33,7 +33,7 @@ copyrightable expression.
   and everything derived from them (64x64 in-engine sprite sheets under
   `game/assets/sprites/<name>/`, animated README profile GIFs, and the
   Android launcher icon set) are AI portrait art made on primo using free
-  images (rights confirmed by Matt, 2026-09-30). `tools/gen_companion_art.py`
+  images (rights confirmed by Owner, 2026-09-30). `tools/gen_companion_art.py`
   and `tools/gen_app_icon.py` (both original code, Apache-2.0) perform
   the crop/pixelate/tint/icon-assembly steps deterministically from those
   source portraits.

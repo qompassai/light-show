@@ -2,7 +2,7 @@
 
 This directory holds vendored agent skills for working on the light-show
 repo — the Bevy fiber-optic puzzle game and its store publication. They
-are copies of Matt's canonical skills, vendored here so any agent
+are copies of Owner's canonical skills, vendored here so any agent
 (Claude Code or opencode) working in this checkout gets the same rules
 without extra setup.
 

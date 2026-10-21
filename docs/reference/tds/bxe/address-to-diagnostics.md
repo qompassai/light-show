@@ -188,5 +188,5 @@ sudo pacman -S --needed curl jq
 
 ## Sources
 
-- VERIFIED: portal URL `https://bxe-portal-prime.content.prod.oscp.ent.tds.net/` (Matt); OpenShift hosting (URL structure); `templates/*/echo.md` etc. in this repo (BXE certification + light-level fields).
+- VERIFIED: portal URL `https://bxe-portal-prime.content.prod.oscp.ent.tds.net/` (Owner); OpenShift hosting (URL structure); `templates/*/echo.md` etc. in this repo (BXE certification + light-level fields).
 - INFERRED: API path shapes and JSON fields — discover yours via section A. Marked `<...>` everywhere they appear.

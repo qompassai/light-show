@@ -2,7 +2,7 @@
 
 Branch `pax/splice-tray-20261011`, commit `50b6be5` on top of
 origin/main `072976d`. NOT pushed — new content beyond the Oct 7
-landing authorization; landing is Matt's call.
+landing authorization; landing is Owner's call.
 
 ## What
 

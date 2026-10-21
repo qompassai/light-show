@@ -92,9 +92,9 @@ cargo test -- --nocapture
 ## Test Conventions
 
 - **Unit tests:** In `game/src/` alongside code, `#[cfg(test)]`
-- **Integration tests:** In `tests/`, flat layout per Matt's preference
+- **Integration tests:** In `tests/`, flat layout per Owner's preference
 - **Playthrough tests:** In `game/src/playthrough.rs`, use headless Bevy app
-- **Physics tests:** Adversarial + validation split (50/50 per Matt's rule)
+- **Physics tests:** Adversarial + validation split (50/50 per Owner's rule)
 
 ## CI Integration
 

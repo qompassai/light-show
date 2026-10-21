@@ -100,7 +100,7 @@ Cuts a GitHub release end to end:
 Console checklist) are intentionally absent from every app. A deterministic
 sandbox must never mint signing identities or submit anything to a store.
 The release app publishes to **GitHub Releases only**. Those steps are
-Matt's, documented in `scripts/publish/`.
+Owner's, documented in `scripts/publish/`.
 
 ## Android gap (documented, not faked)
 

@@ -150,5 +150,5 @@ $cred = Get-Credential -Message "BxE login"  # secure prompt, nothing echoed
 
 ## Sources
 
-- VERIFIED: portal URL (Matt); standard web-session patterns.
+- VERIFIED: portal URL (Owner); standard web-session patterns.
 - INFERRED: login endpoint shape — discover per `address-to-diagnostics.md`.

@@ -15,7 +15,7 @@ Field guides for the BxE portal (`https://bxe-portal-prime.content.prod.oscp.ent
 - Then `address-to-diagnostics.md` (the 10-minute DevTools discovery that unlocks everything).
 - Every guide: one-line overview → mermaid diagram → CLI workflows (primary) → GUI section (secondary).
 - Script blocks for six platforms, alphabetical: **Linux bash, Nix-on-Droid, PowerShell, Termux, Windows cmd, WSL/Arch**.
-- `VERIFIED` = confirmed from Matt, this repo's templates, or direct observation. `INFERRED` = standard patterns you must adapt — marked `<...>` everywhere.
+- `VERIFIED` = confirmed from Owner, this repo's templates, or direct observation. `INFERRED` = standard patterns you must adapt — marked `<...>` everywhere.
 
 ## The guides (alphabetical)
 

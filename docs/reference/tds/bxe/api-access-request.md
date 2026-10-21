@@ -159,5 +159,5 @@ date +%s
 
 ## Sources
 
-- VERIFIED: no public BxE API docs found (web search 2026-09-30); portal URL from Matt.
+- VERIFIED: no public BxE API docs found (web search 2026-09-30); portal URL from Owner.
 - INFERRED: team names, approval process — replace with your org's reality.
