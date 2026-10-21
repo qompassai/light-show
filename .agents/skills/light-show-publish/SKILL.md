@@ -1,6 +1,6 @@
 ---
 name: "light-show-publish"
-description: "Full store-publication journey for the light-show Bevy game (qompassai/light-show): PR merge verification, fastlane metadata, F-Droid recipe, publish scripts, emulator screenshots, licensed music wiring, and the primo build/test gates. Trigger when Matt asks to publish light-show to Google Play or F-Droid."
+description: "Full store-publication journey for the light-show Bevy game (qompassai/light-show): PR merge verification, fastlane metadata, F-Droid recipe, publish scripts, emulator screenshots, licensed music wiring, and the primo build/test gates. Trigger when Owner asks to publish light-show to Google Play or F-Droid."
 metadata:
   includeInPrompt: "true"
 ---
@@ -27,9 +27,9 @@ repo, the real Android toolchain on primo, and a real emulator.
    rebase cleanly and report the move; if it moved incompatibly, stop
    and report.
 4. **Human-gated scripts are never run by agents.** Files named `tbr-*`
-   under `scripts/publish/` are for Matt to run himself (keystores,
+   under `scripts/publish/` are for Owner to run himself (keystores,
    console submissions). Agents may read, review, and dry-run them only
-   if Matt explicitly asks; the default finished state leaves them
+   if Owner explicitly asks; the default finished state leaves them
    untouched for him.
 5. **Never generate signing keys.** No keytool, no keystores, no
    exceptions — not even "throwaway" ones for testing. (Historical note:
@@ -38,7 +38,7 @@ repo, the real Android toolchain on primo, and a real emulator.
    distributed.) If a build needs signing to proceed, use the
    pre-existing debug keystore via cargo-apk's documented env override
    (see §8) for local verification only — never generate a new key.
-6. **git-wip-guard** before any destructive git operation in Matt's
+6. **git-wip-guard** before any destructive git operation in Owner's
    repos: inspect, attribute, snapshot, confirm, verify.
 
 ## 1. PR merge verification
@@ -55,7 +55,7 @@ When a feature branch must land on `main`:
    not by guessing. Record which side won and why in the merge commit
    message.
 3. Preserve history: never rewrite the PR branch, never squash on merge
-   unless Matt asks. The merge commit message names the PR, what it
+   unless Owner asks. The merge commit message names the PR, what it
    adds, and the conflict-resolution rule used.
 4. Gates on the merged tree before pushing:
    - `cargo test --workspace` — all pass
@@ -88,7 +88,7 @@ both Play and F-Droid listings.
   PNG before committing it** — describe exactly what it shows.
   Launcher-only, black, or visibly broken screens (e.g. overlapping
   text) are rejected; fix the underlying issue and re-capture.
-- `full_description.txt` — full listing copy when Matt approves it.
+- `full_description.txt` — full listing copy when Owner approves it.
 
 ## 3. F-Droid recipe
 
@@ -98,7 +98,7 @@ both Play and F-Droid listings.
   builds — never a short SHA, never a tag, never `main`. A commit
   cannot contain its own SHA, so publication is a two-commit sequence:
   push the release commit, verify the remote SHA with `git ls-remote`,
-  then fill that SHA into the recipe. Until Matt runs the sequence, the
+  then fill that SHA into the recipe. Until Owner runs the sequence, the
   reference copy keeps the `__RELEASE_COMMIT_SHA__` placeholder.
 - `ndk:` is the **full `Pkg.Revision`** from the NDK's
   `source.properties` (e.g. `30.0.16248370`) — fdroidserver keys its
@@ -122,7 +122,7 @@ both Play and F-Droid listings.
 
 ## 4. Publish scripts layout
 
-`scripts/publish/` separates what agents may run from what only Matt
+`scripts/publish/` separates what agents may run from what only Owner
 may run:
 
 - `bin/fdroid-publish-check` — repeatable, agent-runnable: license
@@ -141,7 +141,7 @@ may run:
   match.
 
 Naming rule: repeatable automation goes in `bin/`; anything needing
-Matt's hands, accounts, or keys is named `tbr-*` (to-be-run).
+Owner's hands, accounts, or keys is named `tbr-*` (to-be-run).
 
 ## 5. Emulator screenshot / runtime-verification pipeline
 
@@ -233,7 +233,7 @@ APK actually runs. All on primo; `/dev/kvm` must exist.
 `TODO.md` is the program's ground truth. Keep it current — and honest:
 
 - Check off what's done with the commit SHA and date.
-- Items needing Matt personally (accounts, keys, console clicks) are
+- Items needing Owner personally (accounts, keys, console clicks) are
   marked ★.
 - The "Ground truth" footer records the last `fdroid-publish-check`
   output and the music/attribution state — real gate output only, never
@@ -242,7 +242,7 @@ APK actually runs. All on primo; `/dev/kvm` must exist.
   inspected, or a recipe field that is still a placeholder.
 - Art-rights and license decisions are recorded once, with who decided
   and when — never re-litigated. (AI portrait art: made on primo from
-  free images; rights confirmed by Matt 2026-09-30.)
+  free images; rights confirmed by Owner 2026-09-30.)
 
 ## 8. Primo build/test gates
 
@@ -283,7 +283,7 @@ targetSdk 36. `.cargo/config.toml` forces it for
 `armv7-linux-androideabi` (which defaults to 4 KB); verify every ABI
 with `readelf -lW` showing `0x4000` on all `LOAD` segments.
 
-## What stays Matt-only
+## What stays Owner-only
 
 - Running any `tbr-*` script; generating any signing key.
 - Play Console: service account invite (`pass` entry
