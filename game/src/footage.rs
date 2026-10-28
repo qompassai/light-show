@@ -16,16 +16,18 @@ use bevy::prelude::*;
 
 use crate::board;
 use crate::level::{self, CurrentLevelIndex};
+use crate::splice;
 use crate::states::outage::ActiveOutage;
 use crate::states::playing::LiveGraph;
 use crate::states::quiz::{
     QuizChoice, QuizChoiceLabel, QuizExplanation, QuizFeedback, QuizProgress, QuizProgressLine,
     QuizQuestionText,
 };
+use crate::states::splice_console::SpliceProgress;
 use crate::states::GameState;
 
 /// A single scripted action, executed at a given frame.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum FootageAction {
     /// Place a component: insert `(from, to) -> slot` into `PlacedChoices`
     /// and rebuild the live graph (the same state transition the pill-tap
@@ -37,6 +39,17 @@ enum FootageAction {
     QuizAnswer { wrong: bool },
     /// Advance the quiz. Enqueued for `footage_quiz_ui_sync`.
     QuizNext,
+    /// Work one splice-tray splice: open the strand's tube page, pick
+    /// the strand, and splice it to `drop` (the work order's full drop
+    /// label — "A" in beat 1, "Drop 1" / "Drop A" in later beats) —
+    /// the same three `SpliceProgress` calls the console buttons make.
+    Splice {
+        tube: u32,
+        strand: u32,
+        drop: String,
+    },
+    /// Verify the current splice-tray beat.
+    SpliceVerify,
 }
 
 /// Per-level footage script: timed actions plus the total frame budget.
@@ -119,6 +132,43 @@ fn quiz_script(id: &str) -> Option<FootageScript> {
     })
 }
 
+/// Build sp1's script from its own level data: the board splice
+/// (3->4 Fusion, slot 0), then every tray splice the work orders call
+/// for — expected fibers computed with `splice::expected_fiber`, so
+/// damaged strands are fed by their designated spares — with a verify
+/// at each beat's end. Steps land ~0.5s apart at software-rendering
+/// rates so the tray work reads on camera.
+fn splice_script() -> Option<FootageScript> {
+    // sp1 is a Field School scenario: it lives in SCENARIO_SOURCES,
+    // not LEVEL_SOURCES, so the track-index scan cannot find it.
+    let def = level::load_scenario("sp1")?;
+    let orders = def.splice_work_orders.as_ref()?;
+    let mut actions = vec![(
+        SETUP_FRAMES + 10,
+        FootageAction::Place {
+            from: 3,
+            to: 4,
+            slot: 0,
+        },
+    )];
+    let mut frame = SETUP_FRAMES + 40;
+    for beat in &orders.beats {
+        for entry in &beat.work_order {
+            let (expected, _) = splice::expected_fiber(beat, entry.fiber);
+            let (tube, strand) = splice::fiber_pair(expected)?;
+            let drop = entry.drop.clone();
+            actions.push((frame, FootageAction::Splice { tube, strand, drop }));
+            frame += 18;
+        }
+        actions.push((frame, FootageAction::SpliceVerify));
+        frame += 40;
+    }
+    Some(FootageScript {
+        actions,
+        total_frames: frame + 300,
+    })
+}
+
 /// Scripted placements per level: put down the level's signature component,
 /// then hold for the level's signature beat (outage levels wait for the
 /// scripted outage to fire on wall-clock time).
@@ -149,6 +199,62 @@ fn script_for_level(id: &str) -> Option<FootageScript> {
             actions: Vec::new(),
             total_frames: tf,
         });
+    }
+    // Field jobs place two components: the clean splice, then the
+    // NEW splitter — never the smashed legacy box.
+    if id == "fj1" {
+        // Replace the 1x4: Fusion splice 6->7 (slot 1; slot 0 is the
+        // 4.2 dB Mechanical), then the new 1x4 at 7->8.
+        return Some(FootageScript {
+            actions: vec![
+                (
+                    SETUP_FRAMES + 10,
+                    FootageAction::Place {
+                        from: 6,
+                        to: 7,
+                        slot: 1,
+                    },
+                ),
+                (
+                    SETUP_FRAMES + 90,
+                    FootageAction::Place {
+                        from: 7,
+                        to: 8,
+                        slot: 0,
+                    },
+                ),
+            ],
+            total_frames: 1200,
+        });
+    }
+    if id == "fj2" {
+        // Prove the SB: Fusion splice 7->8 (slot 1), then the new
+        // 1x4 at 8->9 — the old box at 8->10 stays dark.
+        return Some(FootageScript {
+            actions: vec![
+                (
+                    SETUP_FRAMES + 10,
+                    FootageAction::Place {
+                        from: 7,
+                        to: 8,
+                        slot: 1,
+                    },
+                ),
+                (
+                    SETUP_FRAMES + 90,
+                    FootageAction::Place {
+                        from: 8,
+                        to: 9,
+                        slot: 0,
+                    },
+                ),
+            ],
+            total_frames: 1200,
+        });
+    }
+    // sp1's repair lives in the splice tray as much as on the board.
+    if id == "sp1" {
+        return splice_script();
     }
     // (from, to, slot, total_frames): slot selects the component choice.
     let (from, to, slot, total_frames) = match id {
@@ -228,10 +334,13 @@ fn script_for_level(id: &str) -> Option<FootageScript> {
     let mut actions = vec![(SETUP_FRAMES + 10, FootageAction::Place { from, to, slot })];
     // w4l1's signature beat is the protection route: after the 20s outage
     // fires on 1->3, place the 2->3 Mechanical splice (slot 0 of its pair).
-    // 1500 frames is safely past the outage at ~35fps software rendering.
+    // The outage clock is wall-time while script actions are frame-indexed,
+    // so the frame must land inside the ~46s repair window across render
+    // rates: 1000 frames is ~50s at primo's ~20fps llvmpipe (repairs with
+    // ~16s to spare) and ~22s at 45fps (just past the outage firing).
     if id == "w4l1" {
         actions.push((
-            1500,
+            1000,
             FootageAction::Place {
                 from: 2,
                 to: 3,
@@ -278,10 +387,14 @@ enum QuizUiUpdate {
 /// call this. Also seeds `CurrentLevelIndex` so `setup_level` loads the
 /// requested level on `OnEnter(Playing)`.
 pub fn add_footage_systems(app: &mut App, level_id: &str, frames_override: Option<u32>) -> bool {
-    let Some(index) = level_index_for_id(level_id) else {
+    // Track levels resolve to a LEVEL_SOURCES index. Field School
+    // scenarios (fj1/fj2/sp1) live in their own registry and enter
+    // play through CurrentScenarioId instead (see level.rs).
+    let index = level_index_for_id(level_id);
+    if index.is_none() && !level::is_scenario_id(level_id) {
         eprintln!("[light-show] --footage: unknown level id {level_id:?}");
         return false;
-    };
+    }
     let Some(mut script) = script_for_level(level_id) else {
         eprintln!("[light-show] --footage: no script for level id {level_id:?}");
         return false;
@@ -289,11 +402,22 @@ pub fn add_footage_systems(app: &mut App, level_id: &str, frames_override: Optio
     if let Some(n) = frames_override {
         script.total_frames = n;
     }
-    eprintln!(
-        "[light-show] footage: level {level_id} (index {index}), {} frames",
-        script.total_frames
-    );
-    app.insert_resource(CurrentLevelIndex(index));
+    match index {
+        Some(index) => {
+            eprintln!(
+                "[light-show] footage: level {level_id} (index {index}), {} frames",
+                script.total_frames
+            );
+            app.insert_resource(CurrentLevelIndex(index));
+        }
+        None => {
+            eprintln!(
+                "[light-show] footage: level {level_id} (scenario), {} frames",
+                script.total_frames
+            );
+            app.insert_resource(level::CurrentScenarioId(Some(level_id.to_string())));
+        }
+    }
     app.insert_resource(FootageRun {
         frames_in_playing: 0,
         script,
@@ -316,6 +440,7 @@ pub fn add_footage_systems(app: &mut App, level_id: &str, frames_override: Optio
 /// live graph directly — the same state transition the input handler
 /// performs on a pill tap, without the fragility of synthetic cursor
 /// coordinates under software rendering.
+#[allow(clippy::too_many_arguments)]
 fn footage_driver(
     mut footage: ResMut<FootageRun>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -324,6 +449,7 @@ fn footage_driver(
     placed: Option<ResMut<board::PlacedChoices>>,
     live: Option<ResMut<LiveGraph>>,
     active_outage: Option<Res<ActiveOutage>>,
+    mut splice_progress: Option<ResMut<SpliceProgress>>,
     mut exit: MessageWriter<AppExit>,
 ) {
     if !footage.entered {
@@ -356,7 +482,7 @@ fn footage_driver(
     while footage.next_action < footage.script.actions.len()
         && footage.script.actions[footage.next_action].0 <= frame
     {
-        let (_, action) = footage.script.actions[footage.next_action];
+        let action = footage.script.actions[footage.next_action].1.clone();
         footage.next_action += 1;
         match action {
             FootageAction::Place { from, to, slot } => {
@@ -368,6 +494,28 @@ fn footage_driver(
                     &mut live.graph,
                 );
                 eprintln!("[light-show] footage: placed {from}->{to} slot {slot} at frame {frame}");
+            }
+            FootageAction::Splice { tube, strand, drop } => {
+                if let (Some(progress), Some(orders)) = (
+                    splice_progress.as_deref_mut(),
+                    level.splice_work_orders.as_ref(),
+                ) {
+                    progress.select_tube(orders, tube);
+                    progress.select_strand(strand);
+                    progress.choose_drop(&drop);
+                    eprintln!(
+                        "[light-show] footage: spliced tube {tube} strand {strand} to {drop} at frame {frame}"
+                    );
+                }
+            }
+            FootageAction::SpliceVerify => {
+                if let (Some(progress), Some(orders)) = (
+                    splice_progress.as_deref_mut(),
+                    level.splice_work_orders.as_ref(),
+                ) {
+                    let passed = progress.verify(orders);
+                    eprintln!("[light-show] footage: splice verify -> {passed:?} at frame {frame}");
+                }
             }
             FootageAction::QuizAnswer { wrong } => {
                 footage.quiz_ui_pending = Some(QuizUiUpdate::Answer { wrong });
