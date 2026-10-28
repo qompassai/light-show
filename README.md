@@ -97,6 +97,151 @@ One honest caveat: the outage clip was captured with a temporary build
 that starts at level 2 — level select doesn't exist yet, and level 2 is
 only reachable through the results screen.
 
+**Every level, animated.** All 83 levels have a preview below,
+captured the same way as the two features above — the game's own
+`--footage` harness driving scripted input through the real game
+under Xvfb, silent. Plain files are the current build's default
+companion set; `*_base` files are the standard-set captures
+(byte-identical to the plain capture where only one set exists
+for that companion — the same convention as the outage pair).
+Levels whose mechanic the harness cannot perform (console and
+triage flows) run their full scripted budget as a showcase,
+and outage levels whose repair runs through the interactive
+alarm flow end on the outage itself — the storm is the show.
+
+*Fiber — Séraphine*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 1 — Clean Hands (`f1l3`) | [GIF](docs/gameplay/light-show-f1l3.gif) · [MP4](docs/gameplay/light-show-f1l3.mp4) | [GIF](docs/gameplay/light-show-f1l3_base.gif) · [MP4](docs/gameplay/light-show-f1l3_base.mp4) |
+| World 1 — Fusion or Bust (`f1l4`) | [GIF](docs/gameplay/light-show-f1l4.gif) · [MP4](docs/gameplay/light-show-f1l4.mp4) | [GIF](docs/gameplay/light-show-f1l4_base.gif) · [MP4](docs/gameplay/light-show-f1l4_base.mp4) |
+| World 1 — The Short Cut (`f1l5`) | [GIF](docs/gameplay/light-show-f1l5.gif) · [MP4](docs/gameplay/light-show-f1l5.mp4) | [GIF](docs/gameplay/light-show-f1l5_base.gif) · [MP4](docs/gameplay/light-show-f1l5_base.mp4) |
+| World 1 — Split Decision (`f1l6`) | [GIF](docs/gameplay/light-show-f1l6.gif) · [MP4](docs/gameplay/light-show-f1l6.mp4) | [GIF](docs/gameplay/light-show-f1l6_base.gif) · [MP4](docs/gameplay/light-show-f1l6_base.mp4) |
+| World 1 — Bend Don't Break (`f1l7`) | [GIF](docs/gameplay/light-show-f1l7.gif) · [MP4](docs/gameplay/light-show-f1l7.mp4) | [GIF](docs/gameplay/light-show-f1l7_base.gif) · [MP4](docs/gameplay/light-show-f1l7_base.mp4) |
+| World 1 — Contamination Event (`f1l8`) | [GIF](docs/gameplay/light-show-f1l8.gif) · [MP4](docs/gameplay/light-show-f1l8.mp4) | [GIF](docs/gameplay/light-show-f1l8_base.gif) · [MP4](docs/gameplay/light-show-f1l8_base.mp4) |
+| World 5 — Tight Budget (`f1l9`) | [GIF](docs/gameplay/light-show-f1l9.gif) · [MP4](docs/gameplay/light-show-f1l9.mp4) | [GIF](docs/gameplay/light-show-f1l9_base.gif) · [MP4](docs/gameplay/light-show-f1l9_base.mp4) |
+| World 5 — Build It Right (`f1l10`) | [GIF](docs/gameplay/light-show-f1l10.gif) · [MP4](docs/gameplay/light-show-f1l10.mp4) | [GIF](docs/gameplay/light-show-f1l10_base.gif) · [MP4](docs/gameplay/light-show-f1l10_base.mp4) |
+
+*Coax — Ondine*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 2 — Unity Gain (`c1l1`) | [GIF](docs/gameplay/light-show-c1l1.gif) · [MP4](docs/gameplay/light-show-c1l1.mp4) | [GIF](docs/gameplay/light-show-c1l1_base.gif) · [MP4](docs/gameplay/light-show-c1l1_base.mp4) |
+| World 2 — Ingress at Night (`c1l2`) | [GIF](docs/gameplay/light-show-c1l2.gif) · [MP4](docs/gameplay/light-show-c1l2.mp4) | [GIF](docs/gameplay/light-show-c1l2_base.gif) · [MP4](docs/gameplay/light-show-c1l2_base.mp4) |
+| World 2 — Longer Run (`c1l3`) | [GIF](docs/gameplay/light-show-c1l3.gif) · [MP4](docs/gameplay/light-show-c1l3.mp4) | [GIF](docs/gameplay/light-show-c1l3_base.gif) · [MP4](docs/gameplay/light-show-c1l3_base.mp4) |
+| World 2 — Tap Dance (`c1l4`) | [GIF](docs/gameplay/light-show-c1l4.gif) · [MP4](docs/gameplay/light-show-c1l4.mp4) | [GIF](docs/gameplay/light-show-c1l4_base.gif) · [MP4](docs/gameplay/light-show-c1l4_base.mp4) |
+| World 2 — Ingress Returns (`c1l5`) | [GIF](docs/gameplay/light-show-c1l5.gif) · [MP4](docs/gameplay/light-show-c1l5.mp4) | [GIF](docs/gameplay/light-show-c1l5_base.gif) · [MP4](docs/gameplay/light-show-c1l5_base.mp4) |
+| World 2 — Backup Plan (`c1l6`) | [GIF](docs/gameplay/light-show-c1l6.gif) · [MP4](docs/gameplay/light-show-c1l6.mp4) | [GIF](docs/gameplay/light-show-c1l6_base.gif) · [MP4](docs/gameplay/light-show-c1l6_base.mp4) |
+| World 2 — Hot Headend (`c1l7`) | [GIF](docs/gameplay/light-show-c1l7.gif) · [MP4](docs/gameplay/light-show-c1l7.mp4) | [GIF](docs/gameplay/light-show-c1l7_base.gif) · [MP4](docs/gameplay/light-show-c1l7_base.mp4) |
+| World 2 — The Long Cascade (`c1l8`) | [GIF](docs/gameplay/light-show-c1l8.gif) · [MP4](docs/gameplay/light-show-c1l8.mp4) | [GIF](docs/gameplay/light-show-c1l8_base.gif) · [MP4](docs/gameplay/light-show-c1l8_base.mp4) |
+| World 6 — Precision Run (`c1l9`) | [GIF](docs/gameplay/light-show-c1l9.gif) · [MP4](docs/gameplay/light-show-c1l9.mp4) | [GIF](docs/gameplay/light-show-c1l9_base.gif) · [MP4](docs/gameplay/light-show-c1l9_base.mp4) |
+| World 6 — Ingress Storm (`c1l10`) | [GIF](docs/gameplay/light-show-c1l10.gif) · [MP4](docs/gameplay/light-show-c1l10.mp4) | [GIF](docs/gameplay/light-show-c1l10_base.gif) · [MP4](docs/gameplay/light-show-c1l10_base.mp4) |
+
+*Ethernet — Lattice*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 4 — The Hundred-Meter Wall (`e1l1`) | [GIF](docs/gameplay/light-show-e1l1.gif) · [MP4](docs/gameplay/light-show-e1l1.mp4) | [GIF](docs/gameplay/light-show-e1l1_base.gif) · [MP4](docs/gameplay/light-show-e1l1_base.mp4) |
+| World 4 — Power Budget (`e1l2`) | [GIF](docs/gameplay/light-show-e1l2.gif) · [MP4](docs/gameplay/light-show-e1l2.mp4) | [GIF](docs/gameplay/light-show-e1l2_base.gif) · [MP4](docs/gameplay/light-show-e1l2_base.mp4) |
+| World 4 — Category Matters (`e1l3`) | [GIF](docs/gameplay/light-show-e1l3.gif) · [MP4](docs/gameplay/light-show-e1l3.mp4) | [GIF](docs/gameplay/light-show-e1l3_base.gif) · [MP4](docs/gameplay/light-show-e1l3_base.mp4) |
+| World 4 — The Long Corridor (`e1l4`) | [GIF](docs/gameplay/light-show-e1l4.gif) · [MP4](docs/gameplay/light-show-e1l4.mp4) | [GIF](docs/gameplay/light-show-e1l4_base.gif) · [MP4](docs/gameplay/light-show-e1l4_base.mp4) |
+| World 4 — Power Hungry (`e1l5`) | [GIF](docs/gameplay/light-show-e1l5.gif) · [MP4](docs/gameplay/light-show-e1l5.mp4) | [GIF](docs/gameplay/light-show-e1l5_base.gif) · [MP4](docs/gameplay/light-show-e1l5_base.mp4) |
+| World 4 — Every Constraint (`e1l6`) | [GIF](docs/gameplay/light-show-e1l6.gif) · [MP4](docs/gameplay/light-show-e1l6.mp4) | [GIF](docs/gameplay/light-show-e1l6_base.gif) · [MP4](docs/gameplay/light-show-e1l6_base.mp4) |
+| World 5 — The Campus (`e1l7`) | [GIF](docs/gameplay/light-show-e1l7.gif) · [MP4](docs/gameplay/light-show-e1l7.mp4) | [GIF](docs/gameplay/light-show-e1l7_base.gif) · [MP4](docs/gameplay/light-show-e1l7_base.mp4) |
+| World 5 — No Slack (`e1l8`) | [GIF](docs/gameplay/light-show-e1l8.gif) · [MP4](docs/gameplay/light-show-e1l8.mp4) | [GIF](docs/gameplay/light-show-e1l8_base.gif) · [MP4](docs/gameplay/light-show-e1l8_base.mp4) |
+| World 5 — Retrofit (`e1l9`) | [GIF](docs/gameplay/light-show-e1l9.gif) · [MP4](docs/gameplay/light-show-e1l9.mp4) | [GIF](docs/gameplay/light-show-e1l9_base.gif) · [MP4](docs/gameplay/light-show-e1l9_base.mp4) |
+| World 5 — The Data Center (`e1l10`) | [GIF](docs/gameplay/light-show-e1l10.gif) · [MP4](docs/gameplay/light-show-e1l10.mp4) | [GIF](docs/gameplay/light-show-e1l10_base.gif) · [MP4](docs/gameplay/light-show-e1l10_base.mp4) |
+
+*Wireless — Linka*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 3 — Close the Link (`m1l1`) | [GIF](docs/gameplay/light-show-m1l1.gif) · [MP4](docs/gameplay/light-show-m1l1.mp4) | [GIF](docs/gameplay/light-show-m1l1_base.gif) · [MP4](docs/gameplay/light-show-m1l1_base.mp4) |
+| World 3 — Ride the Storm (`m1l2`) | [GIF](docs/gameplay/light-show-m1l2.gif) · [MP4](docs/gameplay/light-show-m1l2.mp4) | [GIF](docs/gameplay/light-show-m1l2_base.gif) · [MP4](docs/gameplay/light-show-m1l2_base.mp4) |
+| World 3 — Thread the Needle (`m1l3`) | [GIF](docs/gameplay/light-show-m1l3.gif) · [MP4](docs/gameplay/light-show-m1l3.mp4) | [GIF](docs/gameplay/light-show-m1l3_base.gif) · [MP4](docs/gameplay/light-show-m1l3_base.mp4) |
+| World 3 — The 5GHz Tax (`m1l4`) | [GIF](docs/gameplay/light-show-m1l4.gif) · [MP4](docs/gameplay/light-show-m1l4.mp4) | [GIF](docs/gameplay/light-show-m1l4_base.gif) · [MP4](docs/gameplay/light-show-m1l4_base.mp4) |
+| World 3 — After the Repeater (`m1l5`) | [GIF](docs/gameplay/light-show-m1l5.gif) · [MP4](docs/gameplay/light-show-m1l5.mp4) | [GIF](docs/gameplay/light-show-m1l5_base.gif) · [MP4](docs/gameplay/light-show-m1l5_base.mp4) |
+| World 3 — Loud Is Not Clear (`m1l6`) | [GIF](docs/gameplay/light-show-m1l6.gif) · [MP4](docs/gameplay/light-show-m1l6.mp4) | [GIF](docs/gameplay/light-show-m1l6_base.gif) · [MP4](docs/gameplay/light-show-m1l6_base.mp4) |
+| World 4 — The Long Haul (`m1l7`) | [GIF](docs/gameplay/light-show-m1l7.gif) · [MP4](docs/gameplay/light-show-m1l7.mp4) | [GIF](docs/gameplay/light-show-m1l7_base.gif) · [MP4](docs/gameplay/light-show-m1l7_base.mp4) |
+| World 4 — Aim High (`m1l8`) | [GIF](docs/gameplay/light-show-m1l8.gif) · [MP4](docs/gameplay/light-show-m1l8.mp4) | [GIF](docs/gameplay/light-show-m1l8_base.gif) · [MP4](docs/gameplay/light-show-m1l8_base.mp4) |
+| World 4 — Mixed Bands (`m1l9`) | [GIF](docs/gameplay/light-show-m1l9.gif) · [MP4](docs/gameplay/light-show-m1l9.mp4) | [GIF](docs/gameplay/light-show-m1l9_base.gif) · [MP4](docs/gameplay/light-show-m1l9_base.mp4) |
+| World 5 — Linka's Gauntlet (`m1l10`) | [GIF](docs/gameplay/light-show-m1l10.gif) · [MP4](docs/gameplay/light-show-m1l10.mp4) | [GIF](docs/gameplay/light-show-m1l10_base.gif) · [MP4](docs/gameplay/light-show-m1l10_base.mp4) |
+
+*Clara*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 5 — First Turn-Up (`clara1`) | — | [GIF](docs/gameplay/light-show-clara1_base.gif) · [MP4](docs/gameplay/light-show-clara1_base.mp4) |
+| World 5 — Storm Season (`clara2`) | — | [GIF](docs/gameplay/light-show-clara2_base.gif) · [MP4](docs/gameplay/light-show-clara2_base.mp4) |
+| World 5 — Dead Box Swap (`clara3`) | — | [GIF](docs/gameplay/light-show-clara3_base.gif) · [MP4](docs/gameplay/light-show-clara3_base.mp4) |
+| World 5 — Profile Audit (`clara4`) | — | [GIF](docs/gameplay/light-show-clara4_base.gif) · [MP4](docs/gameplay/light-show-clara4_base.mp4) |
+| World 5 — Drive the NBI (`clara5`) | — | [GIF](docs/gameplay/light-show-clara5_base.gif) · [MP4](docs/gameplay/light-show-clara5_base.mp4) |
+| World 5 — Bulk Turn-Up (`clara6`) | — | [GIF](docs/gameplay/light-show-clara6_base.gif) · [MP4](docs/gameplay/light-show-clara6_base.mp4) |
+| World 5 — SMx Lifecycle (`clara7`) | — | [GIF](docs/gameplay/light-show-clara7_base.gif) · [MP4](docs/gameplay/light-show-clara7_base.mp4) |
+| World 5 — Building Turn-Up (`clara8`) | — | [GIF](docs/gameplay/light-show-clara8_base.gif) · [MP4](docs/gameplay/light-show-clara8_base.mp4) |
+| World 5 — Tight Budget (`clara9`) | — | [GIF](docs/gameplay/light-show-clara9_base.gif) · [MP4](docs/gameplay/light-show-clara9_base.mp4) |
+| World 5 — Night Cutover (`clara10`) | — | [GIF](docs/gameplay/light-show-clara10_base.gif) · [MP4](docs/gameplay/light-show-clara10_base.mp4) |
+
+*Aino*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 6 — First Shift (`aino1`) | — | [GIF](docs/gameplay/light-show-aino1_base.gif) · [MP4](docs/gameplay/light-show-aino1_base.mp4) |
+| World 6 — Triage Order (`aino2`) | — | [GIF](docs/gameplay/light-show-aino2_base.gif) · [MP4](docs/gameplay/light-show-aino2_base.mp4) |
+| World 6 — The Cascade (`aino3`) | — | [GIF](docs/gameplay/light-show-aino3_base.gif) · [MP4](docs/gameplay/light-show-aino3_base.mp4) |
+| World 6 — Bulk Ack (`aino4`) | — | [GIF](docs/gameplay/light-show-aino4_base.gif) · [MP4](docs/gameplay/light-show-aino4_base.mp4) |
+| World 6 — Query the NBI (`aino5`) | — | [GIF](docs/gameplay/light-show-aino5_base.gif) · [MP4](docs/gameplay/light-show-aino5_base.mp4) |
+| World 6 — Supervision (`aino6`) | — | [GIF](docs/gameplay/light-show-aino6_base.gif) · [MP4](docs/gameplay/light-show-aino6_base.mp4) |
+| World 6 — Night Shift (`aino7`) | — | [GIF](docs/gameplay/light-show-aino7_base.gif) · [MP4](docs/gameplay/light-show-aino7_base.mp4) |
+| World 6 — Maintenance Window (`aino8`) | — | [GIF](docs/gameplay/light-show-aino8_base.gif) · [MP4](docs/gameplay/light-show-aino8_base.mp4) |
+| World 6 — SOAP Fault (`aino9`) | — | [GIF](docs/gameplay/light-show-aino9_base.gif) · [MP4](docs/gameplay/light-show-aino9_base.mp4) |
+| World 6 — All Clear (`aino10`) | — | [GIF](docs/gameplay/light-show-aino10_base.gif) · [MP4](docs/gameplay/light-show-aino10_base.mp4) |
+
+*Hikari*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 7 — First Day on the Route (`hikari1`) | — | [GIF](docs/gameplay/light-show-hikari1_base.gif) · [MP4](docs/gameplay/light-show-hikari1_base.mp4) |
+| World 7 — Address to Diagnostics (`hikari2`) | — | [GIF](docs/gameplay/light-show-hikari2_base.gif) · [MP4](docs/gameplay/light-show-hikari2_base.mp4) |
+| World 7 — Beat the Callback (`hikari3`) | — | [GIF](docs/gameplay/light-show-hikari3_base.gif) · [MP4](docs/gameplay/light-show-hikari3_base.mp4) |
+| World 7 — The Dirty Drop (`hikari4`) | — | [GIF](docs/gameplay/light-show-hikari4_base.gif) · [MP4](docs/gameplay/light-show-hikari4_base.mp4) |
+| World 7 — Certify It (`hikari5`) | — | [GIF](docs/gameplay/light-show-hikari5_base.gif) · [MP4](docs/gameplay/light-show-hikari5_base.mp4) |
+| World 7 — Slow Portal (`hikari6`) | — | [GIF](docs/gameplay/light-show-hikari6_base.gif) · [MP4](docs/gameplay/light-show-hikari6_base.mp4) |
+| World 7 — Bend in the Wall (`hikari7`) | — | [GIF](docs/gameplay/light-show-hikari7_base.gif) · [MP4](docs/gameplay/light-show-hikari7_base.mp4) |
+| World 7 — The Splitter Closet (`hikari8`) | — | [GIF](docs/gameplay/light-show-hikari8_base.gif) · [MP4](docs/gameplay/light-show-hikari8_base.mp4) |
+| World 7 — Night Trouble Call (`hikari9`) | — | [GIF](docs/gameplay/light-show-hikari9_base.gif) · [MP4](docs/gameplay/light-show-hikari9_base.mp4) |
+| World 7 — Master Tech (`hikari10`) | — | [GIF](docs/gameplay/light-show-hikari10_base.gif) · [MP4](docs/gameplay/light-show-hikari10_base.mp4) |
+
+*Lea — study & quiz*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 8 — Study Hall Warm-Up (`lea1`) | — | [GIF](docs/gameplay/light-show-lea1_base.gif) · [MP4](docs/gameplay/light-show-lea1_base.mp4) |
+| World 8 — Grounded: Article 250 (`lea2`) | — | [GIF](docs/gameplay/light-show-lea2_base.gif) · [MP4](docs/gameplay/light-show-lea2_base.mp4) |
+| World 8 — Wiring Methods: Articles 300-398 (`lea3`) | — | [GIF](docs/gameplay/light-show-lea3_base.gif) · [MP4](docs/gameplay/light-show-lea3_base.mp4) |
+| World 8 — Hazardous Locations: Articles 500-516 (`lea4`) | — | [GIF](docs/gameplay/light-show-lea4_base.gif) · [MP4](docs/gameplay/light-show-lea4_base.mp4) |
+| World 8 — Special Conditions: Articles 705-780 (`lea5`) | — | [GIF](docs/gameplay/light-show-lea5_base.gif) · [MP4](docs/gameplay/light-show-lea5_base.mp4) |
+| World 8 — Comms Systems Boss: Articles 800-830 (`lea6`) | — | [GIF](docs/gameplay/light-show-lea6_base.gif) · [MP4](docs/gameplay/light-show-lea6_base.mp4) |
+| World 8 — Theory Workshop (`lea7`) | — | [GIF](docs/gameplay/light-show-lea7_base.gif) · [MP4](docs/gameplay/light-show-lea7_base.mp4) |
+| World 8 — Washington Law: RCW 19.28 (`lea8`) | — | [GIF](docs/gameplay/light-show-lea8_base.gif) · [MP4](docs/gameplay/light-show-lea8_base.mp4) |
+| World 8 — Washington Admin Code: WAC 296-46B (`lea9`) | — | [GIF](docs/gameplay/light-show-lea9_base.gif) · [MP4](docs/gameplay/light-show-lea9_base.mp4) |
+| World 8 — Mock Exam: Final Boss (`lea10`) | — | [GIF](docs/gameplay/light-show-lea10_base.gif) · [MP4](docs/gameplay/light-show-lea10_base.mp4) |
+
+*Field jobs & splice tray*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 1 — The Brewhouse Job — Replace the 1x4 (`fj1`) | [GIF](docs/gameplay/light-show-fj1.gif) · [MP4](docs/gameplay/light-show-fj1.mp4) | [GIF](docs/gameplay/light-show-fj1_base.gif) · [MP4](docs/gameplay/light-show-fj1_base.mp4) |
+| World 1 — The Brewhouse Job — Prove the SB (`fj2`) | [GIF](docs/gameplay/light-show-fj2.gif) · [MP4](docs/gameplay/light-show-fj2.mp4) | [GIF](docs/gameplay/light-show-fj2_base.gif) · [MP4](docs/gameplay/light-show-fj2_base.mp4) |
+| World 1 — True to the Color (`sp1`) | [GIF](docs/gameplay/light-show-sp1.gif) · [MP4](docs/gameplay/light-show-sp1.mp4) | [GIF](docs/gameplay/light-show-sp1_base.gif) · [MP4](docs/gameplay/light-show-sp1_base.mp4) |
+
+*Worlds*
+
+| Level | Preview | Base set |
+|---|---|---|
+| World 1 — First Light (`w1l1`) | [GIF](docs/gameplay/light-show-level1.gif) · [MP4](docs/gameplay/light-show-level1.mp4) | [GIF](docs/gameplay/light-show-level1_base.gif) · [MP4](docs/gameplay/light-show-level1_base.mp4) |
+| World 4 — Storm Season (`w4l1`) | [GIF](docs/gameplay/light-show-outage.gif) · [MP4](docs/gameplay/light-show-outage.mp4) | [GIF](docs/gameplay/light-show-outage_base.gif) · [MP4](docs/gameplay/light-show-outage_base.mp4) |
+
 </details>
 
 <details>

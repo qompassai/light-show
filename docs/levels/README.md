@@ -11,6 +11,9 @@ eight companions, ten levels each. Three further **Field School scenario levels*
 live in a separate registry (`SCENARIO_SOURCES`) and never advance a track. This directory covers
 all **83**.
 
+**Animated previews:** every level below has a captured animated preview (GIF + MP4) in
+[`docs/gameplay/`](../gameplay/), indexed in the Gameplay section of the [top-level README](../../README.md).
+
 ## The discipline taxonomy
 
 A discipline is one companion's answer to one question: *what does competence look like on this
