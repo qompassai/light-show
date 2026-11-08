@@ -336,8 +336,7 @@ impl FaceAnim {
             self.flap_clock_secs = 0.0;
         }
         FaceFrame {
-            mouth_open: talking
-                && (self.flap_clock_secs / TALK_FLAP_SECS) as u32 % 2 == 0,
+            mouth_open: talking && (self.flap_clock_secs / TALK_FLAP_SECS) as u32 % 2 == 0,
             eyes_closed: self.blink_clock_secs < BLINK_CLOSED_SECS,
         }
     }
@@ -494,7 +493,11 @@ mod tests {
             "art/seraphine/faces/happy_talk.webp"
         );
         assert_eq!(
-            face_asset_path(PillSpeaker::Host(HostId::Tessa), "neutral", FaceVariant::Blink),
+            face_asset_path(
+                PillSpeaker::Host(HostId::Tessa),
+                "neutral",
+                FaceVariant::Blink
+            ),
             "art/tessa/faces/neutral_blink.webp"
         );
     }
@@ -584,16 +587,25 @@ mod tests {
                 .unwrap_or_else(|e| panic!("{rel} unreadable: {e}"))
         };
         let reactions = read("waifu/reactions.rs");
-        assert!(reactions.contains("PillInbox"), "reactions must render via the pill");
+        assert!(
+            reactions.contains("PillInbox"),
+            "reactions must render via the pill"
+        );
         let warehouse = read("states/warehouse.rs");
         assert!(
             warehouse.contains("pill_presentation") || warehouse.contains("PillSpeaker"),
             "warehouse host lines must resolve through the pill presentation"
         );
         let quiz = read("states/quiz.rs");
-        assert!(quiz.contains("PillInbox"), "quiz explanations must route through the pill");
+        assert!(
+            quiz.contains("PillInbox"),
+            "quiz explanations must route through the pill"
+        );
         let results = read("states/results.rs");
-        assert!(results.contains("PillInbox"), "results line must route through the pill");
+        assert!(
+            results.contains("PillInbox"),
+            "results line must route through the pill"
+        );
         assert!(
             !results.contains("{dialogue_line}"),
             "results must not render the companion line as bare quoted text"

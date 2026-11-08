@@ -34,8 +34,8 @@
 //! lines here); no character speaks in bare text anywhere.
 
 use super::dialogue::DialogueBank;
-use super::pill::{FaceAnim, PillInbox, PillLine, PillSpeaker};
 use super::dialogue_ui::Typewriter;
+use super::pill::{FaceAnim, PillInbox, PillLine, PillSpeaker};
 use super::{trigger_mood_pop, Companion, CompanionSprite, Mood, SelectedCompanion};
 use crate::anim::{ResultsGate, TransitionRequest};
 use crate::audio::{Sfx, SfxKind};
@@ -543,8 +543,9 @@ impl Plugin for ReactionsPlugin {
             .add_systems(OnEnter(GameState::MainMenu), hide_bubble)
             .add_systems(
                 Update,
-                (watch_level_events, process_reactions, drive_results_gate)
-                    .run_if(in_state(GameState::Playing).or_else(in_state(GameState::OutageActive))),
+                (watch_level_events, process_reactions, drive_results_gate).run_if(
+                    in_state(GameState::Playing).or_else(in_state(GameState::OutageActive)),
+                ),
             )
             // The pill is universal: queued pill lines (results,
             // Warehouse, quiz) must render in their own states too.
@@ -563,8 +564,7 @@ impl Plugin for ReactionsPlugin {
 fn spawn_bubble_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let display: Handle<Font> = asset_server.load(DISPLAY);
     let body_font: Handle<Font> = asset_server.load(BODY);
-    let placeholder: Handle<Image> =
-        asset_server.load(Companion::default().portrait_path());
+    let placeholder: Handle<Image> = asset_server.load(Companion::default().portrait_path());
 
     // The pill: a rounded bar anchored to the bottom of the screen.
     let root = commands
@@ -706,11 +706,7 @@ fn reset_attempt(
 
 /// Results covers the board; the bubble's moment is over. (The line
 /// itself also appears on the results screen from the results pool.)
-fn hide_bubble(
-    mut commands: Commands,
-    mut bubble: ResMut<BubbleState>,
-    ui: Option<Res<BubbleUi>>,
-) {
+fn hide_bubble(mut commands: Commands, mut bubble: ResMut<BubbleState>, ui: Option<Res<BubbleUi>>) {
     bubble.queue.clear();
     bubble.typewriter = None;
     bubble.applied_mood = None;
@@ -1059,7 +1055,14 @@ fn tick_bubble(
             }
         }
         if let Ok(mut transform) = faces.get_mut(ui.face) {
-            transform.scale = Vec2::new(1.0, if swapped { 1.0 } else { FaceAnim::scale_y(frame) });
+            transform.scale = Vec2::new(
+                1.0,
+                if swapped {
+                    1.0
+                } else {
+                    FaceAnim::scale_y(frame)
+                },
+            );
         }
     }
     if bubble.queue.tick(dt) {
@@ -1363,7 +1366,11 @@ mod tests {
     fn reaction_test_app() -> App {
         use crate::waifu::SeraphinePlugin;
         let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default(), bevy::state::app::StatesPlugin));
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            bevy::state::app::StatesPlugin,
+        ));
         app.init_asset::<bevy::image::Image>();
         app.init_asset::<bevy::image::TextureAtlasLayout>();
         app.init_asset::<bevy::text::Font>();
@@ -1683,15 +1690,13 @@ mod tests {
         enter_playing(&mut app);
         app.world_mut()
             .resource_mut::<PillInbox>()
-            .push_line(
-                PillSpeaker::Host(crate::warehouse::HostId::Tessa),
-                "Howdy.",
-            );
+            .push_line(PillSpeaker::Host(crate::warehouse::HostId::Tessa), "Howdy.");
         app.update();
         let bubble = &app.world().resource::<BubbleState>().queue;
         let active = bubble.active().expect("pill line must be up");
         assert_eq!(active.line, "Howdy.");
-        let pres = crate::waifu::pill::present(PillSpeaker::Host(crate::warehouse::HostId::Tessa), "x");
+        let pres =
+            crate::waifu::pill::present(PillSpeaker::Host(crate::warehouse::HostId::Tessa), "x");
         assert_eq!(pres.face_path, "art/tessa/companions/tessa_portrait.jpg");
         assert_eq!(pres.speaker_name, "Tessa");
     }

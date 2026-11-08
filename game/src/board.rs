@@ -306,10 +306,7 @@ fn component_value_label(component: &Component) -> Option<String> {
             Some(format!("{} m", fmt_compact(*distance_m)))
         }
         Component::Repeater { tx_dbm } => Some(format!("{} dBm", fmt_compact(*tx_dbm))),
-        Component::EthernetRun {
-            length_m,
-            category,
-        } => Some(format!(
+        Component::EthernetRun { length_m, category } => Some(format!(
             "{} m {}",
             fmt_compact(*length_m),
             match category {

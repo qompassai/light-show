@@ -8,13 +8,13 @@
 use super::GameState;
 use crate::anim::TransitionRequest;
 use crate::cheat_codes::{
-    CodeWordBuffer, KonamiState, UnlockedSpecialists, code_word_to_companion,
+    code_word_to_companion, CodeWordBuffer, KonamiState, UnlockedSpecialists,
 };
 use crate::fonts::FONT_SIZE_ADJUST;
 use crate::level::{self, CurrentScenarioId};
 use crate::responsive::ArtBackdrop;
-use crate::ui::neon::{NEON_CYAN, NEON_DIM, NEON_GOLD, NeonText, spawn_neon_text};
-use crate::ui::{BUTTON_BORDER, ButtonPalette, styled_button};
+use crate::ui::neon::{spawn_neon_text, NeonText, NEON_CYAN, NEON_DIM, NEON_GOLD};
+use crate::ui::{styled_button, ButtonPalette, BUTTON_BORDER};
 use crate::waifu::{Companion, SelectedCompanion};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;

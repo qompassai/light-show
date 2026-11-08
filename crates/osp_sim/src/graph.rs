@@ -993,7 +993,10 @@ mod tests {
             },
         );
         let (_level, hops, _frontier) = g.frontier_budget(0, 3.0, Wavelength::Nm1490);
-        assert!(hops <= 2, "loop must be cut off by the visited set, got {hops}");
+        assert!(
+            hops <= 2,
+            "loop must be cut off by the visited set, got {hops}"
+        );
     }
 
     #[test]

@@ -236,4 +236,3 @@ mod tests {
         assert!(lifetime < 1.0, "burst must be sub-second: {lifetime}s");
     }
 }
-

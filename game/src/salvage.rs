@@ -139,7 +139,12 @@ pub fn detect_fried(
     }
     // Delivery rule: the route completed TOO HOT with no crossing —
     // the last placed part fed the overdrive into the receiver.
-    if !any_crossing && fried.is_empty() && hops > 0 && current == target && level_dbm > window.max_dbm {
+    if !any_crossing
+        && fried.is_empty()
+        && hops > 0
+        && current == target
+        && level_dbm > window.max_dbm
+    {
         if let Some(part) = last_placed {
             fried.push(part);
         }
