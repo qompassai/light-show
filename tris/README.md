@@ -10,8 +10,8 @@ This folder holds the TDS TRIS (Technology Request Information Sheet) submission
 
 ## Status
 
-- Checklist: **41 completed · 8 pending** (requestor lines; the reviewer fields, form rows 66–91, are IT's and are listed separately in the checklist).
-- The pending lines are the inputs only the requestor can supply — manager/PAT Manager/CoE Director names, the submitted-version choice (audited 0.1.0 vs. reconciled 0.1.1, which also settles the AI-component confirmation), similar technologies at TDS, and the shared vendor items. See [CHECKLIST.md](CHECKLIST.md) for the exact list.
+- Checklist: **43 completed · 6 pending** (requestor lines; the reviewer fields, form rows 66–91, are IT's and are listed separately in the checklist).
+- The pending lines are the inputs only the requestor can supply — the CoE Director name, the submitted-version choice (audited 0.1.0 vs. reconciled 0.1.1, which also settles the AI-component confirmation), similar technologies at TDS, and the shared vendor items. (Row 4, Requestor's Manager, is filled; row 5, PAT Manager, is left blank deliberately under the Administrator-deferral.) See [CHECKLIST.md](CHECKLIST.md) for the exact list.
 - Submission status: **DRAFT — prepared, not yet submitted.** After TRIS approval, a Procurement Engagement Request (PER) follows.
 
 ## Public-copy notes
