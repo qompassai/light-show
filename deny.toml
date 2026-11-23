@@ -55,13 +55,7 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
 # Unmaintained-crate advisories fail the check for any crate in the tree.
 unmaintained = "all"
-ignore = [
-    # RUSTSEC-2026-0192: ttf-parser is unmaintained. Transitive via
-    # bevy 0.14 (bevy_text -> ab_glyph -> owned_ttf_parser); the advisory
-    # itself states no safe upgrade is available. Revisit on the bevy
-    # 0.15+ upgrade, which is expected to move off ab_glyph.
-    { id = "RUSTSEC-2026-0192", reason = "transitive via bevy 0.14 ab_glyph; no safe upgrade per advisory; revisit on bevy upgrade" },
-]
+ignore = []
 
 [sources]
 unknown-registry = "deny"
