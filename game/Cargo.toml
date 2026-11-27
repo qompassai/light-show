@@ -124,6 +124,13 @@ target_sdk_version = 36
 
 [package.metadata.android.application]
 label = "Light Show"
+# NativeActivity-only app: no DEX code of its own (the Kotlin plugin's
+# auto-added kotlin-stdlib is referenced by nothing and R8 shakes it out
+# entirely), so the generated manifest must declare hasCode=false, in
+# lockstep with the two hand-written manifests. Without this, bundletool
+# rejects the minified bundle: "has no dex files but 'hasCode' is not
+# set to false".
+has_code = false
 
 # The activity declaration cargo-apk writes into the generated
 # manifest. It must stay in lockstep with the two hand-written

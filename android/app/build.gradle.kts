@@ -48,7 +48,7 @@ android {
             // against.
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             // Play App Signing handles the upload/app signing keys — see
             // docs/BUILD.md "Option B" for the Play Console flow. No
             // signingConfig is declared here on purpose; CI does not

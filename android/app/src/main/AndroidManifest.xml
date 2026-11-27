@@ -22,7 +22,7 @@
         android:label="Light Show"
         android:icon="@mipmap/ic_launcher"
         android:banner="@mipmap/ic_launcher"
-        android:hasCode="true"
+        android:hasCode="false"
         android:allowBackup="false"
         android:hardwareAccelerated="true"
         android:supportsRtl="true">
